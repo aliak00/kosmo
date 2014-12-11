@@ -1,14 +1,14 @@
 var config = require('./config')
     , novastl = require('novastl');
 
-var comoyoVpc = novastl.Vpc({
+var vpc = novastl.Vpc({
     cidr: config.vpcCidrBlock,
     publicSubnets: config.publicSubnets,
     privateSubnets: config.privateSubnets
 });
 
-var comoyoRds = novastl.Rds({
-    vpc: comoyoVpc
+var rds = novastl.Rds({
+    vpc: vpc
 });
 
-console.log(comoyoRds.template.toJson());
+console.log(rds.template.toJson());

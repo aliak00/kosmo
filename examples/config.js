@@ -22,8 +22,14 @@ var privateSubnets = {
     },
 };
 
+var images = {
+    'eu-west-1': 'ami-748e2903',
+    'eu-central-1': 'ami-b43503a9'
+}
+
 module.exports = {
     vpcCidrBlock: '10.42.0.0/0',
     publicSubnets: publicSubnets[region],
-    privateSubnets: privateSubnets[region]
+    privateSubnets: privateSubnets[region],
+    genericImageId: images[region]
 };
