@@ -21,6 +21,6 @@ sudo npm link novaform
 npm install
 sudo npm link
 cd ../examples
-sudo npm novastl
+sudo npm link novastl
 npm install
 ```
