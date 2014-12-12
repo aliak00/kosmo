@@ -1,7 +1,7 @@
 var novaform = require('novaform')
     , _ = require('underscore');
 
-function Bastian(options) {
+function Bastion(options) {
     var vpc = options.vpc;
     var allowedSshCidr = options.allowedSshCidr;
     var keyName = options.keyName;
@@ -172,4 +172,4 @@ function Bastian(options) {
     return asg;
 }
 
-module.exports = Bastian;
+module.exports = Bastion;
