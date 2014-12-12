@@ -8,7 +8,8 @@ var vpc = novastl.Vpc({
 });
 
 var rds = novastl.Rds({
-    vpc: vpc
+    vpc: vpc,
+    name: 'mydb'
 });
 
 console.log(rds.template.toJson());

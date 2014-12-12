@@ -12,6 +12,19 @@ function DBSubnetGroup(name, properties) {
 }
 DBSubnetGroup.prototype = Object.create(Resource.prototype);
 
+function DBInstance(name, properties) {
+    if (!(this instanceof DBInstance)) {
+        return new DBInstance(name, properties);
+    }
+
+    this.properties = properties;
+    this.type = 'AWS::RDS::DBInstance';
+    this.name = name;
+
+}
+DBInstance.prototype = Object.create(Resource.prototype);
+
 module.exports = {
-    DBSubnetGroup: DBSubnetGroup
+    DBSubnetGroup: DBSubnetGroup,
+    DBInstance: DBInstance
 };
