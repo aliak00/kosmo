@@ -2,6 +2,5 @@
   "name": "nova-examples",
   "version": "0.0.0",
   "dependencies": {
-    "novastl": "file:../novastl"
   }
 }

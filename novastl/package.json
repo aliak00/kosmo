@@ -12,7 +12,6 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "novaform": "file:../novaform",
     "underscore": "^1.7.0"
   }
 }
