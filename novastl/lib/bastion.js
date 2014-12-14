@@ -1,30 +1,44 @@
 var novaform = require('novaform')
-    , _ = require('underscore');
+    , _ = require('underscore')
+    , ResourceGroup = require('./resource-group');
+
+/**
+    ResourceGroup with ec2.AutoScalingGroup as the resource object
+**/
 
 function Bastion(options) {
-    var vpc = options.vpc;
-    var allowedSshCidr = options.allowedSshCidr;
+    if (!(this instanceof Bastion)) {
+        return new Bastion(options);
+    }
+
+    var vpc = options.vpc.resource;;
     var keyName = options.keyName;
     var imageId = options.imageId;
-    var instanceType = options.instanceType;
+    var allowedSshCidr = options.allowedSshCidr || '0.0.0.0/0'
+    var instanceType = options.instanceType || 't2.micro';
+    var name = options.name || 'bastion';
+
+    function mkname(str) {
+        return name + '-' + str;
+    }
 
     var cft = novaform.Template();
 
-    var eip = novaform.ec2.EIP('BastionElasticIP', {
+    var eip = novaform.ec2.EIP(mkname('eip'), {
         Domain: 'vpc',
         DependsOn: vpc.igwAttachment
     });
 
-    var securityGroup = novaform.ec2.SecurityGroup('BastionInternalSecurityGroup', {
+    var securityGroup = novaform.ec2.SecurityGroup(mkname('internal-sg'), {
         VpcId: vpc,
         GroupDescription: 'Bastion host security group',
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.join('-', [novaform.refs.StackName, 'bastion-internal'])
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('internal-sg')])
         }
     });
 
-    var sgiIcmp = novaform.ec2.SecurityGroupIngress('BastionSGIIcmp', {
+    var sgiIcmp = novaform.ec2.SecurityGroupIngress(mkname('sgi-icmp'), {
         GroupId: securityGroup,
         IpProtocol: 'icmp',
         FromPort: -1,
@@ -32,7 +46,7 @@ function Bastion(options) {
         CidrIp: vpc.cidrBlock
     });
 
-    var sgiSsh = novaform.ec2.SecurityGroupIngress('BastionSGISsh', {
+    var sgiSsh = novaform.ec2.SecurityGroupIngress(mkname('sgi-ssh'), {
         GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 22,
@@ -40,7 +54,7 @@ function Bastion(options) {
         CidrIp: allowedSshCidr
     });
 
-    var sgeIcmp = novaform.ec2.SecurityGroupEgress('BastionSGEIcmp', {
+    var sgeIcmp = novaform.ec2.SecurityGroupEgress(mkname('sge-icmp'), {
         GroupId: securityGroup,
         IpProtocol: 'icmp',
         FromPort: -1,
@@ -48,7 +62,7 @@ function Bastion(options) {
         CidrIp: '0.0.0.0/0'
     });
 
-    var sgeSsh = novaform.ec2.SecurityGroupEgress('BastionSGESsh', {
+    var sgeSsh = novaform.ec2.SecurityGroupEgress(mkname('sge-ssh'), {
         GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 22,
@@ -56,7 +70,7 @@ function Bastion(options) {
         CidrIp: vpc.cidrBlock
     });
 
-    var instanceSecurityGroup = novaform.ec2.SecurityGroup('BastionToInstanceSecurityGroup', {
+    var instanceSecurityGroup = novaform.ec2.SecurityGroup(mkname('to-instance-sg'), {
         VpcId: vpc,
         GroupDescription: 'Allow ssh from bastion host',
         SecurityGroupIngress: [{
@@ -68,11 +82,11 @@ function Bastion(options) {
         SecurityGroupEgress: [],
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.join('-', [novaform.refs.StackName, 'bastion'])
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('to-instance-sg')])
         }
     });
 
-    var role = novaform.iam.Role('BastionIAMRole', {
+    var role = novaform.iam.Role(mkname('iam-role'), {
         AssumeRolePolicyDocument: {
             Version: '2012-10-17',
             Statement: [{
@@ -86,7 +100,7 @@ function Bastion(options) {
         Path: '/'
     });
 
-    var rolePolicy = novaform.iam.Policy('BastionIAMRolePolicy', {
+    var rolePolicy = novaform.iam.Policy(mkname('iam-role-policy'), {
         PolicyName: 'root',
         Roles: [role],
         PolicyDocument: {
@@ -105,19 +119,23 @@ function Bastion(options) {
         }
     });
 
-    var instanceProfile = novaform.iam.InstanceProfile('BastionIAMInstanceProfile', {
+    var instanceProfile = novaform.iam.InstanceProfile(mkname('iam-instance-profile'), {
         Path: novaform.join('', ['/', novaform.refs.StackName, '/nat/']),
         Roles: [role]
     });
 
-    var launchConfig = novaform.asg.LaunchConfiguration('BastionLaunchConfiguration', {
+    var launchConfig = novaform.asg.LaunchConfiguration(mkname('launch-config'), {
         KeyName: keyName,
         ImageId: imageId,
         SecurityGroups: [securityGroup],
-        InstanceType: instanceType ? instanceType : 't2.micro',
+        InstanceType: instanceType,
         AssociatePublicIpAddress: true,
         IamInstanceProfile: instanceProfile,
-        UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/bastion-user-data.sh')),
+        UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/bastion-user-data.sh', {
+            ASGName: name,
+            LaunchConfig: mkname('launch-config'),
+            EIP: novaform.getAttr(eip.name, 'AllocationId')
+        })),
         DependsOn: role
     }, {
         'AWS::CloudFormation::Init': {
@@ -132,7 +150,7 @@ function Bastion(options) {
     });
 
     var availabilityZones = _.pluck(vpc.publicSubnets, 'availabilityZone');
-    var asg = novaform.asg.AutoScalingGroup('BastionAutoScalingGroup', {
+    var asg = novaform.asg.AutoScalingGroup(name, {
         AvailabilityZones: availabilityZones,
         LaunchConfigurationName: launchConfig,
         VPCZoneIdentifier: vpc.publicSubnets,
@@ -141,7 +159,7 @@ function Bastion(options) {
         DesiredCapacity: availabilityZones.length,
         Tags: {
             Application: novaform.TagValue(novaform.refs.StackId, true),
-            Name: novaform.TagValue(novaform.join('-', [novaform.refs.StackName, 'bastion']), true),
+            Name: novaform.TagValue(novaform.join('-', [novaform.refs.StackName, name]), true),
             Network: novaform.TagValue('public', true)
         },
         UpdatePolicy: {
@@ -171,5 +189,6 @@ function Bastion(options) {
     asg.instanceSecurityGroup = instanceSecurityGroup;
     return asg;
 }
+Bastion.prototype = Object.create(ResourceGroup.prototype);
 
 module.exports = Bastion;

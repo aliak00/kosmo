@@ -12,7 +12,7 @@ error() {
   fi
   /opt/aws/bin/cfn-signal -e "${code}" \
            --stack {{ "Ref" : "AWS::StackName" }} \
-           --resource BastionAutoScalingGroup \
+           --resource {{ ASGName }} \
            --region {{ "Ref" : "AWS::Region" }}
   exit "${code}"
 }
@@ -25,15 +25,15 @@ export AWS_DEFAULT_REGION=$region
 # Set CLI Output to text
 export AWS_DEFAULT_OUTPUT="text"
 instance_id=`curl --retry 3 --retry-delay 0 --silent --fail http://169.254.169.254/latest/meta-data/instance-id`
-allocation_id="{{ "Fn::GetAtt" : [ "BastionElasticIp", "AllocationId" ] }}"
+allocation_id="{{ EIP }}"
 log "Bastion host configuration parameters: Allocation ID=$allocation_id, Instance ID=$instance_id, Region=$region"
 aws ec2 associate-address --allocation-id $allocation_id --instance-id $instance_id --allow-reassociation
 log "Configuration of Bastion host complete."
 /opt/aws/bin/cfn-init -v \
          --stack {{ "Ref" : "AWS::StackName" }} \
-         --resource BastionLaunchConfiguration \
+         --resource {{ LaunchConfig }} \
          --region {{ "Ref" : "AWS::Region" }}
 /opt/aws/bin/cfn-signal -e $? \
          --stack {{ "Ref" : "AWS::StackName" }} \
-         --resource BastionAutoScalingGroup \
+         --resource {{ ASGName }} \
          --region {{ "Ref" : "AWS::Region" }}

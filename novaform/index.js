@@ -5,7 +5,7 @@ var Template = require('./lib/template')
     , fn = require('./lib/fn')
     , fs = require('fs');
 
-function loadUserDataFromFile(filename) {
+function loadUserDataFromFile(filename, params) {
     var contents = fs.readFileSync(filename).toString();
 
     var re = /\{\{.*?\}\}/g;
@@ -16,14 +16,24 @@ function loadUserDataFromFile(filename) {
     // refs: [ '{{there}}', '{{person}}' ]
 
     function refObject(ref) {
-        // Divide '{{"a":"b"}}' => ["a", "b"]
-        var parts = ref.match(/"(.*?)"/g);
-        // Remove quotes
-        var left = parts[0].replace(/\"/g, '');
-        var right = parts[1].replace(/\"/g, '');
-        var obj = {};
-        obj[left] = right;
-        return obj;
+        // Get rid of {{ }}
+        ref = ref.replace(/\{|\}/g, '').trim();
+
+        if (ref.indexOf(':') > -1) {
+            // Divide '"a":"b"' => ["a", "b"]
+            var parts = ref.match(/"(.*?)"/g);
+            // Remove quotes
+            var left = parts[0].replace(/\"/g, '');
+            var right = parts[1].replace(/\"/g, '');
+            var obj = {};
+            obj[left] = right;
+            return obj;
+        } else {
+            if (!params || !params[ref]) {
+                throw new Error('Expected value for ' + ref + ' in params');
+            }
+            return params[ref];
+        }
     }
 
     var joins = [lines[0]];
@@ -51,6 +61,7 @@ module.exports = {
     join: fn.join,
     base64: fn.base64,
     loadUserDataFromFile: loadUserDataFromFile,
+    getAttr: fn.getAttr,
 
     refs: {
         StackName: fn.ref('AWS::StackName'),

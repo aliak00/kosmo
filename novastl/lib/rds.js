@@ -1,8 +1,16 @@
-var novaform = require('novaform');
+var novaform = require('novaform')
+    , ResourceGroup = require('./resource-group');
 
+/**
+    ResourceGroup with rds.DBInstance as the resource object
+**/
 function Rds(options) {
+    if (!(this instanceof Rds)) {
+        return new Rds(options);
+    }
+
     var vpc = options.vpc;
-    var name = options.name;
+    var name = options.name || 'mydb';
     var allocatedStorage = options.allocatedStorage || 5;
     var multiAz = typeof options.multiAz === 'boolean' ? options.multiAz : true;
     var availabilityZone = options.availabilityZone = 'None';
@@ -10,18 +18,22 @@ function Rds(options) {
     var username = options.username || 'root';
     var password = options.password || 'admin';
 
+    function mkname(str) {
+        return name + '-' + str;
+    }
+
     var cft = novaform.Template();
 
-    var dbSubnetGroup = novaform.rds.DBSubnetGroup('DBPrivateSubnet', {
-        DBSubnetGroupDescription: 'private subnets',
+    var dbSubnetGroup = novaform.rds.DBSubnetGroup(mkname('private-subnet'), {
+        DBSubnetGroupDescription: 'db private subnets',
         SubnetIds: vpc.privateSubnets,
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.join('-', novaform.refs.StackName, 'DBPrivateSubnet')
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('private-subnet')])
         }
     });
 
-    var dbInstance = novaform.rds.DBInstance('DBInstance', {
+    var dbInstance = novaform.rds.DBInstance(mkname('instance'), {
         AllocatedStorage: allocatedStorage,
         DBInstanceClass: instanceClass,
         DBName: name,
@@ -32,15 +44,17 @@ function Rds(options) {
         MasterPassword: password,
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.join('-', [novaform.refs.StackName, 'DBInstance'])
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('instance')])
         }
     });
 
     cft.addResource(dbSubnetGroup);
     cft.addResource(dbInstance);
 
-    dbInstance.template = cft;
-    return dbInstance;
+
+    this.template = cft;
+    this.resource = dbInstance;
 }
+Rds.prototype = Object.create(ResourceGroup.prototype);
 
 module.exports = Rds;

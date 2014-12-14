@@ -1,98 +1,113 @@
 var novaform = require('novaform')
-    , util = require('util');
+    , util = require('util')
+    , ResourceGroup = require('./resource-group')
+
+/**
+    ResourceGroup with ec2.VPC as the resource object
+
+    Also returns:
+    @publicSubnets: array of public subnets
+    @privateSubnets: array of private subnets
+    @igwAttachment: the internet gateway attachment
+**/
 
 function Vpc(options) {
+    if (!(this instanceof Vpc)) {
+        return new Vpc(options);
+    }
+
     var vpcCidr = options.cidr;
     var publicSubnets = options.publicSubnets;
     var privateSubnets = options.privateSubnets;
+    var name = options.name || 'vpc';
 
-    var vpc = novaform.ec2.VPC('VPC', {
+    function mkname(str) {
+        return name + '-' + str;
+    }
+
+    var vpc = novaform.ec2.VPC(name, {
         CidrBlock: vpcCidr,
         EnableDnsSupport: true,
         EnableDnsHostname: true,
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.refs.StackName
+            Name: novaform.join('-', [novaform.refs.StackName, name])
         }
     });
 
-    var igw = novaform.ec2.InternetGateway('InternetGateway', {
+    var igw = novaform.ec2.InternetGateway(mkname('igw'), {
         Tags: {
             Application: novaform.refs.StackId,
-            Name: 'internet-gateway',
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('igw')]),
             Network: 'public'
         }
     });
 
-    var igwAttachment = novaform.ec2.InternetGatewayAttachment('InternetGatwayAttachment', {
+    var igwAttachment = novaform.ec2.InternetGatewayAttachment(mkname('igw-attachment'), {
         VpcId: vpc,
         InternetGatwayId: igw
     });
 
     var cft = new novaform.Template();
 
-    var publicSubnetResources = [];
-    var privateSubnetResources = [];
+    var publicSubnetResourcs = [];
+    var privateSubnetResourcs = [];
     function addSubnetsAndNacls(subnets, visibility) {
         for (key in subnets) {
             var cidr = subnets[key];
-            var az = key[key.length - 1];
+            var azIdentifier = key[key.length - 1];
 
             var visibilityLowerCase = visibility.toLowerCase();
-            var visibilityUpperCase = visibilityLowerCase.charAt(0).toUpperCase() + visibilityLowerCase.slice(1);
 
-            function name(str) {
-                return util.format('%s%sAZ%s', visibilityUpperCase, str, az);
+            function mknameAz(str) {
+                return util.format('%s-%s-%s', mkname(str), visibilityLowerCase, azIdentifier);
             }
 
-            var subnet = novaform.ec2.Subnet(name('Subnet'), {
+            function mktags(str) {
+                return {
+                    Application: novaform.refs.StackId,
+                    Name: novaform.join('-', [novaform.refs.StackName, str]),
+                    Network: visibilityLowerCase,
+                    AZ: azIdentifier
+                };
+            }
+
+            var subnet = novaform.ec2.Subnet(mknameAz('subnet'), {
                 VpcId: vpc,
                 AvailabilityZone: key,
                 CidrBlock: cidr,
-                Tags: {
-                    Application: novaform.refs.StackId,
-                    Name: novaform.join('-', [novaform.refs.StackName, visibilityLowerCase]),
-                    Network: visibilityLowerCase
-                }
+                Tags: mktags('subnet')
             });
 
             if (visibilityLowerCase === 'public') {
-                publicSubnetResources.push(subnet);
+                publicSubnetResourcs.push(subnet);
             } else {
-                privateSubnetResources.push(subnet);
+                privateSubnetResourcs.push(subnet);
             }
 
-            var routeTable = novaform.ec2.RouteTable(name('RouteTable'), {
+            var routeTable = novaform.ec2.RouteTable(mknameAz('rt'), {
                 VpcId: vpc,
-                Tags: {
-                    Application: novaform.refs.StackId,
-                    Name: novaform.join('-', [novaform.refs.StackName, visibilityLowerCase]),
-                    Network: visibilityLowerCase
-                }
+                Tags: mktags('rt')
             });
 
-            var route = novaform.ec2.Route(name('Route'), {
+            var route = novaform.ec2.Route(mknameAz('route'), {
                 RouteTableId: routeTable,
                 DestinationCidrBlock: '0.0.0.0/0',
                 GatwayId: igw,
                 DependsOn: igwAttachment.name
             });
 
-            var subnetRouteTableAssociation = novaform.ec2.SubnetRouteTableAssociation(name('SubnetRouteTableAssociation'), {
+            var subnetRouteTableAssociation = novaform.ec2.SubnetRouteTableAssociation(mknameAz('subnet-rt-association'), {
                 SubnetId: subnet,
                 RouteTableId: routeTable
             });
 
-            var nacl = novaform.ec2.NetworkAcl(name('NetworkAcl'), {
+            var nacl = novaform.ec2.NetworkAcl(mknameAz('nacl'), {
                 VpcId: vpc,
-                Tags: {
-                    Application: novaform.refs.StackId,
-                    Name: novaform.join('-', [novaform.refs.StackName, visibilityLowerCase]),
-                    Network: visibilityLowerCase
-                }
+                Tags: mktags('nacl')
             });
 
-            var naclInboundHttp = novaform.ec2.NetworkAclEntry(name('NetworkAclEntryInboundHttp'), {
+            var naclInboundHttp = novaform.ec2.NetworkAclEntry(mknameAz('nacl-ei-http'), {
                 NetworkAclId: nacl,
                 RuleNumber: 100,
                 Protocol: 6,
@@ -102,7 +117,7 @@ function Vpc(options) {
                 PortRange: [80, 80]
             });
 
-            var naclInboundHttps = novaform.ec2.NetworkAclEntry(name('NetworkAclEntryInboundHttps'), {
+            var naclInboundHttps = novaform.ec2.NetworkAclEntry(mknameAz('nacl-ei-https'), {
                 NetworkAclId: nacl,
                 RuleNumber: 101,
                 Protocol: 6,
@@ -112,7 +127,7 @@ function Vpc(options) {
                 PortRange: [443, 443]
             });
 
-            var naclInboundDynamicPorts = novaform.ec2.NetworkAclEntry(name('NetworkAclEntryInboundDynamicPorts'), {
+            var naclInboundDynamicPorts = novaform.ec2.NetworkAclEntry(mknameAz('nacl-ei-dynamic-ports'), {
                 NetworkAclId: nacl,
                 RuleNumber: 102,
                 Protocol: 6,
@@ -122,7 +137,7 @@ function Vpc(options) {
                 PortRange: [1024, 65535]
             });
 
-            var naclInboundSsh = novaform.ec2.NetworkAclEntry(name('NetworkAclEntryInboundSsh'), {
+            var naclInboundSsh = novaform.ec2.NetworkAclEntry(mknameAz('nacl-ei-ssh'), {
                 NetworkAclId: nacl,
                 RuleNumber: 103,
                 Protocol: 6,
@@ -132,7 +147,7 @@ function Vpc(options) {
                 PortRange: [22, 22]
             });
 
-            var naclInboundIcmp = novaform.ec2.NetworkAclEntry(name('NetworkAclEntryInboundIcmp'), {
+            var naclInboundIcmp = novaform.ec2.NetworkAclEntry(mknameAz('nacl-ei-icmp'), {
                 NetworkAclId: nacl,
                 RuleNumber: 104,
                 Protocol: 1,
@@ -145,7 +160,7 @@ function Vpc(options) {
                 }
             });
 
-            var naclOutbound = novaform.ec2.NetworkAclEntry(name('NetworkAclEntryOutbound'), {
+            var naclOutbound = novaform.ec2.NetworkAclEntry(mknameAz('nacl-eo'), {
                 NetworkAclId: nacl,
                 RuleNumber: 100,
                 Protocol: 6,
@@ -155,7 +170,7 @@ function Vpc(options) {
                 PortRange: [0, 65535]
             });
 
-            var naclOutboundIcmp = novaform.ec2.NetworkAclEntry(name('NetworkAclEntryOutboundIcmp'), {
+            var naclOutboundIcmp = novaform.ec2.NetworkAclEntry(mknameAz('nacl-eo-icmp'), {
                 NetworkAclId: nacl,
                 RuleNumber: 101,
                 Protocol: 1,
@@ -168,7 +183,7 @@ function Vpc(options) {
                 }
             });
 
-            var subnetNaclAssociation = novaform.ec2.SubnetNetworkAclAssociation(name('SubnetNetworkAclAssociation'), {
+            var subnetNaclAssociation = novaform.ec2.SubnetNetworkAclAssociation(mknameAz('subnet-nacl-association'), {
                 SubnetId: subnet,
                 NetworkAclId: nacl
             });
@@ -192,7 +207,7 @@ function Vpc(options) {
     addSubnetsAndNacls(publicSubnets, 'public');
     addSubnetsAndNacls(privateSubnets, 'private');
 
-    var output = novaform.Output('VPC', {
+    var output = novaform.Output(name, {
         Value: vpc,
         Description: 'VPC identifier'
     });
@@ -200,14 +215,15 @@ function Vpc(options) {
     cft.addResource(vpc);
     cft.addResource(igw);
     cft.addResource(igwAttachment);
+
     cft.addOutput(output);
 
-    vpc.publicSubnets = publicSubnetResources;
-    vpc.privateSubnets = privateSubnetResources;
-    vpc.igwAttachment = igwAttachment;
-    vpc.template = cft;
-
-    return vpc
+    this.resource = vpc;
+    this.publicSubnets = publicSubnetResourcs;
+    this.privateSubnets = privateSubnetResourcs;
+    this.igwAttachment = igwAttachment;
+    this.template = cft;
 }
+Vpc.prototype = Object.create(ResourceGroup.prototype);
 
 module.exports = Vpc;

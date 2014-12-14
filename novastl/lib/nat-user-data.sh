@@ -12,7 +12,7 @@ error() {
   fi
   /opt/aws/bin/cfn-signal -e "${code}" \
            --stack {{ "Ref" : "AWS::StackName" }} \
-           --resource NatAutoScalingGroup \
+           --resource {{ ASGName }} \
            --region {{ "Ref" : "AWS::Region" }}
   exit "${code}"
 }
@@ -51,9 +51,9 @@ aws ec2 modify-instance-attribute --instance-id $instance_id --source-dest-check
 log "Configuration of HA NAT complete."
 /opt/aws/bin/cfn-init -v \
          --stack {{ "Ref" : "AWS::StackName" }} \
-         --resource NatLaunchConfiguration \
+         --resource {{ LaunchConfig }} \
          --region {{ "Ref" : "AWS::Region" }}
 /opt/aws/bin/cfn-signal -e $? \
          --stack {{ "Ref" : "AWS::StackName" }} \
-         --resource NatAutoScalingGroup \
+         --resource {{ ASGName }} \
              --region {{ "Ref" : "AWS::Region" }}

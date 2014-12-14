@@ -22,8 +22,18 @@ function base64(data) {
     };
 }
 
+function getAttr(id, attr) {
+    return {
+        'Fn::GetAttr': [
+            id,
+            attr
+        ]
+    };
+}
+
 module.exports = {
     ref: ref,
     join: join,
-    base64: base64
+    base64: base64,
+    getAttr: getAttr
 };
