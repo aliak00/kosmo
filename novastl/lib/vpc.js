@@ -207,16 +207,9 @@ function Vpc(options) {
     addSubnetsAndNacls(publicSubnets, 'public');
     addSubnetsAndNacls(privateSubnets, 'private');
 
-    var output = novaform.Output(name, {
-        Value: vpc,
-        Description: 'VPC identifier'
-    });
-
     cft.addResource(vpc);
     cft.addResource(igw);
     cft.addResource(igwAttachment);
-
-    cft.addOutput(output);
 
     this.resource = vpc;
     this.publicSubnets = publicSubnetResourcs;
