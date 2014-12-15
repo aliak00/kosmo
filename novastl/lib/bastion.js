@@ -26,7 +26,7 @@ function Bastion(options) {
 
     var eip = novaform.ec2.EIP(mkname('eip'), {
         Domain: 'vpc',
-        DependsOn: vpc.igwAttachment
+        DependsOn: vpc.gatewayAttachment
     });
 
     var securityGroup = novaform.ec2.SecurityGroup(mkname('internal-sg'), {

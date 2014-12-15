@@ -43,7 +43,7 @@ function Vpc(options) {
         }
     });
 
-    var igwAttachment = novaform.ec2.InternetGatewayAttachment(mkname('igw-attachment'), {
+    var gatewayAttachment = novaform.ec2.VPCGatewayAttachment(mkname('vpc-gw-attachment'), {
         VpcId: vpc,
         InternetGatwayId: igw
     });
@@ -94,7 +94,7 @@ function Vpc(options) {
                 RouteTableId: routeTable,
                 DestinationCidrBlock: '0.0.0.0/0',
                 GatwayId: igw,
-                DependsOn: igwAttachment.name
+                DependsOn: gatewayAttachment.name
             });
 
             var subnetRouteTableAssociation = novaform.ec2.SubnetRouteTableAssociation(mknameAz('subnet-rt-association'), {
@@ -209,12 +209,12 @@ function Vpc(options) {
 
     cft.addResource(vpc);
     cft.addResource(igw);
-    cft.addResource(igwAttachment);
+    cft.addResource(gatewayAttachment);
 
     this.resource = vpc;
     this.publicSubnets = publicSubnetResourcs;
     this.privateSubnets = privateSubnetResourcs;
-    this.igwAttachment = igwAttachment;
+    this.gatewayAttachment = gatewayAttachment;
     this.template = cft;
 }
 Vpc.prototype = Object.create(ResourceGroup.prototype);

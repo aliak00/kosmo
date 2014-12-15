@@ -46,10 +46,12 @@ Resource.prototype.toObject = function() {
     expandTags(this.properties);
     modifyPortRange(this.properties);
     var object = {
-        Properties: _.extend({
-            Type: this.type,
-        }, this.properties)
+        Type: this.type
     };
+
+    if (this.properties) {
+        object.Properties = this.properties;
+    }
 
     if (this.metadata) {
         object.Metadata = this.metadata;

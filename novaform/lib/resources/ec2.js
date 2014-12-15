@@ -24,16 +24,16 @@ function InternetGateway(name, properties) {
 }
 InternetGateway.prototype = Object.create(Resource.prototype);
 
-function InternetGatewayAttachment(name, properties) {
-    if (!(this instanceof InternetGatewayAttachment)) {
-        return new InternetGatewayAttachment(name, properties);
+function VPCGatewayAttachment(name, properties) {
+    if (!(this instanceof VPCGatewayAttachment)) {
+        return new VPCGatewayAttachment(name, properties);
     }
 
     this.properties = properties;
-    this.type = 'AWS::EC2::InternetGatewayAttachment';
+    this.type = 'AWS::EC2::VPCGatewayAttachment';
     this.name = name;
 }
-InternetGatewayAttachment.prototype = Object.create(Resource.prototype);
+VPCGatewayAttachment.prototype = Object.create(Resource.prototype);
 
 function Subnet(name, properties) {
     if (!(this instanceof Subnet)) {
@@ -162,7 +162,7 @@ EIP.prototype = Object.create(Resource.prototype);
 module.exports = {
     VPC: VPC,
     InternetGateway: InternetGateway,
-    InternetGatewayAttachment: InternetGatewayAttachment,
+    VPCGatewayAttachment: VPCGatewayAttachment,
     Subnet: Subnet,
     RouteTable: RouteTable,
     Route: Route,
