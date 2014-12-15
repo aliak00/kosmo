@@ -16,29 +16,31 @@ function Bastion(options) {
     var imageId = options.imageId;
     var allowedSshCidr = options.allowedSshCidr || '0.0.0.0/0'
     var instanceType = options.instanceType || 't2.micro';
-    var name = options.name || 'bastion';
+    var name = options.name || 'Bastion';
+
+    name = name.charAt(0).toUpperCase() + name.slice(1);
 
     function mkname(str) {
-        return name + '-' + str;
+        return name + str;
     }
 
     var cft = novaform.Template();
 
-    var eip = novaform.ec2.EIP(mkname('eip'), {
+    var eip = novaform.ec2.EIP(mkname('Eip'), {
         Domain: 'vpc',
         DependsOn: vpc.gatewayAttachment
     });
 
-    var securityGroup = novaform.ec2.SecurityGroup(mkname('internal-sg'), {
+    var securityGroup = novaform.ec2.SecurityGroup(mkname('InternalSg'), {
         VpcId: vpc,
         GroupDescription: 'Bastion host security group',
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.join('-', [novaform.refs.StackName, mkname('internal-sg')])
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('InternalSg')])
         }
     });
 
-    var sgiIcmp = novaform.ec2.SecurityGroupIngress(mkname('sgi-icmp'), {
+    var sgiIcmp = novaform.ec2.SecurityGroupIngress(mkname('SgiIcmp'), {
         GroupId: securityGroup,
         IpProtocol: 'icmp',
         FromPort: -1,
@@ -46,7 +48,7 @@ function Bastion(options) {
         CidrIp: vpc.cidrBlock
     });
 
-    var sgiSsh = novaform.ec2.SecurityGroupIngress(mkname('sgi-ssh'), {
+    var sgiSsh = novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
         GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 22,
@@ -54,7 +56,7 @@ function Bastion(options) {
         CidrIp: allowedSshCidr
     });
 
-    var sgeIcmp = novaform.ec2.SecurityGroupEgress(mkname('sge-icmp'), {
+    var sgeIcmp = novaform.ec2.SecurityGroupEgress(mkname('SgeIcmp'), {
         GroupId: securityGroup,
         IpProtocol: 'icmp',
         FromPort: -1,
@@ -62,7 +64,7 @@ function Bastion(options) {
         CidrIp: '0.0.0.0/0'
     });
 
-    var sgeSsh = novaform.ec2.SecurityGroupEgress(mkname('sge-ssh'), {
+    var sgeSsh = novaform.ec2.SecurityGroupEgress(mkname('SgeSsh'), {
         GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 22,
@@ -70,7 +72,7 @@ function Bastion(options) {
         CidrIp: vpc.cidrBlock
     });
 
-    var instanceSecurityGroup = novaform.ec2.SecurityGroup(mkname('to-instance-sg'), {
+    var instanceSecurityGroup = novaform.ec2.SecurityGroup(mkname('ToInstanceSg'), {
         VpcId: vpc,
         GroupDescription: 'Allow ssh from bastion host',
         SecurityGroupIngress: [{
@@ -82,11 +84,11 @@ function Bastion(options) {
         SecurityGroupEgress: [],
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.join('-', [novaform.refs.StackName, mkname('to-instance-sg')])
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('ToInstanceSg')])
         }
     });
 
-    var role = novaform.iam.Role(mkname('iam-role'), {
+    var role = novaform.iam.Role(mkname('IAmRole'), {
         AssumeRolePolicyDocument: {
             Version: '2012-10-17',
             Statement: [{
@@ -100,7 +102,7 @@ function Bastion(options) {
         Path: '/'
     });
 
-    var rolePolicy = novaform.iam.Policy(mkname('iam-role-policy'), {
+    var rolePolicy = novaform.iam.Policy(mkname('IAmRolePolicy'), {
         PolicyName: 'root',
         Roles: [role],
         PolicyDocument: {
@@ -119,12 +121,12 @@ function Bastion(options) {
         }
     });
 
-    var instanceProfile = novaform.iam.InstanceProfile(mkname('iam-instance-profile'), {
+    var instanceProfile = novaform.iam.InstanceProfile(mkname('IAmInstanceProfile'), {
         Path: novaform.join('', ['/', novaform.refs.StackName, '/nat/']),
         Roles: [role]
     });
 
-    var launchConfig = novaform.asg.LaunchConfiguration(mkname('launch-config'), {
+    var launchConfig = novaform.asg.LaunchConfiguration(mkname('LaunchConfig'), {
         KeyName: keyName,
         ImageId: imageId,
         SecurityGroups: [securityGroup],
@@ -133,8 +135,8 @@ function Bastion(options) {
         IamInstanceProfile: instanceProfile,
         UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/bastion-user-data.sh', {
             ASGName: name,
-            LaunchConfig: mkname('launch-config'),
-            EIP: novaform.getAttr(eip.name, 'AllocationId')
+            LaunchConfig: mkname('LaunchConfig'),
+            EIP: novaform.getAtt(eip.name, 'AllocationId')
         })),
         DependsOn: role
     }, {

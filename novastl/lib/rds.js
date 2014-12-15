@@ -18,25 +18,28 @@ function Rds(options) {
     var username = options.username || 'root';
     var password = options.password || 'admin';
 
+    var originalName = name;
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+
     function mkname(str) {
-        return name + '-' + str;
+        return name + str;
     }
 
     var cft = novaform.Template();
 
-    var dbSubnetGroup = novaform.rds.DBSubnetGroup(mkname('private-subnet'), {
+    var dbSubnetGroup = novaform.rds.DBSubnetGroup(mkname('PrivateSubnet'), {
         DBSubnetGroupDescription: 'db private subnets',
         SubnetIds: vpc.privateSubnets,
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.join('-', [novaform.refs.StackName, mkname('private-subnet')])
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('PrivateSubnet')])
         }
     });
 
-    var dbInstance = novaform.rds.DBInstance(mkname('instance'), {
+    var dbInstance = novaform.rds.DBInstance(mkname('Instance'), {
         AllocatedStorage: allocatedStorage,
         DBInstanceClass: instanceClass,
-        DBName: name,
+        DBName: originalName,
         DBSubnetGroupName: dbSubnetGroup,
         Engine: 'postgres',
         EngineVersion: '9.3.3',
@@ -44,13 +47,12 @@ function Rds(options) {
         MasterPassword: password,
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.join('-', [novaform.refs.StackName, mkname('instance')])
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('Instance')])
         }
     });
 
     cft.addResource(dbSubnetGroup);
     cft.addResource(dbInstance);
-
 
     this.template = cft;
     this.resource = dbInstance;

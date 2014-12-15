@@ -17,20 +17,22 @@ function Nat(options) {
     var imageId = options.imageId;
     var allowedSshCidr = options.allowedSshCidr || '0.0.0.0/0'
     var instanceType = options.instanceType || 't2.micro';
-    var name = options.name || 'nat';
+    var name = options.name || 'Nat';
+
+    name = name.charAt(0).toUpperCase() + name.slice(1);
 
     function mkname(str) {
-        return name + '-' + str;
+        return name + str;
     }
 
     var cft = novaform.Template();
 
-    var securityGroup = novaform.ec2.SecurityGroup(mkname('sg'), {
+    var securityGroup = novaform.ec2.SecurityGroup(mkname('Sg'), {
         VpcId: vpc,
         GroupDescription: vpc.name + ' NAT security group',
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.join('-', [novaform.refs.StackName, mkname('sg')]),
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('Sg')]),
             Network: 'public'
         }
     });
@@ -43,10 +45,10 @@ function Nat(options) {
         var azIdentifier = az[az.length - 1];
 
         function mknameAz(str) {
-            return util.format('%s-%s', mkname(str), azIdentifier);
+            return util.format('%sAZ%s', mkname(str), azIdentifier);
         }
 
-        var sgiHttp = novaform.ec2.SecurityGroupIngress(mkname('sgi-http-private'), {
+        var sgiHttp = novaform.ec2.SecurityGroupIngress(mkname('SgiHttpPrivate'), {
             GroupId: securityGroup,
             IpProtocol: 'tcp',
             FromPort: 80,
@@ -54,7 +56,7 @@ function Nat(options) {
             CidrIp: cidr
         });
 
-        var sgiHttps = novaform.ec2.SecurityGroupIngress(mkname('sgi-https-private'), {
+        var sgiHttps = novaform.ec2.SecurityGroupIngress(mkname('SgiHttpsPrivate'), {
             GroupId: securityGroup,
             IpProtocol: 'tcp',
             FromPort: 443,
@@ -66,7 +68,7 @@ function Nat(options) {
         cft.addResource(sgiHttps);
     }
 
-    var sgiIcmp = novaform.ec2.SecurityGroupIngress(mkname('sgi-icmp'), {
+    var sgiIcmp = novaform.ec2.SecurityGroupIngress(mkname('SgiIcmp'), {
         GroupId: securityGroup,
         IpProtocol: 'icmp',
         FromPort: -1,
@@ -74,7 +76,7 @@ function Nat(options) {
         CidrIp: vpc.cidrBlock
     });
 
-    var sgiSsh = novaform.ec2.SecurityGroupIngress(mkname('sgi-ssh'), {
+    var sgiSsh = novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
         GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 22,
@@ -82,7 +84,7 @@ function Nat(options) {
         CidrIp: allowedSshCidr
     });
 
-    var sgeHttp = novaform.ec2.SecurityGroupEgress(mkname('sge-http'), {
+    var sgeHttp = novaform.ec2.SecurityGroupEgress(mkname('SgeHttp'), {
         GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 80,
@@ -90,7 +92,7 @@ function Nat(options) {
         CidrIp: '0.0.0.0/0'
     });
 
-    var sgeHttps = novaform.ec2.SecurityGroupEgress(mkname('sge-https'), {
+    var sgeHttps = novaform.ec2.SecurityGroupEgress(mkname('SgeHttps'), {
         GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 443,
@@ -98,7 +100,7 @@ function Nat(options) {
         CidrIp: '0.0.0.0/0'
     });
 
-    var sgeIcmp = novaform.ec2.SecurityGroupEgress(mkname('sge-icmp'), {
+    var sgeIcmp = novaform.ec2.SecurityGroupEgress(mkname('SgeIcmp'), {
         GroupId: securityGroup,
         IpProtocol: 'icmp',
         FromPort: -1,
@@ -106,7 +108,7 @@ function Nat(options) {
         CidrIp: '0.0.0.0/0'
     });
 
-    var role = novaform.iam.Role(mkname('iam-role'), {
+    var role = novaform.iam.Role(mkname('IAmRole'), {
         AssumeRolePolicyDocument: {
             Version: '2012-10-17',
             Statement: [{
@@ -120,7 +122,7 @@ function Nat(options) {
         Path: '/'
     });
 
-    var rolePolicy = novaform.iam.Policy(mkname('iam-role-policy'), {
+    var rolePolicy = novaform.iam.Policy(mkname('IAmRolePolicy'), {
         PolicyName: 'root',
         Roles: [role],
         PolicyDocument: {
@@ -139,12 +141,12 @@ function Nat(options) {
         }
     });
 
-    var instanceProfile = novaform.iam.InstanceProfile(mkname('iam-instance-profile'), {
+    var instanceProfile = novaform.iam.InstanceProfile(mkname('IAmInstanceProfile'), {
         Path: novaform.join('', ['/', novaform.refs.StackName, '/nat/']),
         Roles: [role]
     });
 
-    var launchConfig = novaform.asg.LaunchConfiguration(mkname('launch-config'), {
+    var launchConfig = novaform.asg.LaunchConfiguration(mkname('LaunchConfig'), {
         KeyName: keyName,
         ImageId: imageId,
         SecurityGroups: [securityGroup],
@@ -153,7 +155,8 @@ function Nat(options) {
         IamInstanceProfile: instanceProfile,
         UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/nat-user-data.sh', {
             ASGName: name,
-            LaunchConfig: mkname('launch-config'),
+            VPCName: vpc.name,
+            LaunchConfig: mkname('LaunchConfig'),
         }))
     }, {
         'AWS::CloudFormation::Init': {

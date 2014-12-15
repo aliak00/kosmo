@@ -24,7 +24,7 @@ region="{{ "Ref" : "AWS::Region" }}"
 export AWS_DEFAULT_REGION=$region
 # Set CLI Output to text
 export AWS_DEFAULT_OUTPUT="text"
-vpc_id="{{ "Ref" : "VPC" }}"
+vpc_id="{{ VPCName }}"
 instance_id=`curl --retry 3 --retry-delay 0 --silent --fail http://169.254.169.254/latest/meta-data/instance-id`
 availability_zone=`curl --retry 3 --retry-delay 0 --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone`
 log "HA NAT configuration parameters: Instance ID=$instance_id, Region=$region, Availability Zone=$availability_zone, VPC=$vpc_id"

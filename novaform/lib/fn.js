@@ -22,9 +22,9 @@ function base64(data) {
     };
 }
 
-function getAttr(id, attr) {
+function getAtt(id, attr) {
     return {
-        'Fn::GetAttr': [
+        'Fn::GetAtt': [
             id,
             attr
         ]
@@ -35,5 +35,5 @@ module.exports = {
     ref: ref,
     join: join,
     base64: base64,
-    getAttr: getAttr
+    getAtt: getAtt
 };

@@ -63,7 +63,7 @@ module.exports = {
     join: fn.join,
     base64: fn.base64,
     loadUserDataFromFile: loadUserDataFromFile,
-    getAttr: fn.getAttr,
+    getAtt: fn.getAtt,
 
     refs: {
         StackName: fn.ref('AWS::StackName'),
