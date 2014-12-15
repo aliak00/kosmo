@@ -3,7 +3,8 @@ var Template = require('./lib/template')
     , Output = require('./lib/output')
     , TagValue = require('./lib/tag-value')
     , fn = require('./lib/fn')
-    , fs = require('fs');
+    , fs = require('fs')
+    , Stack = require('./lib/stack');
 
 function loadUserDataFromFile(filename, params) {
     var contents = fs.readFileSync(filename).toString();
@@ -46,6 +47,7 @@ function loadUserDataFromFile(filename, params) {
 }
 
 module.exports = {
+    Stack: Stack,
     Template: Template,
     Resource: Resource,
     TagValue: TagValue,

@@ -1,5 +1,6 @@
 var config = require('./config')
-    , novastl = require('novastl');
+    , novastl = require('novastl')
+    , novaform = require('novaform');
 
 var vpc = novastl.Vpc({
     cidr: config.vpcCidrBlock,
@@ -15,4 +16,8 @@ var bastion = novastl.Bastion({
     instanceType: 't2.micro'
 });
 
-console.log(bastion.template.toJson());
+var stack = novaform.Stack('mystack');
+stack.add(vpc.template);
+stack.add(bastion.template);
+console.log(stack.toJson());
+

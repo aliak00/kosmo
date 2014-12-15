@@ -1,5 +1,5 @@
 var novastl = require('novastl')
-    , config = require('./config');
+    , config = require('./config')
 
 var vpc = novastl.Vpc({
     cidr: config.vpcCidrBlock,

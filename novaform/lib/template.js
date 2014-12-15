@@ -34,8 +34,14 @@ Template.prototype.addResource = function(resource) {
     this.resources[resource.name] = resource;
 }
 
-Template.prototype.toJson = function() {
-    var cft = {};
+Template.prototype.toJson = function(description) {
+    var cft = {
+        AWSTemplateFormatVersion: '2010-09-09'
+    };
+
+    if (description) {
+        cft.Description = description;
+    }
 
     for (key in this.resources) {
         cft.Resources = cft.Resources || {};

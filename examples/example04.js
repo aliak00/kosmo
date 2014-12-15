@@ -1,5 +1,6 @@
 var config = require('./config')
-    , novastl = require('novastl');
+    , novastl = require('novastl')
+    , novaform = require('novaform');
 
 var vpc = novastl.Vpc({
     cidr: config.vpcCidrBlock,
@@ -11,4 +12,7 @@ var rds = novastl.Rds({
     vpc: vpc
 });
 
-console.log(rds.template.toJson());
+var stack = novaform.Stack('mystack');
+stack.add(vpc.template);
+stack.add(rds.template);
+console.log(stack.toJson());
