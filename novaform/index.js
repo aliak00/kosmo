@@ -58,7 +58,7 @@ module.exports = {
     iam: require('./lib/resources/iam'),
     asg: require('./lib/resources/asg'),
     rds: require('./lib/resources/rds'),
-    route53: require('./lib/resources/route53'),
+    r53: require('./lib/resources/route53'),
 
     ref: fn.ref,
     join: fn.join,
