@@ -13,19 +13,29 @@ This repository contains maybe 4 projects
 ## Dev setup
 
 Since this repo uses unpublished node modules, you have to do a little manual work to get it up and running to develop on
+
 ```bash
-cd nova/novaform
+cd <nova-repo>/novaform
 sudo npm link
-cd ../novastl
+
+cd <nova-repo>/novastl
 sudo npm link novaform
 npm install
 sudo npm link
+
+cd <nova-repo>/nova
+sudo npm link novaform
+npm install
+sudo npm link
+```
+
+## Examples
+
+To run examples with a dev setup
+```bash
 cd ../examples
 sudo npm link novastl
 sudo npm link novaform
 npm install
-cd ../nova
-sudo npm link novaform
-npm install
-sudo npm link
+node <example-file>.js
 ```
