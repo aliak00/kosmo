@@ -20,16 +20,41 @@ Stack.prototype.add = function(template) {
 }
 
 Stack.prototype.toJson = function() {
-    var cft = Template();
+    var cft = {
+        AWSTemplateFormatVersion: '2010-09-09'
+    };
+
+    if (this.description) {
+        cft.Description = description;
+    }
+
     this.templates.forEach(function(template) {
         for (key in template.resources) {
-            cft.addResource(template.resources[key]);
+            cft.Resources = cft.Resources || {};
+            cft.Resources[key] = template.resources[key].toObject();
         }
+
         for (key in template.outputs) {
-            cft.addOutput(template.outputs[key]);
+            cft.Outputs = cft.Outputs || {};
+            cft.Outputs[key] = template.outputs[key].toObject();
         }
     });
-    return cft.toJson(this.description);
+
+    return JSON.stringify(cft, function(key, value) {
+        if (typeof value === 'boolean') {
+            return value.toString();
+        }
+
+        if (typeof value === 'number') {
+            return value.toString();
+        }
+
+        if (value instanceof Resource) {
+            return { Ref: value.name };
+        }
+
+        return value;
+    }, 2);
 }
 
 module.exports = Stack;
