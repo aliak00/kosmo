@@ -1,7 +1,5 @@
 var Resource = require('./../resource');
 
-function var Resource = require('./../resource');
-
 function Application(name, properties) {
     if (!(this instanceof Application)) {
         return new Application(name, properties);
