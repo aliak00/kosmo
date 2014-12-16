@@ -1,4 +1,5 @@
-var Template = require('./template');
+var Template = require('./template')
+    , Resource = require('./resource');
 
 function Stack(name, description) {
     if (!(this instanceof Stack)) {
