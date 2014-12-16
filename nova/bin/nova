@@ -1,0 +1,6 @@
+#!/usr/bin/env node
+'use strict';
+
+var nova = require('../lib');
+
+console.log('Hello from nova: ', nova);

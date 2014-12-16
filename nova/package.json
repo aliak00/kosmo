@@ -1,8 +1,8 @@
 {
-  "name": "novastl",
+  "name": "nova",
   "version": "0.0.0",
-  "description": "Standard templates created with novaform",
-  "main": "index.js",
+  "description": "Deployment tool for novaform stacks",
+  "main": "lib",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,7 +12,11 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "aws-sdk": "^2.1.2",
     "novaform": "*",
     "underscore": "^1.7.0"
+  },
+  "bin": {
+    "nova": "bin/nova"
   }
 }
