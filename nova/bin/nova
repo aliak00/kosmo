@@ -1,6 +1,24 @@
 #!/usr/bin/env node
 'use strict';
 
-var nova = require('../lib');
+var nova = require('../lib')
+    , getopt = require('node-getopt');
 
-console.log('Hello from nova: ', nova);
+var opts = getopt.create([
+    ['v', 'validate', 'validate stack'],
+    ['h', 'help', 'Display this help']
+]).bindHelp().parseSystem();
+
+var validate = opts.options['validate'];
+var path = opts.argv[0];
+
+var pathComponents = path.split('/');
+var projectName = pathComponents[0];
+var stackName = pathComponents[1];
+
+var project = require(process.cwd() + '/' + projectName);
+
+if (validate) {
+    console.log('Validating ' + stackName + ' in project ' + projectName);
+    console.log(project);
+}

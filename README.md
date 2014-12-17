@@ -38,3 +38,10 @@ sudo npm link novaform
 npm install
 node <example-file>.js
 ```
+
+## Running nova
+
+You can run the following in the examples directory to see tentaive deployment structure
+```bash
+nova --validate project1/stack1
+```
