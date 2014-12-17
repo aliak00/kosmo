@@ -1,9 +1,12 @@
 var novaform = require('novaform')
     , _ = require('underscore')
-    , ResourceGroup = require('./resource-group');
+    , Template = require('./template');
 
 /**
-    ResourceGroup with ec2.AutoScalingGroup as the resource object
+    Template with ec2.AutoScalingGroup as the resource 
+
+    Also returns:
+    @instanceSecurityGroup: sg that allows ssh from bastion
 **/
 
 function Bastion(options) {
@@ -11,7 +14,7 @@ function Bastion(options) {
         return new Bastion(options);
     }
 
-    var vpc = options.vpc.resource;;
+    var vpcTemplate = options.vpcTemplate;;
     var keyName = options.keyName;
     var imageId = options.imageId;
     var allowedSshCidr = options.allowedSshCidr || '0.0.0.0/0'
@@ -24,15 +27,15 @@ function Bastion(options) {
         return name + str;
     }
 
-    var cft = novaform.Template();
+    var rg = novaform.ResourceGroup();
 
     var eip = novaform.ec2.EIP(mkname('Eip'), {
         Domain: 'vpc',
-        DependsOn: vpc.gatewayAttachment
+        DependsOn: vpcTemplate.gatewayAttachment
     });
 
     var securityGroup = novaform.ec2.SecurityGroup(mkname('InternalSg'), {
-        VpcId: vpc,
+        VpcId: vpcTemplate.resource,
         GroupDescription: 'Bastion host security group',
         Tags: {
             Application: novaform.refs.StackId,
@@ -45,7 +48,7 @@ function Bastion(options) {
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1, 
-        CidrIp: vpc.cidrBlock
+        CidrIp: vpcTemplate.cidrBlock
     });
 
     var sgiSsh = novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
@@ -69,11 +72,11 @@ function Bastion(options) {
         IpProtocol: 'tcp',
         FromPort: 22,
         ToPort: 22, 
-        CidrIp: vpc.cidrBlock
+        CidrIp: vpcTemplate.cidrBlock
     });
 
     var instanceSecurityGroup = novaform.ec2.SecurityGroup(mkname('ToInstanceSg'), {
-        VpcId: vpc,
+        VpcId: vpcTemplate.resource,
         GroupDescription: 'Allow ssh from bastion host',
         SecurityGroupIngress: [{
             IpProtocol: 'tcp',
@@ -135,7 +138,7 @@ function Bastion(options) {
         IamInstanceProfile: instanceProfile,
         UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/bastion-user-data.sh', {
             ASGName: name,
-            LaunchConfig: mkname('LaunchConfig'),
+            LaunchConfigName: mkname('LaunchConfig'),
             EIP: novaform.getAtt(eip.name, 'AllocationId')
         })),
         DependsOn: role
@@ -151,11 +154,11 @@ function Bastion(options) {
         }
     });
 
-    var availabilityZones = _.pluck(vpc.publicSubnets, 'availabilityZone');
+    var availabilityZones = _.pluck(vpcTemplate.publicSubnets, 'availabilityZone');
     var asg = novaform.asg.AutoScalingGroup(name, {
         AvailabilityZones: availabilityZones,
         LaunchConfigurationName: launchConfig,
-        VPCZoneIdentifier: vpc.publicSubnets,
+        VPCZoneIdentifier: vpcTemplate.publicSubnets,
         MinSize: 1,
         MaxSize: availabilityZones.length + 1, // 1 more for rolling update,
         DesiredCapacity: availabilityZones.length,
@@ -174,23 +177,24 @@ function Bastion(options) {
         }
     });
 
-    cft.addResource(eip);
-    cft.addResource(securityGroup);
-    cft.addResource(sgiIcmp);
-    cft.addResource(sgiSsh);
-    cft.addResource(sgeIcmp);
-    cft.addResource(sgeSsh);
-    cft.addResource(instanceSecurityGroup);
-    cft.addResource(role);
-    cft.addResource(rolePolicy);
-    cft.addResource(instanceProfile);
-    cft.addResource(launchConfig);
-    cft.addResource(asg);
+    rg.add(eip);
+    rg.add(securityGroup);
+    rg.add(sgiIcmp);
+    rg.add(sgiSsh);
+    rg.add(sgeIcmp);
+    rg.add(sgeSsh);
+    rg.add(instanceSecurityGroup);
+    rg.add(role);
+    rg.add(rolePolicy);
+    rg.add(instanceProfile);
+    rg.add(launchConfig);
+    rg.add(asg);
 
-    asg.template = cft;
-    asg.instanceSecurityGroup = instanceSecurityGroup;
-    return asg;
+    this.resource = asg;
+    this.resourceGroup = rg;
+    this.instanceSecurityGroup = instanceSecurityGroup;
 }
-Bastion.prototype = Object.create(ResourceGroup.prototype);
+
+Bastion.prototype = Object.create(Template.prototype);
 
 module.exports = Bastion;

@@ -31,7 +31,7 @@ aws ec2 associate-address --allocation-id $allocation_id --instance-id $instance
 log "Configuration of Bastion host complete."
 /opt/aws/bin/cfn-init -v \
          --stack {{ "Ref" : "AWS::StackName" }} \
-         --resource {{ LaunchConfig }} \
+         --resource {{ LaunchConfigName }} \
          --region {{ "Ref" : "AWS::Region" }}
 /opt/aws/bin/cfn-signal -e $? \
          --stack {{ "Ref" : "AWS::StackName" }} \

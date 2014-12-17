@@ -1,14 +1,15 @@
 var novaform = require('novaform')
     , util = require('util')
-    , ResourceGroup = require('./resource-group')
+    , Template = require('./template')
 
 /**
-    ResourceGroup with ec2.VPC as the resource object
+    Template with ec2.VPC as the resource object
 
     Also returns:
+    @cidrBlock: the cidr block for this VPC
     @publicSubnets: array of public subnets
     @privateSubnets: array of private subnets
-    @igwAttachment: the internet gateway attachment
+    @gatewayAttachment: the internet gateway attachment
 **/
 
 function Vpc(options) {
@@ -45,12 +46,12 @@ function Vpc(options) {
         }
     });
 
-    var gatewayAttachment = novaform.ec2.VPCGatewayAttachment(mkname('VpcGwAttachment'), {
+    var gatewayAttachment = novaform.ec2.VPCGatewayAttachment(mkname('GatewayAttachment'), {
         VpcId: vpc,
         InternetGatwayId: igw
     });
 
-    var cft = new novaform.Template();
+    var rg = new novaform.ResourceGroup();
 
     var publicSubnetResourcs = [];
     var privateSubnetResourcs = [];
@@ -191,35 +192,36 @@ function Vpc(options) {
                 NetworkAclId: nacl
             });
 
-            cft.addResource(subnet);
-            cft.addResource(routeTable);
-            cft.addResource(route);
-            cft.addResource(subnetRouteTableAssociation);
-            cft.addResource(nacl);
-            cft.addResource(naclInboundHttp);
-            cft.addResource(naclInboundHttps);
-            cft.addResource(naclInboundDynamicPorts);
-            cft.addResource(naclInboundSsh);
-            cft.addResource(naclInboundIcmp);
-            cft.addResource(naclOutbound);
-            cft.addResource(naclOutboundIcmp);
-            cft.addResource(subnetNaclAssociation);
+            rg.add(subnet);
+            rg.add(routeTable);
+            rg.add(route);
+            rg.add(subnetRouteTableAssociation);
+            rg.add(nacl);
+            rg.add(naclInboundHttp);
+            rg.add(naclInboundHttps);
+            rg.add(naclInboundDynamicPorts);
+            rg.add(naclInboundSsh);
+            rg.add(naclInboundIcmp);
+            rg.add(naclOutbound);
+            rg.add(naclOutboundIcmp);
+            rg.add(subnetNaclAssociation);
         }
     }
 
     addSubnetsAndNacls(publicSubnets, 'public');
     addSubnetsAndNacls(privateSubnets, 'private');
 
-    cft.addResource(vpc);
-    cft.addResource(igw);
-    cft.addResource(gatewayAttachment);
+    rg.add(vpc);
+    rg.add(igw);
+    rg.add(gatewayAttachment);
 
     this.resource = vpc;
+    this.resourceGroup = rg;
+    this.cidrBlock = vpcCidr;
     this.publicSubnets = publicSubnetResourcs;
     this.privateSubnets = privateSubnetResourcs;
     this.gatewayAttachment = gatewayAttachment;
-    this.template = cft;
 }
-Vpc.prototype = Object.create(ResourceGroup.prototype);
+Vpc.prototype = Object.create(Template.prototype);
 
 module.exports = Vpc;

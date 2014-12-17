@@ -1,15 +1,15 @@
 var novaform = require('novaform')
-    , ResourceGroup = require('./resource-group');
+    , Template = require('./template');
 
 /**
-    ResourceGroup with rds.DBInstance as the resource object
+    Template with rds.DBInstance as the resource object
 **/
 function Rds(options) {
     if (!(this instanceof Rds)) {
         return new Rds(options);
     }
 
-    var vpc = options.vpc;
+    var vpcTemplate = options.vpcTemplate;
     var name = options.name || 'mydb';
     var allocatedStorage = options.allocatedStorage || 5;
     var multiAz = typeof options.multiAz === 'boolean' ? options.multiAz : true;
@@ -25,11 +25,11 @@ function Rds(options) {
         return name + str;
     }
 
-    var cft = novaform.Template();
+    var rg = novaform.ResourceGroup();
 
     var dbSubnetGroup = novaform.rds.DBSubnetGroup(mkname('PrivateSubnet'), {
         DBSubnetGroupDescription: 'db private subnets',
-        SubnetIds: vpc.privateSubnets,
+        SubnetIds: vpcTemplate.privateSubnets,
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('PrivateSubnet')])
@@ -51,12 +51,12 @@ function Rds(options) {
         }
     });
 
-    cft.addResource(dbSubnetGroup);
-    cft.addResource(dbInstance);
+    rg.add(dbSubnetGroup);
+    rg.add(dbInstance);
 
-    this.template = cft;
     this.resource = dbInstance;
+    this.resourceGroup = rg;
 }
-Rds.prototype = Object.create(ResourceGroup.prototype);
+Rds.prototype = Object.create(Template.prototype);
 
 module.exports = Rds;

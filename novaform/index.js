@@ -1,4 +1,4 @@
-var Template = require('./lib/template')
+var ResourceGroup = require('./lib/resource-group')
     , Resource = require('./lib/resource')
     , Output = require('./lib/output')
     , TagValue = require('./lib/tag-value')
@@ -48,11 +48,12 @@ function loadUserDataFromFile(filename, params) {
 
 module.exports = {
     Stack: Stack,
-    Template: Template,
+    ResourceGroup: ResourceGroup,
     Resource: Resource,
-    TagValue: TagValue,
 
     Output: Output,
+    
+    TagValue: TagValue,
 
     ec2: require('./lib/resources/ec2'),
     iam: require('./lib/resources/iam'),
@@ -64,8 +65,9 @@ module.exports = {
     ref: fn.ref,
     join: fn.join,
     base64: fn.base64,
-    loadUserDataFromFile: loadUserDataFromFile,
     getAtt: fn.getAtt,
+
+    loadUserDataFromFile: loadUserDataFromFile,
 
     refs: {
         StackName: fn.ref('AWS::StackName'),

@@ -1,6 +1,7 @@
 var _ = require('underscore')
     , TagValue = require('./tag-value');
 
+
 function expandTags(options) {
     if (!options || !options.Tags) {
         return;

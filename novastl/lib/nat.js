@@ -1,10 +1,10 @@
 var novaform = require('novaform')
     , util = require('util')
     , _ = require('underscore')
-    , ResourceGroup = require('./resource-group');
+    , Template = require('./template');
 
 /**
-    ResourceGroup with ec2.AutoScalingGroup as the resource object
+    Template with ec2.AutoScalingGroup as the resource object
 **/
 
 function Nat(options) {
@@ -12,7 +12,7 @@ function Nat(options) {
         return new Nat(options);
     }
 
-    var vpc = options.vpc.resource;;
+    var vpcTemplate = options.vpcTemplate;
     var keyName = options.keyName;
     var imageId = options.imageId;
     var allowedSshCidr = options.allowedSshCidr || '0.0.0.0/0'
@@ -25,11 +25,11 @@ function Nat(options) {
         return name + str;
     }
 
-    var cft = novaform.Template();
+    var rg = novaform.ResourceGroup();
 
     var securityGroup = novaform.ec2.SecurityGroup(mkname('Sg'), {
-        VpcId: vpc,
-        GroupDescription: vpc.name + ' NAT security group',
+        VpcId: vpcTemplate.resource,
+        GroupDescription: vpcTemplate.resource.name + ' NAT security group',
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('Sg')]),
@@ -37,8 +37,8 @@ function Nat(options) {
         }
     });
 
-    for (i in vpc.privateSubnets) {
-        var subnet = vpc.privateSubnets[i]
+    for (i in vpcTemplate.privateSubnets) {
+        var subnet = vpcTemplate.privateSubnets[i];
         var cidr = subnet.cidrBlock;
         var az = subnet.availabilityZone;
 
@@ -48,7 +48,7 @@ function Nat(options) {
             return util.format('%sAZ%s', mkname(str), azIdentifier);
         }
 
-        var sgiHttp = novaform.ec2.SecurityGroupIngress(mkname('SgiHttpPrivate'), {
+        var sgiHttp = novaform.ec2.SecurityGroupIngress(mknameAz('SgiHttpPrivate'), {
             GroupId: securityGroup,
             IpProtocol: 'tcp',
             FromPort: 80,
@@ -56,7 +56,7 @@ function Nat(options) {
             CidrIp: cidr
         });
 
-        var sgiHttps = novaform.ec2.SecurityGroupIngress(mkname('SgiHttpsPrivate'), {
+        var sgiHttps = novaform.ec2.SecurityGroupIngress(mknameAz('SgiHttpsPrivate'), {
             GroupId: securityGroup,
             IpProtocol: 'tcp',
             FromPort: 443,
@@ -64,8 +64,8 @@ function Nat(options) {
             CidrIp: cidr
         });
 
-        cft.addResource(sgiHttp);
-        cft.addResource(sgiHttps);
+        rg.add(sgiHttp);
+        rg.add(sgiHttps);
     }
 
     var sgiIcmp = novaform.ec2.SecurityGroupIngress(mkname('SgiIcmp'), {
@@ -73,7 +73,7 @@ function Nat(options) {
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1,
-        CidrIp: vpc.cidrBlock
+        CidrIp: vpcTemplate.cidrBlock
     });
 
     var sgiSsh = novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
@@ -155,8 +155,8 @@ function Nat(options) {
         IamInstanceProfile: instanceProfile,
         UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/nat-user-data.sh', {
             ASGName: name,
-            VPCName: vpc.name,
-            LaunchConfig: mkname('LaunchConfig'),
+            VPCName: vpcTemplate.resource.name,
+            LaunchConfigName: mkname('LaunchConfig'),
         }))
     }, {
         'AWS::CloudFormation::Init': {
@@ -170,11 +170,11 @@ function Nat(options) {
         }
     });
 
-    var availabilityZones = _.pluck(vpc.publicSubnets, 'availabilityZone');
+    var availabilityZones = _.pluck(vpcTemplate.publicSubnets, 'availabilityZone');
     var asg = novaform.asg.AutoScalingGroup(name, {
         AvailabilityZones: availabilityZones,
         LaunchConfigurationName: launchConfig,
-        VPCZoneIdentifier: vpc.publicSubnets,
+        VPCZoneIdentifier: vpcTemplate.publicSubnets,
         MinSize: 1,
         MaxSize: availabilityZones.length + 1, // 1 more for rolling update,
         DesiredCapacity: availabilityZones.length,
@@ -193,21 +193,21 @@ function Nat(options) {
         }
     });
 
-    cft.addResource(securityGroup);
-    cft.addResource(sgiIcmp);
-    cft.addResource(sgiSsh);
-    cft.addResource(sgeHttp);
-    cft.addResource(sgeHttps);
-    cft.addResource(sgeIcmp);
-    cft.addResource(role);
-    cft.addResource(rolePolicy);
-    cft.addResource(instanceProfile);
-    cft.addResource(launchConfig);
-    cft.addResource(asg);
+    rg.add(securityGroup);
+    rg.add(sgiIcmp);
+    rg.add(sgiSsh);
+    rg.add(sgeHttp);
+    rg.add(sgeHttps);
+    rg.add(sgeIcmp);
+    rg.add(role);
+    rg.add(rolePolicy);
+    rg.add(instanceProfile);
+    rg.add(launchConfig);
+    rg.add(asg);
 
     this.resource = asg;
-    this.template = cft;
+    this.resourceGroup = rg;
 }
-Nat.prototype = Object.create(ResourceGroup.prototype);
+Nat.prototype = Object.create(Template.prototype);
 
 module.exports = Nat;

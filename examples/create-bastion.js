@@ -9,7 +9,7 @@ var vpc = novastl.Vpc({
 });
 
 var bastion = novastl.Bastion({
-    vpc: vpc,
+    vpcTemplate: vpc,
     allowedSshCidr: '0.0.0.0/0',
     keyName: 'test-key-pair',
     imageId: config.genericImageId,
@@ -17,7 +17,8 @@ var bastion = novastl.Bastion({
 });
 
 var stack = novaform.Stack('mystack');
-stack.add(vpc.template);
-stack.add(bastion.template);
+stack.add(vpc.resourceGroup);
+stack.add(bastion.resourceGroup);
+
 console.log(stack.toJson());
 

@@ -9,7 +9,7 @@ var vpc = novastl.Vpc({
 });
 
 var nat = novastl.Nat({
-    vpc: vpc,
+    vpcTemplate: vpc,
     allowedSshCidr: '0.0.0.0/0',
     keyName: 'test-key-pair',
     imageId: config.genericImageId,
@@ -17,6 +17,7 @@ var nat = novastl.Nat({
 });
 
 var stack = novaform.Stack('mystack');
-stack.add(vpc.template);
-stack.add(nat.template);
+stack.add(vpc.resourceGroup);
+stack.add(nat.resourceGroup);
+
 console.log(stack.toJson());

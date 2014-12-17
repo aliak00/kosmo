@@ -3,11 +3,10 @@ nova
 
 Secret CTO tool - also a cataclysmic nuclear explosion of a white dwarf.
 
-This repository contains maybe 4 projects
+This repository contains maybe 3 projects
 
-- Novaform: base building blocks of aws cloudformation templates
+- Novaform: base building blocks of aws cloudformation stacks
 - NovaSTL: standard template library for common aws resource groups
-- NovaLib: (maybe) - helper functions that tie up the aws sdk with novaform
 - Nova: The binary itself that takes a config file, some nova code and manages deployments
 
 ## Dev setup
