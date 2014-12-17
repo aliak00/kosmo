@@ -7,7 +7,7 @@ var vpc = novastl.Vpc({
     privateSubnets: config.privateSubnets
 });
 
-console.log(vpc.resourceGroup.toJson());
+console.log(vpc.toResourceGroup().toJson());
 
 
 

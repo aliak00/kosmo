@@ -9,11 +9,11 @@ var vpc = novastl.Vpc({
 });
 
 var rds = novastl.Rds({
-    vpcTemplate: vpc
+    vpc: vpc
 });
 
 var stack = novaform.Stack('mystack');
-stack.add(vpc.resourceGroup);
-stack.add(rds.resourceGroup);
+stack.add(vpc.toResourceGroup());
+stack.add(rds.toResourceGroup());
 
 console.log(stack.toJson());

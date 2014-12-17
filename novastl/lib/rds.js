@@ -1,15 +1,18 @@
 var novaform = require('novaform')
-    , Template = require('./template');
+    , Template = require('./template')
+    , _ = require('underscore');
 
 /**
-    Template with rds.DBInstance as the resource object
+    Refs include:
+    - subnet-group: rds.DBSubnetGroup
+    - instance: rds.DBInstance
 **/
 function Rds(options) {
     if (!(this instanceof Rds)) {
         return new Rds(options);
     }
 
-    var vpcTemplate = options.vpcTemplate;
+    var vpc = options.vpc;
     var name = options.name || 'mydb';
     var allocatedStorage = options.allocatedStorage || 5;
     var multiAz = typeof options.multiAz === 'boolean' ? options.multiAz : true;
@@ -25,22 +28,26 @@ function Rds(options) {
         return name + str;
     }
 
-    var rg = novaform.ResourceGroup();
+    var refs = {};
 
-    var dbSubnetGroup = novaform.rds.DBSubnetGroup(mkname('PrivateSubnet'), {
-        DBSubnetGroupDescription: 'db private subnets',
-        SubnetIds: vpcTemplate.privateSubnets,
+    var privateSubnets = _.map(vpc.refs.private, function(az) {
+        return az.subnet;
+    });
+
+    refs['subnet-group'] = novaform.rds.DBSubnetGroup(mkname('PrivateSubnet'), {
+        DBSubnetGroupDescription: originalName + ' db private subnets',
+        SubnetIds: privateSubnets,
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('PrivateSubnet')])
         }
     });
 
-    var dbInstance = novaform.rds.DBInstance(mkname('Instance'), {
+    refs['instance'] = novaform.rds.DBInstance(mkname('Instance'), {
         AllocatedStorage: allocatedStorage,
         DBInstanceClass: instanceClass,
         DBName: originalName,
-        DBSubnetGroupName: dbSubnetGroup,
+        DBSubnetGroupName: refs['subnet-group'],
         Engine: 'postgres',
         EngineVersion: '9.3.3',
         MasterUsername: username,
@@ -51,11 +58,7 @@ function Rds(options) {
         }
     });
 
-    rg.add(dbSubnetGroup);
-    rg.add(dbInstance);
-
-    this.resource = dbInstance;
-    this.resourceGroup = rg;
+    this.refs = refs;
 }
 Rds.prototype = Object.create(Template.prototype);
 
