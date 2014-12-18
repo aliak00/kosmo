@@ -51,7 +51,7 @@ function Nat(options) {
 
     addref('sg', novaform.ec2.SecurityGroup(mkname('Sg'), {
         VpcId: vpc.refs['vpc'],
-        GroupDescription: vpc.refs['vpc'].name + ' NAT security group',
+        GroupDescription: name + ' security group',
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('Sg')]),
