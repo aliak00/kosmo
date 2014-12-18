@@ -25,10 +25,10 @@ var pathComponents = path.split('/');
 var projectName = pathComponents[0];
 var stackName = pathComponents[1];
 
-var project = require(process.cwd() + '/' + projectName)(region);
+var project = require(process.cwd() + '/' + projectName);
 
 if (list) {
-    console.log(_.keys(project));
+    console.log(_.pluck(project, 'name'));
     process.exit(0);
 }
 
@@ -37,10 +37,16 @@ AWS.config.credentials = credentials;
 AWS.config.logger = process.stdout;
 AWS.config.region = region;
 
-var stackConfig = project[stackName];
+var stackConfig = _.findWhere(project, {name: stackName});
+console.log(stackConfig);
+var stackBuild = stackConfig.build({region: region});
+
 var stack = novaform.Stack(stackName);
-stackConfig.resourceGroups.forEach(function(rg) {
-    stack.add(rg);
+_.forEach(stackBuild.resourceGroups, function(resourceGroup) {
+    stack.add(resourceGroup);
+});
+_.forEach(stackBuild.outputs, function(output) {
+    stack.add(output);
 });
 
 if (validate) {
