@@ -5,73 +5,116 @@ var nova = require('../lib')
     , getopt = require('node-getopt')
     , AWS = require('aws-sdk')
     , novaform = require('novaform')
-    , _ = require('underscore');
+    , _ = require('underscore')
+    , util = require('util');
 
-var opts = getopt.create([
-    ['p', 'profile=ARG', 'set which aws profile to use for credentials'],
-    ['r', 'region=ARG', 'set which region you want to use'],
-    ['v', 'validate', 'validate stack'],
-    ['l', 'list', 'list available stacks in project'],
-    ['h', 'help', 'Display this help']
-]).bindHelp().parseSystem();
+function parseArguments(commands) {
+    var args = process.argv.slice(2);
 
-var validate = opts.options['validate'];
-var profile = opts.options['profile'];
-var region = opts.options['region'];
-var list = opts.options['list'];
-var path = opts.argv[0];
+    // find index of the first command (if present)
+    var commandIndexes = _.reject(_.map(_.keys(nova.commands), function(command) {
+        return _.indexOf(args, command);
+    }), function(idx) { return idx == -1; });
 
-var pathComponents = path.split('/');
-var projectName = pathComponents[0];
-var stackName = pathComponents[1];
+    var commandIndex = _(commandIndexes).isEmpty() ? -1 : commandIndexes[0];
+    var commonArgs = [];
+    var commandName;
+    var commandArgs = [];
 
-var project = require(process.cwd() + '/' + projectName);
+    if (commandIndex == -1) {
+        commonArgs = args;
+    } else {
+        commonArgs = args.slice(0, commandIndex);
+        commandName = args[commandIndex];
+        commandArgs = args.slice(commandIndex+1);
+    }
 
-if (list) {
-    console.log(_.pluck(project, 'name'));
+    var commonOpts = getopt.create([
+        ['p', 'profile=ARG', 'set which aws profile to use for credentials'],
+        ['v', 'verbose', 'Print more stuff'],
+        ['h', 'help', 'Display help']
+    ]);
+
+    var commandDescriptions = _.map(commands, function(command, name) {
+        return util.format('  %s\t%s', name, command.descriptionText);
+    }).join('\n');
+
+    commonOpts.setHelp(util.format(
+'Usage: nova [common_options] command [command_options]\n\n\
+Common options:\n\
+[[OPTIONS]]\n\n\
+Commands:\n\
+%s\n\
+', commandDescriptions));
+
+    var opts = commonOpts.parse(commonArgs);
+
+    if (opts.argv.length !== 0) {
+        // something is wrong, we shouldn't have left over argument here,
+        // treat it as fake command name to report an error later.
+        commandName = opts.argv[0];
+    }
+
+    var showHelp = function(message) {
+        if (message) {
+            console.error('Error:', message, '\n');
+        }
+        console.error(commonOpts.getHelp());
+    };
+
+    return {
+        commonArguments: commonArgs,
+        commonOptions: opts.options,
+        commandName: commandName,
+        command: commands[commandName],
+        commandArguments: commandArgs,
+        showHelp: showHelp,
+    };
+}
+
+function showCommandHelp(opts, command, errorMessage) {
+    var commandName = command.commandName;
+    var commandUsage = command.usageText;
+    var commandOptions = command.optionsText;
+
+    if (errorMessage) {
+        console.error('Error: ' + errorMessage + '\n');
+    }
+
+    console.error(util.format(
+'Usage: nova %s %s\n\n\
+"%s" options:\n\
+%s\n\
+', commandName, commandUsage, commandName, commandOptions));
+}
+
+function loadConfiguration() {
+    var credentials = new AWS.SharedIniFileCredentials({profile: opts.commonOptions.profile});
+    AWS.config.credentials = credentials;
+    AWS.config.logger = process.stdout;
+}
+
+var opts = parseArguments(nova.commands);
+
+if (opts.commonOptions.help) {
+    opts.showHelp();
     process.exit(0);
 }
 
-var credentials = new AWS.SharedIniFileCredentials({profile: profile});
-AWS.config.credentials = credentials;
-AWS.config.logger = process.stdout;
-AWS.config.region = region;
-
-var config = _.findWhere(project, {name: stackName});
-var dependencyOutputs = {};
-_.forEach(config.dependencies, function(dependency) {
-    // Get outputs for dependency
-    dependencyOutputs[dependency.name] = {
-        privateSubnets: '1,2'
-    };
-});
-
-var build = config.build({region: region, dependencies: dependencyOutputs});
-
-var stack = novaform.Stack(config.name);
-_.forEach(build.resourceGroups, function(resourceGroup) {
-    stack.add(resourceGroup);
-});
-_.forEach(build.outputs, function(output) {
-    stack.add(output);
-});
-
-if (validate) {
-    console.log('Using profile:', profile);
-    console.log('Validating ' + stackName + ' in project ' + projectName);
-
-    var cloudformation = new AWS.CloudFormation();
-
-    var params = {
-        TemplateBody: stack.toJson(),
-    };
-
-    cloudformation.validateTemplate(params, function(err, data) {
-        if (err) {
-            console.log(err, err.stack);
-            return;
-        }
-
-        console.log(data);
-    });
+if (!opts.command) {
+    if (opts.commandName) {
+        opts.showHelp('Unknown command specified');
+    } else {
+        opts.showHelp('Missing command');
+    }
+    process.exit(0);
 }
+
+loadConfiguration();
+
+var command = new opts.command(opts.commonOptions, opts.commandArguments, function help(errorMessage) {
+    showCommandHelp(opts, opts.command, errorMessage);
+    process.exit(0);
+});
+
+command.execute();
