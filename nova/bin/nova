@@ -37,15 +37,22 @@ AWS.config.credentials = credentials;
 AWS.config.logger = process.stdout;
 AWS.config.region = region;
 
-var stackConfig = _.findWhere(project, {name: stackName});
-console.log(stackConfig);
-var stackBuild = stackConfig.build({region: region});
+var config = _.findWhere(project, {name: stackName});
+var dependencyOutputs = {};
+_.forEach(config.dependencies, function(dependency) {
+    // Get outputs for dependency
+    dependencyOutputs[dependency.name] = {
+        privateSubnets: '1,2'
+    };
+});
 
-var stack = novaform.Stack(stackName);
-_.forEach(stackBuild.resourceGroups, function(resourceGroup) {
+var build = config.build({region: region, dependencies: dependencyOutputs});
+
+var stack = novaform.Stack(config.name);
+_.forEach(build.resourceGroups, function(resourceGroup) {
     stack.add(resourceGroup);
 });
-_.forEach(stackBuild.outputs, function(output) {
+_.forEach(build.outputs, function(output) {
     stack.add(output);
 });
 

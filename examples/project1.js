@@ -46,11 +46,11 @@ var stack1 = {
 
 var stack2 = {
     name: 'stack2',
-    depends: [stack1],
+    dependencies: [stack1],
     build: function(options) {
         var region = options.region;
         var config = require('./config')(region);
-        var subnets = options.inputs.privateSubnets.split(',');
+        var subnets = options.dependencies.stack1.privateSubnets.split(',');
 
         var rds = novastl.Rds({
             subnets: subnets
@@ -58,7 +58,7 @@ var stack2 = {
 
         return {
             resourceGroups: [
-                rds
+                rds.toResourceGroup()
             ]
         };
     }
