@@ -43,5 +43,5 @@ node <example-file>.js
 
 You can run the following in the examples directory to see tentaive deployment structure
 ```bash
-nova --validate project1/stack1
+nova --region eu-central-1 --profile <aws-cli-profile> --validate project1/stack1
 ```
