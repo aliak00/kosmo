@@ -1,4 +1,4 @@
-var novastl = require('novastl')
+var novastl = require('novastl')('eu-central-1')
     , config = require('./config')
 
 var vpc = novastl.Vpc({

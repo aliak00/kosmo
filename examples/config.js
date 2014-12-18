@@ -1,5 +1,3 @@
-var region = 'eu-west-1';
-
 var publicSubnets = {
     'eu-west-1': {
         'eu-west-1a': '10.42.1.0/24',
@@ -27,9 +25,23 @@ var images = {
     'eu-central-1': 'ami-b43503a9'
 };
 
-module.exports = {
-    vpcCidrBlock: '10.42.0.0/0',
-    publicSubnets: publicSubnets[region],
-    privateSubnets: privateSubnets[region],
-    genericImageId: images[region]
+module.exports = function(region) {
+    if (!publicSubnets[region]) {
+        throw new Error('Unsupported public subnet region');
+    }
+
+    if (!privateSubnets[region]) {
+        throw new Error('Unsupported private subnet region');
+    }
+
+    if (!images[region]) {
+        throw new Error('Unsupported instance image subnet region');
+    }
+
+    return {
+        vpcCidrBlock: '10.42.0.0/0',
+        publicSubnets: publicSubnets[region],
+        privateSubnets: privateSubnets[region],
+        genericImageId: images[region]
+    };
 };

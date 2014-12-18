@@ -2,23 +2,63 @@
 'use strict';
 
 var nova = require('../lib')
-    , getopt = require('node-getopt');
+    , getopt = require('node-getopt')
+    , AWS = require('aws-sdk')
+    , novaform = require('novaform')
+    , _ = require('underscore');
 
 var opts = getopt.create([
+    ['p', 'profile=ARG', 'set which aws profile to use for credentials'],
+    ['r', 'region=ARG', 'set which region you want to use'],
     ['v', 'validate', 'validate stack'],
+    ['l', 'list', 'list available stacks in project'],
     ['h', 'help', 'Display this help']
 ]).bindHelp().parseSystem();
 
 var validate = opts.options['validate'];
+var profile = opts.options['profile'];
+var region = opts.options['region'];
+var list = opts.options['list'];
 var path = opts.argv[0];
 
 var pathComponents = path.split('/');
 var projectName = pathComponents[0];
 var stackName = pathComponents[1];
 
-var project = require(process.cwd() + '/' + projectName);
+var project = require(process.cwd() + '/' + projectName)(region);
+
+if (list) {
+    console.log(_.keys(project));
+    process.exit(0);
+}
+
+var credentials = new AWS.SharedIniFileCredentials({profile: profile});
+AWS.config.credentials = credentials;
+AWS.config.logger = process.stdout;
+AWS.config.region = region;
+
+var stackConfig = project[stackName];
+var stack = novaform.Stack(stackName);
+stackConfig.resourceGroups.forEach(function(rg) {
+    stack.add(rg);
+});
 
 if (validate) {
+    console.log('Using profile:', profile);
     console.log('Validating ' + stackName + ' in project ' + projectName);
-    console.log(project);
+
+    var cloudformation = new AWS.CloudFormation();
+
+    var params = {
+        TemplateBody: stack.toJson(),
+    };
+
+    cloudformation.validateTemplate(params, function(err, data) {
+        if (err) {
+            console.log(err, err.stack);
+            return;
+        }
+
+        console.log(data);
+    });
 }

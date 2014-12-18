@@ -1,4 +1,4 @@
-var config = require('./config')
+var config = require('./config')('eu-central-1')
     , novastl = require('novastl')
     , novaform = require('novaform');
 
