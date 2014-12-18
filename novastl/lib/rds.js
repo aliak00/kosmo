@@ -12,7 +12,7 @@ function Rds(options) {
         return new Rds(options);
     }
 
-    var vpc = options.vpc;
+    var subnets = options.subnets;
     var name = options.name || 'mydb';
     var allocatedStorage = options.allocatedStorage || 5;
     var multiAz = typeof options.multiAz === 'boolean' ? options.multiAz : true;
@@ -30,13 +30,9 @@ function Rds(options) {
 
     var refs = {};
 
-    var privateSubnets = _.map(vpc.refs.private, function(az) {
-        return az.subnet;
-    });
-
     refs['subnet-group'] = novaform.rds.DBSubnetGroup(mkname('PrivateSubnet'), {
         DBSubnetGroupDescription: originalName + ' db private subnets',
-        SubnetIds: privateSubnets,
+        SubnetIds: subnets,
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('PrivateSubnet')])

@@ -1,6 +1,7 @@
 var config = require('./config')('eu-central-1')
     , novastl = require('novastl')
-    , novaform = require('novaform');
+    , novaform = require('novaform')
+    , _ = require('underscore');
 
 var vpc = novastl.Vpc({
     cidr: config.vpcCidrBlock,
@@ -8,8 +9,12 @@ var vpc = novastl.Vpc({
     privateSubnets: config.privateSubnets
 });
 
+var privateSubnets = _.map(vpc.refs.private, function(az) {
+    return az.subnet;
+});
+
 var rds = novastl.Rds({
-    vpc: vpc
+    subnets: privateSubnets
 });
 
 var stack = novaform.Stack('mystack');
