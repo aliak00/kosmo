@@ -1,5 +1,9 @@
 var getopt = require('node-getopt')
-    , _ = require('underscore');
+    , _ = require('underscore')
+    , util = require('util')
+    , fs = require('fs')
+    , novaform = require('novaform')
+    , novastl = require('novastl');
 
 var cmdopts = module.exports.opts = getopt.create([
     ['w', 'wait', 'Wait for completion'],
@@ -29,14 +33,23 @@ function Command(commonOptions, args, helpCallback) {
     }
 
     var ref = opts.argv[0];
-    this.ref = parseProjectRef(ref);
+    ref = this.ref = parseProjectRef(ref);
     if (!this.ref) {
         helpCallback('Invalid project ref');
+        return;
+    }
+
+    this.project = Project.load(this.ref.project, function(e) {
+        helpCallback(util.format('Failed to load project "%s": %s', ref.project, e.message));
+    });
+    if (!this.project) {
+        helpCallback(util.format('Could not find project "%s"', this.ref.project));
         return;
     }
 }
 
 Command.prototype.execute = function() {
+    console.log('TODO: executing deployment steps');
 }
 
 Command.usageText = '[options] <project>/<component>'
@@ -67,3 +80,31 @@ function parseProjectRef(ref) {
         component: component,
     };
 }
+
+function Project(config) {
+    this.config = config;
+}
+Project.searchPaths = [process.cwd()];
+Project.load = function(name, callback) {
+    for (var i = 0; i < Project.searchPaths.length; ++i) {
+        var searchPath = Project.searchPaths[i];
+        var filepath = searchPath + '/' + name;
+
+        if (fs.existsSync(filepath) || fs.existsSync(filepath + '.js')) {
+            try {
+                var module = require(filepath);
+                var options = {
+                    underscore: _,
+                };
+                var config = module(novaform, novastl, options);
+                return new Project(config);
+            } catch(e) {
+                if (callback) {
+                    callback(e);
+                }
+            }
+            return null;
+        }
+    }
+    return null;
+};

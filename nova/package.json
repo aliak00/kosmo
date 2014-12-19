@@ -15,6 +15,7 @@
     "aws-sdk": "^2.1.2",
     "node-getopt": "^0.2.3",
     "novaform": "*",
+    "novastl": "*",
     "underscore": "^1.7.0"
   },
   "bin": {
