@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "dependencies": {
     "novaform": "*",
-    "novastl": "*"
+    "novastl": "*",
+    "underscore": "^1.7.0"
   }
 }
