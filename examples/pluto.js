@@ -1,10 +1,10 @@
-module.exports = function(novaform, novastl, options) {
-    var _ = options.underscore;
+var _ = require('underscore');
 
+module.exports = function(novaform, novastl) {
     var infrastructure = {
         name: 'infrastructure',
 
-        depends: [
+        dependencies: [
         ],
 
         region: 'eu-west-1',
@@ -51,7 +51,7 @@ module.exports = function(novaform, novastl, options) {
     var database = {
         name: 'database',
 
-        depends: [
+        dependencies: [
             'infrastructure',
         ],
 

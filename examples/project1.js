@@ -1,67 +1,74 @@
-var novaform = require('novaform')
-    , novastl = require('novastl')
-    , _ = require('underscore');
+var _ = require('underscore');
 
-var stack1 = {
-    name: 'stack1',
-    build: function(options) {
-        var region = options.region;
-        var config = require('./config')(region);
+module.exports = function(novaform, novastl) {
 
-        var vpc = novastl.Vpc({
-            cidr: config.vpcCidrBlock,
-            publicSubnets: config.publicSubnets,
-            privateSubnets: config.privateSubnets
-        });
+    var stack1 = {
+        name: 'stack1',
+        region: 'eu-central-1',
+        build: function(dependencies) {
+            var config = require('./config')(this.region);
 
-        var nat = novastl.Nat({
-            vpc: vpc,
-            allowedSshCidr: '0.0.0.0/0',
-            keyName: 'test-key-pair',
-            imageId: config.genericImageId,
-            instanceType: 't2.micro'
-        });
+            var vpc = novastl.Vpc({
+                cidr: config.vpcCidrBlock,
+                publicSubnets: config.publicSubnets,
+                privateSubnets: config.privateSubnets
+            });
 
-        var privateSubnetRefs = _.map(vpc.refs.private, function(az) {
-            return az.subnet;
-        });
+            var nat = novastl.Nat({
+                vpc: vpc,
+                allowedSshCidr: '0.0.0.0/0',
+                keyName: 'test-key-pair',
+                imageId: config.genericImageId,
+                instanceType: 't2.micro'
+            });
 
-        var vpcPrivateSubnetOutput = novaform.Output('privateSubnets', {
-            Value: novaform.join(',', privateSubnetRefs),
-            Description: 'Private subnets from ' + vpc.name
-        });
+            var privateSubnetRefs = _.map(vpc.refs.private, function(az) {
+                return az.subnet;
+            });
 
-        return {
-            resourceGroups: [
-                vpc.toResourceGroup(),
-                nat.toResourceGroup()
-            ],
+            var vpcPrivateSubnetOutput = novaform.Output('privateSubnets', {
+                Value: novaform.join(',', privateSubnetRefs),
+                Description: 'Private subnets from ' + vpc.name
+            });
 
-            outputs: [
-                vpcPrivateSubnetOutput
-            ]
-        };
-    }
-};
+            return {
+                resourceGroups: [
+                    vpc.toResourceGroup(),
+                    nat.toResourceGroup()
+                ],
 
-var stack2 = {
-    name: 'stack2',
-    dependencies: [stack1],
-    build: function(options) {
-        var region = options.region;
-        var config = require('./config')(region);
-        var subnets = options.dependencies.stack1.privateSubnets.split(',');
+                outputs: [
+                    vpcPrivateSubnetOutput
+                ]
+            };
+        }
+    };
 
-        var rds = novastl.Rds({
-            subnets: subnets
-        });
+    var stack2 = {
+        name: 'stack2',
+        dependencies: [stack1],
+        region: 'eu-central-1',
+        build: function(dependencies) {
+            var config = require('./config')(this.region);
+            var subnets = dependencies.stack1.privateSubnets.split(',');
 
-        return {
-            resourceGroups: [
-                rds.toResourceGroup()
-            ]
-        };
-    }
-};
+            var rds = novastl.Rds({
+                subnets: subnets
+            });
 
-module.exports = [stack1, stack2];
+            return {
+                resourceGroups: [
+                    rds.toResourceGroup()
+                ]
+            };
+        }
+    };
+
+    return {
+        name: 'project1',
+        components [
+            stack1, 
+            stack2
+        ]
+    };
+}

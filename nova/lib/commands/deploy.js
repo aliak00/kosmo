@@ -93,12 +93,9 @@ Project.load = function(name, callback) {
         if (fs.existsSync(filepath) || fs.existsSync(filepath + '.js')) {
             try {
                 var module = require(filepath);
-                var options = {
-                    underscore: _,
-                };
-                var config = module(novaform, novastl, options);
+                var config = module(novaform, novastl);
                 return new Project(config);
-            } catch(e) {
+            } catch (e) {
                 if (callback) {
                     callback(e);
                 }

@@ -4,7 +4,6 @@
 var nova = require('../lib')
     , getopt = require('node-getopt')
     , AWS = require('aws-sdk')
-    , novaform = require('novaform')
     , _ = require('underscore')
     , util = require('util');
 
