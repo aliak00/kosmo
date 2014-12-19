@@ -112,7 +112,7 @@ function Bastion(options) {
             Statement: [{
                 Effect: 'Allow',
                 Principal: {
-                    Service: [ 'ec2.amazonovaform.com' ]
+                    Service: [ 'ec2.amazonaws.com' ]
                 },
                 Action: [ 'sts:AssumeRole' ]
             }]
@@ -128,11 +128,7 @@ function Bastion(options) {
             Statement: [{
                 Effect: 'Allow',
                 Action: [
-                    'ec2:ModifyInstanceAttribute',
-                    'ec2:DescribeSubnets',
-                    'ec2:DescribeRouteTables',
-                    'ec2:CreateRoute',
-                    'ec2:ReplaceRoute'
+                  'ec2:AssociateAddress'
                 ],
                 Resource: '*'
             }]
@@ -140,7 +136,7 @@ function Bastion(options) {
     }));
 
     addref('instance-profile', novaform.iam.InstanceProfile(mkname('IAmInstanceProfile'), {
-        Path: novaform.join('', ['/', novaform.refs.StackName, '/nat/']),
+        Path: novaform.join('', ['/', novaform.refs.StackName, '/bastion/']),
         Roles: [refs['role']]
     }));
 

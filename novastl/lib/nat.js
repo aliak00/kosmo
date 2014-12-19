@@ -139,7 +139,7 @@ function Nat(options) {
             Statement: [{
                 Effect: 'Allow',
                 Principal: {
-                    Service: [ 'ec2.amazonovaform.com' ]
+                    Service: [ 'ec2.amazonaws.com' ]
                 },
                 Action: [ 'sts:AssumeRole' ]
             }]
