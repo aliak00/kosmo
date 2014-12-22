@@ -10,7 +10,7 @@ var novaform = require('novaform')
     - sgi-ssh: ec2.SecurityGroupIngress
     - sge-icmp: ec2.SecurityGroupEgress
     - sge-ssh: ec2.SecurityGroupIngress
-    - to-instance: ec2.SecurityGroup
+    - instance-sg: ec2.SecurityGroup
     - role: iam.Role
     - policy: iam.Policy
     - instance-profile: iam.InstanceProfile
@@ -78,7 +78,7 @@ function Bastion(options) {
         GroupId: refs['internal-sg'],
         IpProtocol: 'icmp',
         FromPort: -1,
-        ToPort: -1, 
+        ToPort: -1,
         CidrIp: '0.0.0.0/0'
     }));
 
