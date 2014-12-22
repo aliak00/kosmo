@@ -16,7 +16,7 @@ function expandTags(options) {
         if (value instanceof TagValue) {
             tag = _.extend(tag, value)
         } else {
-            tag.value = value;
+            tag.Value = value;
         }
         tags.push(tag);
     }
