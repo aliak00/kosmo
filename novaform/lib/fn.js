@@ -8,10 +8,18 @@ function ref(ref) {
 }
 
 function join(seperator, values) {
+    var modifiedValues = [];
+    values.forEach(function(value) {
+        if (value instanceof Resource) {
+            modifiedValues.push(ref(value));
+        } else {
+            modifiedValues.push(value);
+        }
+    });
     return {
         'Fn::Join': [
             seperator,
-            values
+            modifiedValues
         ]
     };
 }
