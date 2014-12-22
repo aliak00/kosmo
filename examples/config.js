@@ -39,7 +39,7 @@ module.exports = function(region) {
     }
 
     return {
-        vpcCidrBlock: '10.42.0.0/0',
+        vpcCidrBlock: '10.42.0.0/16',
         publicSubnets: publicSubnets[region],
         privateSubnets: privateSubnets[region],
         genericImageId: images[region]
