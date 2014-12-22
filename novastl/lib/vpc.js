@@ -46,7 +46,7 @@ function Vpc(options) {
     refs['vpc'] = novaform.ec2.VPC(name, {
         CidrBlock: vpcCidr,
         EnableDnsSupport: true,
-        EnableDnsHostname: true,
+        EnableDnsHostnames: true,
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, name])
