@@ -63,7 +63,7 @@ function Vpc(options) {
 
     refs['gatewayAttachment'] = novaform.ec2.VPCGatewayAttachment(mkname('GatewayAttachment'), {
         VpcId: refs['vpc'],
-        InternetGatwayId: refs['igw']
+        InternetGatewayId: refs['igw']
     });
 
     function addSubnetsAndNacls(subnets, visibility) {
@@ -115,7 +115,7 @@ function Vpc(options) {
             addref('route', novaform.ec2.Route(mknameAz('Route'), {
                 RouteTableId: ref('route-table'),
                 DestinationCidrBlock: '0.0.0.0/0',
-                GatwayId: refs['igw'],
+                GatewayId: refs['igw'],
                 DependsOn: refs['gatewayAttachment'].name
             }));
 
