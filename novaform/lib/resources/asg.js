@@ -22,6 +22,8 @@ function AutoScalingGroup(name, properties) {
     this.type = 'AWS::AutoScaling::AutoScalingGroup';
     this.name = name;
 
+    this.extendWith = this.properties.UpdatePolicy;
+
 }
 AutoScalingGroup.prototype = Object.create(Resource.prototype);
 

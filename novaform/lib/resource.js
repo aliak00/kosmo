@@ -50,6 +50,16 @@ Resource.prototype.toObject = function() {
         Type: this.type
     };
 
+    if (this.properties.DependsOn) {
+        object.DependsOn = this.properties.DependsOn;
+        delete this.properties.DependsOn;
+    }
+
+    for (key in this.extendWith) {
+        object[key] = this.extendWith[key];
+        delete this.properties[key];
+    }
+
     if (this.properties) {
         object.Properties = this.properties;
     }
