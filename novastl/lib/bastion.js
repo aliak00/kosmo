@@ -5,12 +5,11 @@ var novaform = require('novaform')
 /**
     Refs include:
     - eip: ec2.EIP
-    - internal-sg: ec2.SecurityGroup
+    - sg: ec2.SecurityGroup
     - sgi-icmp: ec2.SecurityGroupIngress
     - sgi-ssh: ec2.SecurityGroupIngress
     - sge-icmp: ec2.SecurityGroupEgress
     - sge-ssh: ec2.SecurityGroupIngress
-    - instance-sg: ec2.SecurityGroup
     - role: iam.Role
     - policy: iam.Policy
     - instance-profile: iam.InstanceProfile
@@ -49,17 +48,17 @@ function Bastion(options) {
         DependsOn: vpc.refs['gateway'].name
     }));
 
-    addref('internal-sg', novaform.ec2.SecurityGroup(mkname('InternalSg'), {
+    addref('sg', novaform.ec2.SecurityGroup(mkname('Sg'), {
         VpcId: vpc.refs['vpc'],
         GroupDescription: 'Bastion host security group',
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.join('-', [novaform.refs.StackName, mkname('InternalSg')])
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('Sg')])
         }
     }));
 
     addref('sgi-icmp', novaform.ec2.SecurityGroupIngress(mkname('SgiIcmp'), {
-        GroupId: refs['internal-sg'],
+        GroupId: refs['sg'],
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1, 
@@ -67,15 +66,31 @@ function Bastion(options) {
     }));
 
     addref('sgi-ssh', novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
-        GroupId: refs['internal-sg'],
+        GroupId: refs['sg'],
         IpProtocol: 'tcp',
         FromPort: 22,
         ToPort: 22, 
         CidrIp: allowedSshCidr
     }));
 
+    addref('sge-http', novaform.ec2.SecurityGroupEgress(mkname('SgeHttp'), {
+        GroupId: refs['sg'],
+        IpProtocol: 'tcp',
+        FromPort: 80,
+        ToPort: 80,
+        CidrIp: '0.0.0.0/0'
+    }));
+
+    addref('sge-https', novaform.ec2.SecurityGroupEgress(mkname('SgeHttps'), {
+        GroupId: refs['sg'],
+        IpProtocol: 'tcp',
+        FromPort: 443,
+        ToPort: 443,
+        CidrIp: '0.0.0.0/0'
+    }));
+
     addref('sge-icmp', novaform.ec2.SecurityGroupEgress(mkname('SgeIcmp'), {
-        GroupId: refs['internal-sg'],
+        GroupId: refs['sg'],
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1,
@@ -83,27 +98,11 @@ function Bastion(options) {
     }));
 
     addref('sge-ssh', novaform.ec2.SecurityGroupEgress(mkname('SgeSsh'), {
-        GroupId: refs['internal-sg'],
+        GroupId: refs['sg'],
         IpProtocol: 'tcp',
         FromPort: 22,
         ToPort: 22, 
         CidrIp: vpc.refs['vpc'].properties.CidrBlock
-    }));
-
-    addref('instance-sg', novaform.ec2.SecurityGroup(mkname('ToInstanceSg'), {
-        VpcId: vpc.refs['vpc'],
-        GroupDescription: 'Allow ssh from bastion host',
-        SecurityGroupIngress: [{
-            IpProtocol: 'tcp',
-            FromPort: 22,
-            ToPort: 22,
-            SourceSecurityGroupId: refs['internal-sg']
-        }],
-        SecurityGroupEgress: [],
-        Tags: {
-            Application: novaform.refs.StackId,
-            Name: novaform.join('-', [novaform.refs.StackName, mkname('ToInstanceSg')])
-        }
     }));
 
     addref('role', novaform.iam.Role(mkname('IAmRole'), {
@@ -143,7 +142,7 @@ function Bastion(options) {
     addref('launch-config', novaform.asg.LaunchConfiguration(mkname('LaunchConfig'), {
         KeyName: keyName,
         ImageId: imageId,
-        SecurityGroups: [refs['internal-sg']],
+        SecurityGroups: [refs['sg']],
         InstanceType: instanceType,
         AssociatePublicIpAddress: true,
         IamInstanceProfile: refs['instance-profile'],
