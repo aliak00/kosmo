@@ -11,7 +11,7 @@ var vpc = novastl.Vpc({
 var bastion = novastl.Bastion({
     vpc: vpc,
     allowedSshCidr: '0.0.0.0/0',
-    keyName: 'test-key-pair',
+    keyName: 'stupid-key-pair',
     imageId: config.genericImageId,
     instanceType: 't2.micro'
 });
