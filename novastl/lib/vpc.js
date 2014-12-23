@@ -10,20 +10,272 @@ var novaform = require('novaform')
     - private: {az: {private refs per az}}
     - public: {az: {public refs per az}}
 
-    For each az per public and private array we have the following refs:
+    For each az the public refs include:
+        - subnet: ec2.Subnet
+        - route-table: ec2.RouteTable
+        - route: ec2.Route
+        - subnet-rt-association: ec2.SubnetRouteTableAssociation
+        - nacl: ec2.NetworkAcl
+        - inbound-http: ec2.NetworkAclEntry
+        - inbound-https: ec2.NetworkAclEntry
+        - inbound-dynamic-ports: ec2.NetworkAclEntry
+        - inbound-ssh: ec2.NetworkAclEntry
+        - inbound-icmp: ec2.NetworkAclEntry
+        - outbound-tcp: ec2.NetworkAclEntry
+        - outbound-icmp: ec2.NetworkAclEntry
+        - subnet-nacl-association: ec2.SubnetNetworkAclAssociation
+
+    For each az the private refs include:
         - subnet: ec2.Subnet
         - route-table: ec2.RouteTable
         - subnet-rt-association: ec2.SubnetRouteTableAssociation
         - nacl: ec2.NetworkAcl
-        - nacl-ingress-http: ec2.NetworkAclEntry
-        - nacl-ingress-https: ec2.NetworkAclEntry
-        - nacl-ingress-dynamic-ports: ec2.NetworkAclEntry
-        - nacl-ingress-ssh: ec2.NetworkAclEntry
-        - nacl-ingress-icmp: ec2.NetworkAclEntry
-        - nacl-egress: ec2.NetworkAclEntry
-        - nacl-egress-icmp: ec2.NetworkAclEntry
+        - inbound-tcp: ec2.NetworkAclEntry
+        - inbound-icmp: ec2.NetworkAclEntry
+        - outbound-tcp: ec2.NetworkAclEntry
+        - outbound-icmp: ec2.NetworkAclEntry
         - subnet-nacl-association: ec2.SubnetNetworkAclAssociation
 **/
+
+function mktags(str, visibility, az) {
+    return {
+        Application: novaform.refs.StackId,
+        Name: novaform.join('-', [novaform.refs.StackName, str]),
+        Network: visibility,
+        AZ: az
+    };
+}
+
+function mknameAz(str, az) {
+    return util.format('%sAZ%s', str, az);
+}
+
+function addPublicSubnets(refs, subnets) {
+    refs.public = refs.public || {};
+    var publicRefs = {};
+    for (key in subnets) {
+        var cidr = subnets[key];
+        var az = key[key.length - 1];
+
+        if (publicRefs[az]) {
+            throw new Error('Multiple AZs found in vpc public subnets');
+        }
+
+        if (refs.public[az]) {
+            throw new Error('AZ ' + az + ' already in vpc public refs');
+        }
+
+        publicRefs[az] = {};
+
+        publicRefs[az]['subnet'] = novaform.ec2.Subnet(mknameAz('PublicSubnet', az), {
+            VpcId: refs['vpc'],
+            AvailabilityZone: key,
+            CidrBlock: cidr,
+            Tags: mktags('Subnet', 'public', az)
+        });
+
+        publicRefs[az]['route-table'] = novaform.ec2.RouteTable(mknameAz('PublicRouteTable', az), {
+            VpcId: refs['vpc'],
+            Tags: mktags('RouteTable', 'public', az)
+        });
+
+        publicRefs[az]['route'] = novaform.ec2.Route(mknameAz('PublicRoute', az), {
+            RouteTableId: publicRefs[az]['route-table'],
+            DestinationCidrBlock: '0.0.0.0/0',
+            GatewayId: refs['igw'],
+            DependsOn: refs['gateway'].name
+        });
+
+        publicRefs[az]['subnet-rt-association'] = novaform.ec2.SubnetRouteTableAssociation(mknameAz('PublicSubnetRouteTableAssociation', az), {
+            SubnetId: publicRefs[az]['subnet'],
+            RouteTableId: publicRefs[az]['route-table']
+        });
+
+        publicRefs[az]['nacl'] = novaform.ec2.NetworkAcl(mknameAz('PublicNacl', az), {
+            VpcId: refs['vpc'],
+            Tags: mktags('Nacl', 'public', az)
+        });
+
+        var nacl = publicRefs[az]['nacl'];
+        publicRefs[az]['inbound-http'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundHttp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 100,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [80, 80]
+        });
+
+        publicRefs[az]['inbound-https'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundHttps', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 101,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [443, 443]
+        });
+
+        publicRefs[az]['inbound-dynamic-ports'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundDynamicPorts', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 102,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [1024, 65535]
+        });
+
+        publicRefs[az]['inbound-ssh'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundSsh', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 103,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [22, 22]
+        });
+
+        publicRefs[az]['inbound-icmp'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundIcmp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 104,
+            Protocol: 1,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: '0.0.0.0/0',
+            Icmp: {
+                Code: -1,
+                Type: -1
+            }
+        });
+
+       publicRefs[az]['outbound-tcp'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundTcp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 100,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [0, 65535]
+        });
+
+        publicRefs[az]['outbound-icmp'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundIcmp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 101,
+            Protocol: 1,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+            Icmp: {
+                Code: -1,
+                Type: -1
+            }
+        });
+
+        publicRefs[az]['subnet-nacl-association'] = novaform.ec2.SubnetNetworkAclAssociation(mknameAz('PublicSubnetNaclAssociation', az), {
+            SubnetId: publicRefs[az]['subnet'],
+            NetworkAclId: nacl
+        });
+    }
+
+    refs.public = publicRefs;
+}
+
+function addPrivateSubnets(refs, privateSubnets) {
+    refs.private = refs.private || {};
+    var privateRefs = {};
+    for (key in privateSubnets) {
+        var cidr = privateSubnets[key];
+        var az = key[key.length - 1];
+
+        if (privateRefs[az]) {
+            throw new Error('Multiple AZs found in vpc private subnets');
+        }
+
+        if (refs.private[az]) {
+            throw new Error('AZ ' + az + ' already in vpc private refs');
+        }
+
+        privateRefs[az] = {};
+
+        privateRefs[az]['subnet'] = novaform.ec2.Subnet(mknameAz('PrivateSubnet', az), {
+            VpcId: refs['vpc'],
+            AvailabilityZone: key,
+            CidrBlock: cidr,
+            Tags: mktags('Subnet', 'private', az)
+        });
+
+        privateRefs[az]['route-table'] = novaform.ec2.RouteTable(mknameAz('PrivateRouteTable', az), {
+            VpcId: refs['vpc'],
+            Tags: mktags('RouteTable', 'private', az)
+        });
+
+        privateRefs[az]['subnet-rt-association'] = novaform.ec2.SubnetRouteTableAssociation(mknameAz('PrivateSubnetRouteTableAssociation', az), {
+            SubnetId: privateRefs['subnet'],
+            RouteTableId: privateRefs['route-table']
+        });
+
+        privateRefs[az]['nacl'] = novaform.ec2.NetworkAcl(mknameAz('PrivateNacl', az), {
+            VpcId: refs['vpc'],
+            Tags: mktags('Nacl', 'private', az)
+        });
+
+        var nacl = privateRefs[az]['nacl'];
+        privateRefs[az]['inbound-tcp'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundTcp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 100,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: refs['vpc'].properties.CidrBlock,
+            PortRange: [0, 65536]
+        });
+
+        privateRefs[az]['inbound-icmp'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundIcmp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 101,
+            Protocol: 1,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: '0.0.0.0/0',
+            Icmp: {
+                Code: -1,
+                Type: -1
+            }
+        });
+
+       privateRefs[az]['outbound-tcp'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateOutboundTcp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 100,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [0, 65535]
+        });
+
+        privateRefs[az]['outbound-icmp'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateOutboundIcmp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 101,
+            Protocol: 1,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+            Icmp: {
+                Code: -1,
+                Type: -1
+            }
+        });
+
+        privateRefs[az]['subnet-nacl-association'] = novaform.ec2.SubnetNetworkAclAssociation(mknameAz('PrivateSubnetNaclAssociation', az), {
+            SubnetId: privateRefs[az]['subnet'],
+            NetworkAclId: nacl
+        });
+    }
+
+    refs.private = privateRefs;
+}
 
 function Vpc(options) {
     if (!(this instanceof Vpc)) {
@@ -66,155 +318,8 @@ function Vpc(options) {
         InternetGatewayId: refs['igw']
     });
 
-    function addSubnetsAndNacls(subnets, visibility) {
-        for (key in subnets) {
-            var cidr = subnets[key];
-            var azIdentifier = key[key.length - 1];
-            var visibilityLowerCase = visibility.toLowerCase();
-            var visibilityUpperCase = visibilityLowerCase.charAt(0).toUpperCase() + visibilityLowerCase.slice(1);
-
-            refs[visibilityLowerCase] = refs[visibilityLowerCase] || {};
-            refs[visibilityLowerCase][azIdentifier] = refs[visibilityLowerCase][azIdentifier] || {};
-
-            function mknameAz(str) {
-                return util.format('%s%sAZ%s', mkname(str), visibilityUpperCase, azIdentifier);
-            }
-
-            function mktags(str) {
-                return {
-                    Application: novaform.refs.StackId,
-                    Name: novaform.join('-', [novaform.refs.StackName, str]),
-                    Network: visibilityLowerCase,
-                    AZ: azIdentifier
-                };
-            }
-
-            function ref(key) {
-                return refs[visibilityLowerCase][azIdentifier][key];
-            }
-
-            function addref(key, value) {
-                if (ref(key)) {
-                    throw new Error('Cannot have duplicate ' + visibilityLowerCase + ' key in Template refs');
-                }
-                refs[visibilityLowerCase][azIdentifier][key] = value;
-            }
-
-            addref('subnet', novaform.ec2.Subnet(mknameAz('Subnet'), {
-                VpcId: refs['vpc'],
-                AvailabilityZone: key,
-                CidrBlock: cidr,
-                Tags: mktags('Subnet')
-            }));
-
-            addref('route-table', novaform.ec2.RouteTable(mknameAz('RouteTable'), {
-                VpcId: refs['vpc'],
-                Tags: mktags('RouteTable')
-            }));
-
-            addref('route', novaform.ec2.Route(mknameAz('Route'), {
-                RouteTableId: ref('route-table'),
-                DestinationCidrBlock: '0.0.0.0/0',
-                GatewayId: refs['igw'],
-                DependsOn: refs['gateway'].name
-            }));
-
-            addref('subnet-rt-association',  novaform.ec2.SubnetRouteTableAssociation(mknameAz('SubnetRouteTableAssociation'), {
-                SubnetId: ref('subnet'),
-                RouteTableId: ref('route-table')
-            }));
-
-            addref('nacl', novaform.ec2.NetworkAcl(mknameAz('Nacl'), {
-                VpcId: refs['vpc'],
-                Tags: mktags('Nacl')
-            }));
-
-            var nacl = ref('nacl');
-            addref('nacl-ingress-http', novaform.ec2.NetworkAclEntry(mknameAz('NaclIngressHttp'), {
-                NetworkAclId: nacl,
-                RuleNumber: 100,
-                Protocol: 6,
-                RuleAction: 'allow',
-                Egress: false,
-                CidrBlock: '0.0.0.0/0',
-                PortRange: [80, 80]
-            }));
-
-            addref('nacl-ingress-https', novaform.ec2.NetworkAclEntry(mknameAz('NaclIngressHttps'), {
-                NetworkAclId: nacl,
-                RuleNumber: 101,
-                Protocol: 6,
-                RuleAction: 'allow',
-                Egress: false,
-                CidrBlock: '0.0.0.0/0',
-                PortRange: [443, 443]
-            }));
-
-            addref('nacl-ingress-dynamic-ports', novaform.ec2.NetworkAclEntry(mknameAz('NaclIngressDynamicPorts'), {
-                NetworkAclId: nacl,
-                RuleNumber: 102,
-                Protocol: 6,
-                RuleAction: 'allow',
-                Egress: false,
-                CidrBlock: '0.0.0.0/0',
-                PortRange: [1024, 65535]
-            }));
-
-            addref('nacl-ingress-ssh', novaform.ec2.NetworkAclEntry(mknameAz('NaclIngressSsh'), {
-                NetworkAclId: nacl,
-                RuleNumber: 103,
-                Protocol: 6,
-                RuleAction: 'allow',
-                Egress: false,
-                CidrBlock: '0.0.0.0/0',
-                PortRange: [22, 22]
-            }));
-
-            addref('nacl-ingress-icmp', novaform.ec2.NetworkAclEntry(mknameAz('NaclIngressIcmp'), {
-                NetworkAclId: nacl,
-                RuleNumber: 104,
-                Protocol: 1,
-                RuleAction: 'allow',
-                Egress: false,
-                CidrBlock: '0.0.0.0/0',
-                Icmp: {
-                    Code: -1,
-                    Type: -1
-                }
-            }));
-
-           addref('nacl-egress', novaform.ec2.NetworkAclEntry(mknameAz('NaclEgress'), {
-                NetworkAclId: nacl,
-                RuleNumber: 100,
-                Protocol: 6,
-                RuleAction: 'allow',
-                Egress: true,
-                CidrBlock: '0.0.0.0/0',
-                PortRange: [0, 65535]
-            }));
-
-            addref('nacl-egress-icmp', novaform.ec2.NetworkAclEntry(mknameAz('NaclEgressIcmp'), {
-                NetworkAclId: nacl,
-                RuleNumber: 101,
-                Protocol: 1,
-                RuleAction: 'allow',
-                Egress: true,
-                CidrBlock: '0.0.0.0/0',
-                Icmp: {
-                    Code: -1,
-                    Type: -1
-                }
-            }));
-
-            addref('subnet-nacl-association', novaform.ec2.SubnetNetworkAclAssociation(mknameAz('SubnetNaclAssociation'), {
-                SubnetId: ref('subnet'),
-                NetworkAclId: nacl
-            }));
-        }
-    }
-
-    addSubnetsAndNacls(publicSubnets, 'public');
-    addSubnetsAndNacls(privateSubnets, 'private');
+    addPublicSubnets(refs, publicSubnetsPerAz);
+    addPrivateSubnets(refs, privateSubnetsPerAz);
 
     this.refs = refs;
 }
