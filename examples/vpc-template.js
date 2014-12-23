@@ -4,8 +4,8 @@ var novastl = require('novastl')
 
 var vpc = novastl.Vpc({
     cidr: config.vpcCidrBlock,
-    publicSubnets: config.publicSubnets,
-    privateSubnets: config.privateSubnets
+    publicSubnetsPerAz: config.publicSubnetsPerAz,
+    privateSubnetsPerAz: config.privateSubnetsPerAz
 });
 
 var stack = novaform.Stack();

@@ -14,8 +14,8 @@ module.exports = function(novaform, novastl) {
 
             var vpc = novastl.Vpc({
                 cidr: config.vpcCidrBlock,
-                publicSubnets: config.publicSubnets,
-                privateSubnets: config.privateSubnets
+                publicSubnetsPerAz: config.publicSubnetsPerAz,
+                privateSubnetsPerAz: config.privateSubnetsPerAz
             });
 
             var nat = novastl.Nat({
@@ -59,7 +59,6 @@ module.exports = function(novaform, novastl) {
 
         build: function(deps) {
             var region = this.region;
-            var config = require('./config')(region);
             var subnets = deps.infrastructure.privateSubnets.split(',');
 
             var rds = novastl.Rds({

@@ -1,4 +1,4 @@
-var publicSubnets = {
+var publicSubnetsMap = {
     'eu-west-1': {
         'eu-west-1a': '10.42.1.0/24',
         'eu-west-1b': '10.42.2.0/24'
@@ -9,7 +9,7 @@ var publicSubnets = {
     },
 };
 
-var privateSubnets = {
+var privateSubnetsMap = {
     'eu-west-1': {
         'eu-west-1a': '10.42.3.0/24',
         'eu-west-1b': '10.42.4.0/24'
@@ -40,8 +40,8 @@ module.exports = function(region) {
 
     return {
         vpcCidrBlock: '10.42.0.0/16',
-        publicSubnets: publicSubnets[region],
-        privateSubnets: privateSubnets[region],
+        publicSubnetsPerAz: publicSubnetsMap[region],
+        privateSubnetsPerAz: privateSubnetsMap[region],
         genericImageId: images[region]
     };
 };

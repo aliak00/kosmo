@@ -31,8 +31,8 @@ function Vpc(options) {
     }
 
     var vpcCidr = options.cidr;
-    var publicSubnets = options.publicSubnets;
-    var privateSubnets = options.privateSubnets;
+    var publicSubnetsPerAz = options.publicSubnetsPerAz;
+    var privateSubnetsPerAz = options.privateSubnetsPerAz;
     var name = options.name || 'Vpc';
 
     name = name.charAt(0).toUpperCase() + name.slice(1);

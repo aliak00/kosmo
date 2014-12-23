@@ -4,8 +4,8 @@ var config = require('./config')('eu-central-1')
 
 var vpc = novastl.Vpc({
     cidr: config.vpcCidrBlock,
-    publicSubnets: config.publicSubnets,
-    privateSubnets: config.privateSubnets
+    publicSubnetsPerAz: config.publicSubnetsPerAz,
+    privateSubnetsPerAz: config.privateSubnetsPerAz
 });
 
 var bastion = novastl.Bastion({
