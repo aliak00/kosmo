@@ -26,11 +26,11 @@ var images = {
 };
 
 module.exports = function(region) {
-    if (!publicSubnets[region]) {
+    if (!publicSubnetsMap[region]) {
         throw new Error('Unsupported public subnet region');
     }
 
-    if (!privateSubnets[region]) {
+    if (!privateSubnetsMap[region]) {
         throw new Error('Unsupported private subnet region');
     }
 
