@@ -45,7 +45,7 @@ function Bastion(options) {
 
     addref('eip', novaform.ec2.EIP(mkname('Eip'), {
         Domain: 'vpc',
-        DependsOn: vpc.refs['gateway'].name
+        DependsOn: vpc.refs['gateway-attachment'].name
     }));
 
     addref('sg', novaform.ec2.SecurityGroup(mkname('Sg'), {
