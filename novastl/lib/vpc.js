@@ -6,7 +6,7 @@ var novaform = require('novaform')
     Refs include:
     - vpc: ec2.VPC
     - igw: ec2.InternetGateway
-    - gatwayAttachment: ec2.VPCGatewayAttachment
+    - gateway: ec2.VPCGatewayAttachment
     - private: {az: {private refs per az}}
     - public: {az: {public refs per az}}
 
@@ -61,7 +61,7 @@ function Vpc(options) {
         }
     });
 
-    refs['gatewayAttachment'] = novaform.ec2.VPCGatewayAttachment(mkname('GatewayAttachment'), {
+    refs['gateway'] = novaform.ec2.VPCGatewayAttachment(mkname('GatewayAttachment'), {
         VpcId: refs['vpc'],
         InternetGatewayId: refs['igw']
     });
@@ -116,7 +116,7 @@ function Vpc(options) {
                 RouteTableId: ref('route-table'),
                 DestinationCidrBlock: '0.0.0.0/0',
                 GatewayId: refs['igw'],
-                DependsOn: refs['gatewayAttachment'].name
+                DependsOn: refs['gateway'].name
             }));
 
             addref('subnet-rt-association',  novaform.ec2.SubnetRouteTableAssociation(mknameAz('SubnetRouteTableAssociation'), {
