@@ -229,7 +229,7 @@ function addPrivateSubnets(refs, privateSubnets) {
             RuleAction: 'allow',
             Egress: false,
             CidrBlock: refs['vpc'].properties.CidrBlock,
-            PortRange: [0, 65536]
+            PortRange: [0, 65535]
         });
 
         privateRefs[az]['inbound-icmp'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundIcmp', az), {
