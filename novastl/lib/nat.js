@@ -166,7 +166,7 @@ function Nat(options) {
         }
     }));
 
-    addref('profile', novaform.iam.InstanceProfile(mkname('IAmInstanceProfile'), {
+    addref('instance-profile', novaform.iam.InstanceProfile(mkname('IAmInstanceProfile'), {
         Path: novaform.join('', ['/', novaform.refs.StackName, '/nat/']),
         Roles: [refs['role']]
     }));
