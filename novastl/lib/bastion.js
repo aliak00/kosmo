@@ -150,7 +150,7 @@ function Bastion(options) {
         UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/bastion-user-data.sh', {
             ASGName: name,
             LaunchConfigName: mkname('LaunchConfig'),
-            EIP: novaform.getAtt(refs['eip'].name, 'AllocationId')
+            EIPAllocId: novaform.getAtt(refs['eip'].name, 'AllocationId')
         })),
         DependsOn: refs['role'].name
     }, {

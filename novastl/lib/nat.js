@@ -180,7 +180,7 @@ function Nat(options) {
         IamInstanceProfile: refs['instance-profile'],
         UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/nat-user-data.sh', {
             ASGName: name,
-            VPCName: vpc.refs['vpc'].name,
+            VPCNameRef: novaform.ref(vpc.refs['vpc'].name),
             LaunchConfigName: mkname('LaunchConfig'),
         }))
     }, {
