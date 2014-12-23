@@ -212,8 +212,8 @@ function addPrivateSubnets(refs, privateSubnets) {
         });
 
         privateRefs[az]['subnet-rt-association'] = novaform.ec2.SubnetRouteTableAssociation(mknameAz('PrivateSubnetRouteTableAssociation', az), {
-            SubnetId: privateRefs['subnet'],
-            RouteTableId: privateRefs['route-table']
+            SubnetId: privateRefs[az]['subnet'],
+            RouteTableId: privateRefs[az]['route-table']
         });
 
         privateRefs[az]['nacl'] = novaform.ec2.NetworkAcl(mknameAz('PrivateNacl', az), {
