@@ -46,7 +46,7 @@ else
   done
 fi
 # Turn off source / destination check
-aws ec2 modify-instance-attribute --instance-id $instance_id --source-dest-check "{\\"Value\\": false}" &&
+aws ec2 modify-instance-attribute --instance-id $instance_id --source-dest-check "{\"Value\": false}" &&
   log "Source Destination check disabled for $instance_id."
 log "Configuration of HA NAT complete."
 /opt/aws/bin/cfn-init -v \
