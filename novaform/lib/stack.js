@@ -14,21 +14,27 @@ function Stack(name, description) {
     this.outputs = {};
 }
 
-Stack.prototype.add = function(stackItem) {
-    if (stackItem instanceof ResourceGroup) {
-        this.resourceGroups.push(stackItem);
-    } else if (stackItem instanceof Resource) {
-        var rg = ResourceGroup();
-        rg.add(stackItem);
-        this.resourceGroups.push(rg);
-    } else if (stackItem instanceof Output) {
-        if (this.outputs[stackItem.name]) {
-            throw new Error('Cannot add duplicate output: ' + stackItem.name);
-        }
-        this.outputs[stackItem.name] = stackItem;
-    } else {
-        throw new Error('stackItem must be instanceof Resource, ResourceGroup or Output');
+Stack.prototype.add = function(stackItems) {
+    if (!(stackItems instanceof Array)) {
+        stackItems = [stackItems];
     }
+    var that = this;
+    stackItems.forEach(function(stackItem) {
+        if (stackItem instanceof ResourceGroup) {
+            that.resourceGroups.push(stackItem);
+        } else if (stackItem instanceof Resource) {
+            var rg = ResourceGroup();
+            rg.add(stackItem);
+            that.resourceGroups.push(rg);
+        } else if (stackItem instanceof Output) {
+            if (that.outputs[stackItem.name]) {
+                throw new Error('Cannot add duplicate output: ' + stackItem.name);
+            }
+            that.outputs[stackItem.name] = stackItem;
+        } else {
+            throw new Error('stackItem must be instanceof Resource, ResourceGroup or Output');
+        }
+    });
 }
 
 Stack.prototype.toObject = function() {

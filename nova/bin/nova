@@ -5,6 +5,7 @@ var nova = require('../lib')
     , getopt = require('node-getopt')
     , AWS = require('aws-sdk')
     , _ = require('underscore')
+    , fs = require('fs')
     , util = require('util');
 
 function parseArguments(commands) {
@@ -87,10 +88,53 @@ function showCommandHelp(opts, command, errorMessage) {
 ', commandName, commandUsage, commandName, commandOptions));
 }
 
-function loadConfiguration() {
-    var credentials = new AWS.SharedIniFileCredentials({profile: opts.commonOptions.profile});
+function init(callback) {
+    var credentials;
+
+    if (!credentials && opts.commonOptions.profile) {
+        var options = {
+            profile : opts.commonOptions.profile,
+        };
+        credentials = new AWS.SharedIniFileCredentials(options);
+        credentials.refresh(function(err) {
+            if (err) {
+                credentials = null;
+            }
+        });
+    }
+
+    if (!credentials) {
+        credentials = new AWS.EnvironmentCredentials('AWS');
+        credentials.refresh(function(err) {
+            if (err) {
+                credentials = null;
+            }
+        });
+    }
+
+    if (!credentials) {
+        callback('Failed to initialize AWS - make sure you provide --profile or set AWS_ACCESS_KEY_ID env var');
+    }
+
     AWS.config.credentials = credentials;
     AWS.config.logger = process.stdout;
+}
+
+function loadConfiguration() {
+    var default_config = {
+        s3: {
+            region: null,
+            bucket: null,
+            keyPrefix: '',
+        }
+    };
+
+    var filename = process.env['HOME'] + '/.novacfg';
+    if (fs.existsSync(filename)) {
+        var data = fs.readFileSync(filename);
+        var config = JSON.parse(data) || {};
+    }
+    return _.extend(default_config, config);
 }
 
 var opts = parseArguments(nova.commands);
@@ -109,9 +153,13 @@ if (!opts.command) {
     process.exit(0);
 }
 
-loadConfiguration();
+var config = loadConfiguration();
+init(function(err) {
+    opts.showHelp(err);
+    process.exit(0);
+});
 
-var command = new opts.command(opts.commonOptions, opts.commandArguments, function help(errorMessage) {
+var command = new opts.command(config, opts.commonOptions, opts.commandArguments, function help(errorMessage) {
     showCommandHelp(opts, opts.command, errorMessage);
     process.exit(0);
 });

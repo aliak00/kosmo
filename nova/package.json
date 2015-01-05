@@ -16,6 +16,7 @@
     "node-getopt": "^0.2.3",
     "novaform": "*",
     "novastl": "*",
+    "q": "^1.1.2",
     "underscore": "^1.7.0"
   },
   "bin": {
