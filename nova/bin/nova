@@ -32,6 +32,7 @@ function parseArguments(commands) {
     var commonOpts = getopt.create([
         ['p', 'profile=ARG', 'set which aws profile to use for credentials'],
         ['v', 'verbose', 'Print more stuff'],
+        ['f', 'output-format=ARG', 'Output format (json or text)'],
         ['h', 'help', 'Display help']
     ]);
 
@@ -61,6 +62,12 @@ Commands:\n\
         }
         console.error(commonOpts.getHelp());
     };
+
+    var outputFormat = opts.options['output-format'];
+    if (outputFormat !== 'text' && outputFormat !== 'json') {
+        showHelp('Invalid output format');
+        process.exit(0);
+    }
 
     return {
         commonArguments: commonArgs,

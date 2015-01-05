@@ -5,7 +5,9 @@ var getopt = require('node-getopt')
     , fs = require('fs')
     , novaform = require('novaform')
     , novastl = require('novastl')
-    , AWS = require('aws-sdk');
+    , AWS = require('aws-sdk')
+    , uuid = require('node-uuid')
+    , moment = require('moment');
 
 var cmdopts = module.exports.opts = getopt.create([
     ['w', 'wait', 'Wait for completion'],
@@ -83,27 +85,41 @@ Command.prototype.execute = function() {
         if (that.commonOptions.verbose) {
             console.log('Generating cloudformation template...');
         }
+
         var stackName = that.ref.makeStackName();
+        var deploymentDate = moment.utc();
+        var deploymentId = uuid.v4();
+
         var result = that.component.build(dependencies);
         var stack = novaform.Stack(stackName);
         stack.add(result.resourceGroups);
         stack.add(result.outputs);
 
         var templateBody = stack.toJson();
-        return [stackName,templateBody];
-    }).spread(function(stackName, templateBody) {
+        return {
+            projectName: that.ref.project,
+            componentName: that.ref.component,
+            deploymentDate: deploymentDate,
+            deploymentId: deploymentId,
+            stackName: stackName,
+            templateBody: templateBody,
+        };
+    }).then(function(deploymentConfig) {
         if (that.commonOptions.verbose) {
             console.log('Uploading cloudformation template to S3...');
         }
 
         var bucketname = that.config.s3.bucket;
         var region = that.config.s3.region;
-        var keypath = util.format('%s%s', that.config.s3.keyPrefix, stackName);
+        var datestring = deploymentConfig.deploymentDate.format();
+        var keypath = util.format('%s%s/%s-%s',
+            that.config.s3.keyPrefix, that.ref.project,
+            deploymentConfig.stackName, datestring);
 
         var params = {
             Bucket: bucketname,
             Key: keypath,
-            Body: templateBody
+            Body: deploymentConfig.templateBody,
         };
 
         function s3_endpoint(region) {
@@ -118,21 +134,40 @@ Command.prototype.execute = function() {
         return s3upload(params).then(function() {
             var s3endpoint = s3_endpoint(that.config.s3.region);
             var url = util.format('%s/%s/%s', s3endpoint, bucketname, keypath);
-            return url;
+            return _.extend(deploymentConfig, {
+                templateUrl: url,
+            });
         }).catch(function(e) {
             throw new Error(util.format('Failed to upload to S3: %s', JSON.stringify(e)));
         });
-    }).then(function(templateUrl) {
+    }).then(function(deploymentConfig) {
         if (that.commonOptions.verbose) {
             console.log('Deploying cloudformation stack...');
         }
         // TODO: initiate cloudformation deployment
-    }).then(function() {
+        return deploymentConfig;
+    }).then(function(deploymentConfig) {
         // TODO: wait for completion
         // if (that.opts.wait) {
         // }
-    }).then(function() {
+        return deploymentConfig;
+    }).then(function(deploymentConfig) {
         // TODO: fetch stack output and print it
+        var output = {
+            project: deploymentConfig.projectName,
+            component: deploymentConfig.componentName,
+            deploymentId: deploymentConfig.deploymentId,
+        };
+
+        if (that.commonOptions['output-format'] == 'json') {
+            console.log(output);
+        } else if (that.commonOptions['output-format'] == 'text') {
+            console.log('Output:\n')
+            for (var key in output) {
+                var value = output[key];
+                console.log(util.format('%s: %s', key, value));
+            }
+        }
     }).catch(function(e) {
         console.error(util.format('Internal error: %s', e.message));
     });
