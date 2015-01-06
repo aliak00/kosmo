@@ -32,6 +32,7 @@ function parseArguments(commands) {
     var commonOpts = getopt.create([
         ['p', 'profile=ARG', 'set which aws profile to use for credentials'],
         ['v', 'verbose', 'Print more stuff'],
+        ['d', 'debug', 'Print insane amount of logs'],
         ['f', 'output-format=ARG', 'Output format (json or text)'],
         ['h', 'help', 'Display help']
     ]);
@@ -67,6 +68,10 @@ Commands:\n\
     if (outputFormat !== 'text' && outputFormat !== 'json') {
         showHelp('Invalid output format');
         process.exit(0);
+    }
+
+    if (opts.options['debug']) {
+        opts.options['verbose'] = true;
     }
 
     return {
@@ -124,7 +129,10 @@ function init(callback) {
     }
 
     AWS.config.credentials = credentials;
-    AWS.config.logger = process.stdout;
+
+    if (opts.commonOptions.debug) {
+        AWS.config.logger = process.stdout;
+    }
 }
 
 function loadConfiguration() {
