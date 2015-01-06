@@ -159,6 +159,17 @@ function EIP(name, properties) {
 }
 EIP.prototype = Object.create(Resource.prototype);
 
+function Instance(name, properties) {
+    if (!(this instanceof Intance)) {
+        return new Intance(name, properties);
+    }
+
+    this.properties = properties;
+    this.type = 'AWS::EC2::Instance';
+    this.name = name;
+}
+Instance.prototype = Object.create(Resource.prototype);
+
 module.exports = {
     VPC: VPC,
     InternetGateway: InternetGateway,
@@ -173,5 +184,6 @@ module.exports = {
     SecurityGroup: SecurityGroup,
     SecurityGroupIngress: SecurityGroupIngress,
     SecurityGroupEgress: SecurityGroupEgress,
-    EIP: EIP
+    EIP: EIP,
+    Instance: Instance
 };
