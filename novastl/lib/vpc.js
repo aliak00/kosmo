@@ -1,6 +1,6 @@
 var novaform = require('novaform')
     , util = require('util')
-    , Template = require('./template')
+    , Template = require('./template');
 
 /**
     Refs include:
@@ -21,7 +21,10 @@ var novaform = require('novaform')
         - inbound-dynamic-ports: ec2.NetworkAclEntry
         - inbound-ssh: ec2.NetworkAclEntry
         - inbound-icmp: ec2.NetworkAclEntry
-        - outbound-tcp: ec2.NetworkAclEntry
+        - outbound-http: ec2.NetworkAclEntry
+        - outbound-https: ec2.NetworkAclEntry
+        - outbound-ssh: ec2.NetworkAclEntry
+        - outbound-dynamic-ports: ec2.NetworkAclEntry
         - outbound-icmp: ec2.NetworkAclEntry
         - subnet-nacl-association: ec2.SubnetNetworkAclAssociation
 
@@ -30,9 +33,12 @@ var novaform = require('novaform')
         - route-table: ec2.RouteTable
         - subnet-rt-association: ec2.SubnetRouteTableAssociation
         - nacl: ec2.NetworkAcl
-        - inbound-tcp: ec2.NetworkAclEntry
+        - inbound-dynamic-ports: ec2.NetworkAclEntry
+        - inbound-ssh: ec2.NetworkAclEntry
         - inbound-icmp: ec2.NetworkAclEntry
-        - outbound-tcp: ec2.NetworkAclEntry
+        - outbound-http: ec2.NetworkAclEntry
+        - outbound-https: ec2.NetworkAclEntry
+        - outbound-dynamic-ports: ec2.NetworkAclEntry
         - outbound-icmp: ec2.NetworkAclEntry
         - subnet-nacl-association: ec2.SubnetNetworkAclAssociation
 **/
@@ -97,6 +103,12 @@ function addPublicSubnets(refs, subnets) {
         });
 
         var nacl = publicRefs[az]['nacl'];
+
+
+        //
+        // Inbound Network ACLs
+        //
+
         publicRefs[az]['inbound-http'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundHttp', az), {
             NetworkAclId: nacl,
             RuleNumber: 100,
@@ -117,24 +129,25 @@ function addPublicSubnets(refs, subnets) {
             PortRange: [443, 443]
         });
 
-        publicRefs[az]['inbound-dynamic-ports'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundDynamicPorts', az), {
+        publicRefs[az]['inbound-ssh'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundSsh', az), {
             NetworkAclId: nacl,
             RuleNumber: 102,
             Protocol: 6,
             RuleAction: 'allow',
             Egress: false,
             CidrBlock: '0.0.0.0/0',
-            PortRange: [1024, 65535]
+            PortRange: [22, 22]
         });
 
-        publicRefs[az]['inbound-ssh'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundSsh', az), {
+        // Allows inbound return traffic from requests originating in the subnet
+        publicRefs[az]['inbound-dynamic-ports'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundDynamicPorts', az), {
             NetworkAclId: nacl,
             RuleNumber: 103,
             Protocol: 6,
             RuleAction: 'allow',
             Egress: false,
             CidrBlock: '0.0.0.0/0',
-            PortRange: [22, 22]
+            PortRange: [1024, 65535]
         });
 
         publicRefs[az]['inbound-icmp'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundIcmp', az), {
@@ -150,19 +163,56 @@ function addPublicSubnets(refs, subnets) {
             }
         });
 
-       publicRefs[az]['outbound-tcp'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundTcp', az), {
+
+        //
+        // Outound Network ACLs
+        //
+
+        publicRefs[az]['outbound-http'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundHttp', az), {
             NetworkAclId: nacl,
             RuleNumber: 100,
             Protocol: 6,
             RuleAction: 'allow',
             Egress: true,
             CidrBlock: '0.0.0.0/0',
-            PortRange: [0, 65535]
+            PortRange: [80, 80]
+        });
+
+       publicRefs[az]['outbound-https'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundHttps', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 101,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [443, 443]
+        });
+
+       publicRefs[az]['outbound-ssh'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundSsh', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 102,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: refs['vpc'].properties.CidrBlock,
+            PortRange: [22, 22]
+        });
+
+        // Allows outbound responses to clients on the Internet
+        // for example, serving web pages to people visiting the web servers in the subnet
+        publicRefs[az]['outbound-dynamic-ports'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundDynamicPorts', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 103,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [1024, 65535]
         });
 
         publicRefs[az]['outbound-icmp'] = novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundIcmp', az), {
             NetworkAclId: nacl,
-            RuleNumber: 101,
+            RuleNumber: 104,
             Protocol: 1,
             RuleAction: 'allow',
             Egress: true,
@@ -222,46 +272,89 @@ function addPrivateSubnets(refs, privateSubnets) {
         });
 
         var nacl = privateRefs[az]['nacl'];
-        privateRefs[az]['inbound-tcp'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundTcp', az), {
+
+        //
+        // Inbound Network ACLs
+        //
+
+        // Allows inbound return traffic from NAT instance in the public subnet for requests originating in the private subnet
+        privateRefs[az]['inbound-dynamic-ports'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundDynamicPorts', az), {
             NetworkAclId: nacl,
             RuleNumber: 100,
             Protocol: 6,
             RuleAction: 'allow',
             Egress: false,
             CidrBlock: refs['vpc'].properties.CidrBlock,
-            PortRange: [0, 65535]
+            PortRange: [1024, 65535]
+        });
+
+        privateRefs[az]['inbound-ssh'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundSsh', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 101,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: refs['vpc'].properties.CidrBlock,
+            PortRange: [22, 22]
         });
 
         privateRefs[az]['inbound-icmp'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundIcmp', az), {
             NetworkAclId: nacl,
-            RuleNumber: 101,
+            RuleNumber: 102,
             Protocol: 1,
             RuleAction: 'allow',
             Egress: false,
-            CidrBlock: '0.0.0.0/0',
+            CidrBlock: refs['vpc'].properties.CidrBlock,
             Icmp: {
                 Code: -1,
                 Type: -1
             }
         });
 
-       privateRefs[az]['outbound-tcp'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateOutboundTcp', az), {
+
+        //
+        // Outound Network ACLs
+        //
+
+        privateRefs[az]['outbound-http'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateOutboundHttp', az), {
             NetworkAclId: nacl,
             RuleNumber: 100,
             Protocol: 6,
             RuleAction: 'allow',
             Egress: true,
             CidrBlock: '0.0.0.0/0',
-            PortRange: [0, 65535]
+            PortRange: [80, 80]
+        });
+
+        privateRefs[az]['outbound-https'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateOutboundHttps', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 101,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [443, 443]
+        });
+
+        // Allows outbound responses to the public subnet
+        // for example, responses to web servers in the public subnet that are communicating with DB Servers in the private subnet
+        privateRefs[az]['outbound-dynamic-ports'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateOutboundDynamicPorts', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 102,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: refs['vpc'].properties.CidrBlock,
+            PortRange: [1024, 65535]
         });
 
         privateRefs[az]['outbound-icmp'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateOutboundIcmp', az), {
             NetworkAclId: nacl,
-            RuleNumber: 101,
+            RuleNumber: 103,
             Protocol: 1,
             RuleAction: 'allow',
             Egress: true,
-            CidrBlock: '0.0.0.0/0',
+            CidrBlock: refs['vpc'].properties.CidrBlock,
             Icmp: {
                 Code: -1,
                 Type: -1
