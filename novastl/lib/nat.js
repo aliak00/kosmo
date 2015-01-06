@@ -93,20 +93,20 @@ function Nat(options) {
         });
     }
 
-    addref('sgi-icmp', novaform.ec2.SecurityGroupIngress(mkname('SgiIcmp'), {
-        GroupId: refs['sg'],
-        IpProtocol: 'icmp',
-        FromPort: -1,
-        ToPort: -1,
-        CidrIp: vpc.refs['vpc'].properties.CidrBlock
-    }));
-
     addref('sgi-ssh', novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
         GroupId: refs['sg'],
         IpProtocol: 'tcp',
         FromPort: 22,
         ToPort: 22,
         CidrIp: allowedSshCidr
+    }));
+
+    addref('sgi-icmp', novaform.ec2.SecurityGroupIngress(mkname('SgiIcmp'), {
+        GroupId: refs['sg'],
+        IpProtocol: 'icmp',
+        FromPort: -1,
+        ToPort: -1,
+        CidrIp: vpc.refs['vpc'].properties.CidrBlock
     }));
 
     addref('sge-http', novaform.ec2.SecurityGroupEgress(mkname('SgeHttp'), {
