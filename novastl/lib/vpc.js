@@ -284,7 +284,7 @@ function addPrivateSubnets(refs, privateSubnets) {
             Protocol: 6,
             RuleAction: 'allow',
             Egress: false,
-            CidrBlock: refs['vpc'].properties.CidrBlock,
+            CidrBlock: '0.0.0.0/0',
             PortRange: [1024, 65535]
         });
 
