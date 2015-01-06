@@ -7,7 +7,8 @@ var getopt = require('node-getopt')
     , novastl = require('novastl')
     , AWS = require('aws-sdk')
     , uuid = require('node-uuid')
-    , moment = require('moment');
+    , moment = require('moment')
+    , stackUtils = require('../stack-utils');
 
 var cmdopts = module.exports.opts = getopt.create([
     ['w', 'wait', 'Wait for completion'],
@@ -145,11 +146,76 @@ Command.prototype.execute = function() {
             console.log('Deploying cloudformation stack...');
         }
         // TODO: initiate cloudformation deployment
-        return deploymentConfig;
+        var region = that.config.s3.region;
+        var cfn = new AWS.CloudFormation({ region : region });
+        var getStackStatus = q.nbind(stackUtils.getStackStatus, stackUtils);
+        return getStackStatus(cfn, deploymentConfig.stackName).then(function(status) {
+            if (status === stackUtils.Status.DOES_NOT_EXIST) {
+                // create a new stack
+                var createStack = q.nbind(cfn.createStack, cfn);
+                return createStack({
+                    Capabilities: [ 'CAPABILITY_IAM' ], // TODO: this is only needed for some stacks that create iam roles, hm.
+                    StackName: deploymentConfig.stackName,
+                    TemplateURL: deploymentConfig.templateUrl,
+                    Tags: [
+                        { Key: 'deployment-id', Value: deploymentConfig.deploymentId },
+                    ],
+                }).then(function(data) {
+                    return _.extend(deploymentConfig, {
+                        cfn: cfn,
+                        stackId: data.StackId,
+                    });
+                }).catch(function(err) {
+                    throw new Error(util.format('Failed to initiate stack creation:\n%j', err));
+                });
+            } else {
+                if (!stackUtils.isStatusComplete(status)) {
+                    // already in progress?
+                    throw new Error(util.format('Stack is not in a valid state for deployment (%s)', status));
+                }
+                // TODO: update
+                return deploymentConfig;
+            }
+        });
     }).then(function(deploymentConfig) {
-        // TODO: wait for completion
-        // if (that.opts.wait) {
-        // }
+        // wait for completion
+        if (that.commandOptions.wait) {
+            var cfn = deploymentConfig.cfn;
+
+            var maxWaitSeconds = 15 * 60;
+            var start = moment();
+            var maxEnd = moment(start);
+            maxEnd.add(maxWaitSeconds, 'seconds');
+
+            var getStackStatus = q.nbind(stackUtils.getStackStatus, stackUtils);
+
+            if (that.commonOptions.verbose) {
+                console.log('Waiting for deployment to complete...');
+            }
+
+            var f = function() {
+                return getStackStatus(cfn, deploymentConfig.stackName).then(function(status) {
+                    if (stackUtils.isStatusFailed(status)
+                        || stackUtils.isStatusRolledBack(status)
+                        || stackUtils.isStatusRollingback(status)) {
+                        throw new Error('Stack deployment failed');
+                    }
+                    if (!stackUtils.isStatusComplete(status)) {
+                        if (moment().isAfter(maxEnd)) {
+                            throw new Error('Timeout');
+                        }
+
+                        if (that.commonOptions.verbose) {
+                            console.log('Still waiting...');
+                        }
+                        return q.delay(1000).then(f);
+                    }
+                    return deploymentConfig;
+                });
+            };
+
+            return f();
+        }
         return deploymentConfig;
     }).then(function(deploymentConfig) {
         // TODO: fetch stack output and print it
@@ -157,6 +223,7 @@ Command.prototype.execute = function() {
             project: deploymentConfig.projectName,
             component: deploymentConfig.componentName,
             deploymentId: deploymentConfig.deploymentId,
+            stackId: deploymentConfig.stackId,
         };
 
         if (that.commonOptions['output-format'] == 'json') {
@@ -169,6 +236,7 @@ Command.prototype.execute = function() {
             }
         }
     }).catch(function(e) {
+        // TODO: differentiate between internal errors and valid exits like timeout or stack deployment failed
         console.error(util.format('Internal error: %s', e.message));
     });
 }
