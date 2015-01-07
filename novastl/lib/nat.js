@@ -54,8 +54,7 @@ function Nat(options) {
         GroupDescription: name + ' security group',
         Tags: {
             Application: novaform.refs.StackId,
-            Name: novaform.join('-', [novaform.refs.StackName, mkname('Sg')]),
-            Network: 'public'
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('Sg')])
         }
     }));
 
