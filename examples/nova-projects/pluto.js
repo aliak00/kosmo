@@ -55,7 +55,7 @@ module.exports = function(novaform, novastl) {
             var nat = novastl.Nat({
                 vpc: vpc,
                 allowedSshCidr: '0.0.0.0/0',
-                keyName: 'test-key-pair',
+                keyName: 'ddenis', // TODO: how do we want to bootstrap key pairs?
                 imageId: config.genericImageId,
                 instanceType: 't2.micro'
             });
