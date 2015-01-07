@@ -24,6 +24,7 @@ sudo npm link
 
 cd <nova-repo>/nova
 sudo npm link novaform
+sudo npm link novastl
 npm install
 sudo npm link
 ```
