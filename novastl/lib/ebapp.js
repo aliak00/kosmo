@@ -112,6 +112,11 @@ function EBApp(options) {
         Description: name + ' beanstalk environment',
         VersionLabel: refs['version'],
         SolutionStackName: '64bit Amazon Linux 2014.09 v1.0.9 running Node.js',
+        Tier: {
+            Name: 'WebServer',
+            Type: 'Standard',
+            Version: '1.0'
+        },
         OptionSettings: templateOptionSettings
     });
 
