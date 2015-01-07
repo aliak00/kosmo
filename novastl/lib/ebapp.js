@@ -58,6 +58,7 @@ function EBApp(options) {
     });
 
     refs['application'] = novaform.eb.Application(name, {
+        ApplicationName: name,
         Description: name + ' beanstalk application'
     });
 
