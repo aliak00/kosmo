@@ -1,5 +1,3 @@
-var _ = require('underscore');
-
 var publicSubnetsMap = {
     'eu-west-1': {
         'eu-west-1a': '10.42.1.0/24',
@@ -62,14 +60,15 @@ module.exports = function(novaform, novastl) {
                 instanceType: 't2.micro'
             });
 
-            var privateSubnetRefs = _.map(vpc.refs.private, function(az) {
-                return az.subnet;
-            });
-
-            var vpcPrivateSubnetOutput = novaform.Output('privateSubnets', {
-                Value: novaform.join(',', privateSubnetRefs),
-                Description: 'Private subnets from ' + vpc.name
-            });
+            function subnets(obj) {
+                var result = [];
+                for (var az in obj) {
+                    result.push(obj[az].subnet);
+                }
+                return result;
+            }
+            var privateSubnetRefs = subnets(vpc.refs.private);
+            var publicSubnetRefs = subnets(vpc.refs.public);
 
             return {
                 resourceGroups: [
@@ -78,7 +77,9 @@ module.exports = function(novaform, novastl) {
                 ],
 
                 outputs: [
-                    vpcPrivateSubnetOutput
+                    novaform.Output('vpcId', vpc.refs.vpc),
+                    novaform.Output('privateSubnets', novaform.join(',', privateSubnetRefs)),
+                    novaform.Output('publicSubnets', novaform.join(',', publicSubnetRefs)),
                 ],
             };
         }
