@@ -277,10 +277,31 @@ function addPrivateSubnets(refs, privateSubnets) {
         // Inbound Network ACLs
         //
 
+        // Allow vpc cidr range to communicate with private subnet
+        privateRefs[az]['inbound-http'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundHttp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 100,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: refs['vpc'].properties.CidrBlock,
+            PortRange: [80, 80]
+        });
+
+        privateRefs[az]['inbound-https'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundHttps', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 101,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: refs['vpc'].properties.CidrBlock,
+            PortRange: [443, 443]
+        });
+
         // Allows inbound return traffic from NAT instance in the public subnet for requests originating in the private subnet
         privateRefs[az]['inbound-dynamic-ports'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundDynamicPorts', az), {
             NetworkAclId: nacl,
-            RuleNumber: 100,
+            RuleNumber: 102,
             Protocol: 6,
             RuleAction: 'allow',
             Egress: false,
@@ -288,9 +309,10 @@ function addPrivateSubnets(refs, privateSubnets) {
             PortRange: [1024, 65535]
         });
 
+        // Allow ssh from within the vpc
         privateRefs[az]['inbound-ssh'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundSsh', az), {
             NetworkAclId: nacl,
-            RuleNumber: 101,
+            RuleNumber: 103,
             Protocol: 6,
             RuleAction: 'allow',
             Egress: false,
@@ -300,7 +322,7 @@ function addPrivateSubnets(refs, privateSubnets) {
 
         privateRefs[az]['inbound-icmp'] = novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundIcmp', az), {
             NetworkAclId: nacl,
-            RuleNumber: 102,
+            RuleNumber: 104,
             Protocol: 1,
             RuleAction: 'allow',
             Egress: false,
