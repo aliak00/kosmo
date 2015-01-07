@@ -68,7 +68,20 @@ function EBApp(options) {
         SourceBundle: sourceBundle
     });
 
+    refs['sg'] = novaform.ec2.SecurityGroup(mkname('Sg'), {
+        VpcId: vpc,
+        GroupDescription: name + ' security group',
+        Tags: {
+            Application: novaform.refs.StackId,
+            Name: novaform.join('-', [novaform.refs.StackName, mkname('Sg')])
+        }
+    });
+
     var templateOptionSettings = [{
+        Namespace: 'aws:autoscaling:launchconfiguration',
+        OptionName: 'SecurityGroups',
+        Value: refs['sg']
+    },{
         Namespace: 'aws:autoscaling:launchconfiguration',
         OptionName: 'SSHSourceRestriction',
         Value: novaform.join('', ['tcp,22,22,', bastionSecurityGroup])
