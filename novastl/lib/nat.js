@@ -66,16 +66,16 @@ function Nat(options) {
         var subnet = subnetsPerAZ[i];
         var cidr = subnet.properties.CidrBlock;
         var availabilityZone = subnet.properties.AvailabilityZone;
-        var azIdentifier = availabilityZone[availabilityZone.length - 1];
+        var az = availabilityZone[availabilityZone.length - 1];
 
         refs.private = refs.private || {};
-        refs.private[azIdentifier] = refs.private[azIdentifier] || {};
+        refs.private[az] = refs.private[az] || {};
 
         function mknameAz(str) {
-            return util.format('%sAZ%s', mkname(str), azIdentifier);
+            return util.format('%sAZ%s', mkname(str), az);
         }
 
-        refs.private[azIdentifier]['sgi-http'] = novaform.ec2.SecurityGroupIngress(mknameAz('SgiHttpPrivate'), {
+        refs.private[az]['sgi-http'] = novaform.ec2.SecurityGroupIngress(mknameAz('SgiHttpPrivate'), {
             GroupId: refs['sg'],
             IpProtocol: 'tcp',
             FromPort: 80,
@@ -83,7 +83,7 @@ function Nat(options) {
             CidrIp: cidr
         });
 
-        refs.private[azIdentifier]['sgi-https'] = novaform.ec2.SecurityGroupIngress(mknameAz('SgiHttpsPrivate'), {
+        refs.private[az]['sgi-https'] = novaform.ec2.SecurityGroupIngress(mknameAz('SgiHttpsPrivate'), {
             GroupId: refs['sg'],
             IpProtocol: 'tcp',
             FromPort: 443,
