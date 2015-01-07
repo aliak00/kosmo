@@ -90,30 +90,22 @@ function EBApp(options) {
         OptionName: 'EC2KeyName',
         Value: keyName
     },{
+        Namespace: 'aws:autoscaling:launchconfiguration',
+        OptionName: 'IamInstanceProfile',
+        Value: refs['instance-profile']
+    },{
         Namespace: 'aws:ec2:vpc',
         OptionName: 'VPCId',
         Value: vpc
     },{
-        Namespace: 'aws:autoscaling:launchconfiguration',
-        OptionName: 'IamInstanceProfile',
-        Value: refs['instance-profile']
+        Namespace: 'aws:ec2:vpc',
+        OptionName: 'Subnets',
+        Value: novaform.join(',', privateSubnets)
+    },{
+        Namespace: 'aws:ec2:vpc',
+        OptionName: 'ELBSubnets',
+        Value: novaform.join(',', publicSubnets)
     }];
-
-    privateSubnets.forEach(function(subnet) {
-        templateOptionSettings.push({
-            Namespace: 'aws:ec2:vpc',
-            OptionName: 'Subnets',
-            Value: subnet
-        });
-    });
-
-    publicSubnets.forEach(function(subnet) {
-        templateOptionSettings.push({
-            Namespace: 'aws:ec2:vpc',
-            OptionName: 'ELBSubnets',
-            Value: subnet
-        });
-    });
 
     refs['environment'] = novaform.eb.Environment(mkname('Environment'), {
         ApplicationName: refs['application'],
