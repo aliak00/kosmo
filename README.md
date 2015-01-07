@@ -31,9 +31,9 @@ sudo npm link
 
 ## Examples
 
-To run examples with a dev setup
+To run examples templates with a dev setup. These examples outout a cloudformation stack
 ```bash
-cd ../examples
+cd ../examples/cf-templates
 sudo npm link novastl
 sudo npm link novaform
 npm install
