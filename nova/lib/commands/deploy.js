@@ -68,6 +68,34 @@ function Command(config, commonOptions, args, helpCallback) {
     }
 }
 
+Command.prototype._waitForStack = function(options, shouldStopCallback) {
+    var cfn = options.cfn;
+    var stackName = options.stackName;
+    var maxWaitSeconds = options.maxWaitSeconds || 15 * 60;
+    var waitSeconds = options.waitSeconds || 1;
+
+    var start = moment();
+    var maxEnd = moment(start);
+    maxEnd.add(maxWaitSeconds, 'seconds');
+
+    var getStackStatus = q.nbind(stackUtils.getStackStatus, stackUtils);
+
+    var f = function() {
+        return getStackStatus(cfn, stackName).then(function(status) {
+            var callbackResult = shouldStopCallback(status);
+            if (callbackResult) {
+                return callbackResult;
+            }
+            if (moment().isAfter(maxEnd)) {
+                throw new Error('Timeout');
+            }
+            return q.delay(waitSeconds * 1000).then(f);
+        });
+    };
+
+    return f();
+};
+
 Command.prototype.execute = function() {
     var that = this;
     return q().then(function() {
@@ -142,14 +170,46 @@ Command.prototype.execute = function() {
             throw new Error(util.format('Failed to upload to S3: %s', JSON.stringify(e)));
         });
     }).then(function(deploymentConfig) {
-        if (that.commonOptions.verbose) {
-            console.log('Deploying cloudformation stack...');
-        }
-        // TODO: initiate cloudformation deployment
-        var region = that.config.s3.region;
-        var cfn = new AWS.CloudFormation({ region : region });
+        // initiate cloudformation deployment
+        var region = that.component.region;
+        var cfn = that.cfn = new AWS.CloudFormation({ region : region });
         var getStackStatus = q.nbind(stackUtils.getStackStatus, stackUtils);
+        if (that.commonOptions.verbose) {
+            console.log('Checking cloudformation stack status...');
+        }
         return getStackStatus(cfn, deploymentConfig.stackName).then(function(status) {
+            if (status !== stackUtils.Status.ROLLBACK_COMPLETE) {
+                // all good, nothing to do here.
+                return status;
+            }
+
+            if (that.commonOptions.verbose) {
+                console.log('Stack was stuck in a rollback state, deleting it before deploying...');
+            }
+
+            // oh, previous stack creation failed and we cannot update failed stack
+            // the only option is to delete the stack and create it again.
+            var deleteStack = q.nbind(cfn.deleteStack, cfn);
+            return deleteStack({
+                StackName: deploymentConfig.stackName
+            }).then(function(data) {
+                return that._waitForStack({
+                    cfn: cfn,
+                    stackName: deploymentConfig.stackName,
+                }, function(status) {
+                    if (status === stackUtils.Status.DOES_NOT_EXIST) {
+                        return status;
+                    }
+                    console.log('Still waiting...');
+                    return null;
+                });
+            }).catch(function(err) {
+                throw new Error(util.format('Failed to delete stack "%s": %j', deploymentConfig.stackName, err));
+            });
+        }).then(function(status) {
+            if (that.commonOptions.verbose) {
+                console.log('Deploying cloudformation stack...');
+            }
             if (status === stackUtils.Status.DOES_NOT_EXIST) {
                 // create a new stack
                 var createStack = q.nbind(cfn.createStack, cfn);
@@ -158,7 +218,8 @@ Command.prototype.execute = function() {
                     StackName: deploymentConfig.stackName,
                     TemplateURL: deploymentConfig.templateUrl,
                     Tags: [
-                        { Key: 'deployment-id', Value: deploymentConfig.deploymentId },
+                        { Key: 'nova-project', Value: deploymentConfig.projectName },
+                        { Key: 'nova-component', Value: deploymentConfig.componentName },
                     ],
                 }).then(function(data) {
                     return _.extend(deploymentConfig, {
@@ -173,48 +234,47 @@ Command.prototype.execute = function() {
                     // already in progress?
                     throw new Error(util.format('Stack is not in a valid state for deployment (%s)', status));
                 }
-                // TODO: update
-                return deploymentConfig;
+
+                // update an existing stack
+                var updateStack = q.nbind(cfn.updateStack, cfn);
+                return updateStack({
+                    Capabilities: [ 'CAPABILITY_IAM' ], // TODO: this is only needed for some stacks that create iam roles, hm.
+                    StackName: deploymentConfig.stackName,
+                    TemplateURL: deploymentConfig.templateUrl,
+                }).then(function(data) {
+                    return _.extend(deploymentConfig, {
+                        cfn: cfn,
+                        stackId: data.StackId,
+                    });
+                }).catch(function(err) {
+                    throw new Error(util.format('Failed to initiate stack creation:\n%j', err));
+                });
             }
         });
     }).then(function(deploymentConfig) {
         // wait for completion
         if (that.commandOptions.wait) {
-            var cfn = deploymentConfig.cfn;
-
-            var maxWaitSeconds = 15 * 60;
-            var start = moment();
-            var maxEnd = moment(start);
-            maxEnd.add(maxWaitSeconds, 'seconds');
-
-            var getStackStatus = q.nbind(stackUtils.getStackStatus, stackUtils);
-
             if (that.commonOptions.verbose) {
                 console.log('Waiting for deployment to complete...');
             }
 
-            var f = function() {
-                return getStackStatus(cfn, deploymentConfig.stackName).then(function(status) {
-                    if (stackUtils.isStatusFailed(status)
-                        || stackUtils.isStatusRolledBack(status)
-                        || stackUtils.isStatusRollingback(status)) {
-                        throw new Error('Stack deployment failed');
+            return that._waitForStack({
+                cfn: deploymentConfig.cfn,
+                stackName: deploymentConfig.stackName,
+            }, function(status) {
+                if (stackUtils.isStatusFailed(status)
+                    || stackUtils.isStatusRolledBack(status)
+                    || stackUtils.isStatusRollingback(status)) {
+                    throw new Error('Stack deployment failed');
+                }
+                if (!stackUtils.isStatusComplete(status)) {
+                    if (that.commonOptions.verbose) {
+                        console.log('Still waiting...');
                     }
-                    if (!stackUtils.isStatusComplete(status)) {
-                        if (moment().isAfter(maxEnd)) {
-                            throw new Error('Timeout');
-                        }
-
-                        if (that.commonOptions.verbose) {
-                            console.log('Still waiting...');
-                        }
-                        return q.delay(1000).then(f);
-                    }
-                    return deploymentConfig;
-                });
-            };
-
-            return f();
+                    return null;
+                }
+                return deploymentConfig;
+            });
         }
         return deploymentConfig;
     }).then(function(deploymentConfig) {
@@ -237,7 +297,7 @@ Command.prototype.execute = function() {
         }
     }).catch(function(e) {
         // TODO: differentiate between internal errors and valid exits like timeout or stack deployment failed
-        console.error(util.format('Internal error: %s', e.message));
+        console.error(util.format('Internal error: %s', e.stack));
     });
 }
 
