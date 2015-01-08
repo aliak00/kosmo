@@ -64,7 +64,7 @@ Commands:\n\
         console.error(commonOpts.getHelp());
     };
 
-    var outputFormat = opts.options['output-format'];
+    var outputFormat = opts.options['output-format'] || 'json';
     if (outputFormat !== 'text' && outputFormat !== 'json') {
         showHelp('Invalid output format');
         process.exit(0);
