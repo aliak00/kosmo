@@ -1,0 +1,9 @@
+{
+  "name": "nova-examples",
+  "version": "0.0.0",
+  "dependencies": {
+    "novaform": "*",
+    "novastl": "*",
+    "underscore": "^1.7.0"
+  }
+}
