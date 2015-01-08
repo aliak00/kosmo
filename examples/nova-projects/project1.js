@@ -53,7 +53,7 @@ module.exports = function(novaform, novastl) {
             var nat = novastl.Nat({
                 vpc: vpc,
                 allowedSshCidr: '0.0.0.0/0',
-                keyName: 'test-key-pair',
+                keyName: 'stupid-key-pair',
                 imageId: config.genericImageId,
                 instanceType: 't2.micro'
             });
@@ -101,7 +101,7 @@ module.exports = function(novaform, novastl) {
 
     return {
         name: 'project1',
-        components [
+        components: [
             stack1, 
             stack2
         ]
