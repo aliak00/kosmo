@@ -15,18 +15,18 @@ Since this repo uses unpublished node modules, you have to do a little manual wo
 
 ```bash
 cd <nova-repo>/novaform
-sudo npm link
+npm link
 
 cd <nova-repo>/novastl
-sudo npm link novaform
+npm link novaform
 npm install
-sudo npm link
+npm link
 
 cd <nova-repo>/nova
-sudo npm link novaform
-sudo npm link novastl
+npm link novaform
+npm link novastl
 npm install
-sudo npm link
+npm link
 ```
 
 ## Examples
@@ -34,15 +34,15 @@ sudo npm link
 To run examples templates with a dev setup. These examples outout a cloudformation stack
 ```bash
 cd ../examples/cf-templates
-sudo npm link novastl
-sudo npm link novaform
+npm link novastl
+npm link novaform
 npm install
 node <example-file>.js
 ```
 
 ## Running nova
 
-You can run the following in the examples directory to see tentaive deployment structure
+You can run the following in the examples/nova-projects directory to deploy an example stack
 ```bash
-nova --region eu-central-1 --profile <aws-cli-profile> --validate project1/stack1
+nova --profile <aws-cli-profile> deploy project1/stack1
 ```
