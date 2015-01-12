@@ -400,7 +400,7 @@ function Vpc(options) {
     var vpcCidr = options.cidr;
     var publicSubnetsPerAz = options.publicSubnetsPerAz;
     var privateSubnetsPerAz = options.privateSubnetsPerAz;
-    var name = this.name = options.name || 'Vpc';
+    var name = this.name = options.name || 'Vpc'; // TODO: this.name should not be used anywhere.
 
     name = name.charAt(0).toUpperCase() + name.slice(1);
 
