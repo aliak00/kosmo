@@ -12,6 +12,8 @@ function Rds(options) {
         return new Rds(options);
     }
 
+    Template.call(this);
+
     var subnets = options.subnets;
     var name = options.name || 'mydb';
     var allocatedStorage = options.allocatedStorage || 5;
@@ -28,22 +30,20 @@ function Rds(options) {
         return name + str;
     }
 
-    var refs = {};
-
-    refs['subnet-group'] = novaform.rds.DBSubnetGroup(mkname('PrivateSubnet'), {
+    var subnetGroup = this._addResource(novaform.rds.DBSubnetGroup(mkname('PrivateSubnet'), {
         DBSubnetGroupDescription: originalName + ' db private subnets',
         SubnetIds: subnets,
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('PrivateSubnet')])
         }
-    });
+    }));
 
-    refs['instance'] = novaform.rds.DBInstance(mkname('Instance'), {
+    var dbinstance = this._addResource(novaform.rds.DBInstance(mkname('Instance'), {
         AllocatedStorage: allocatedStorage,
         DBInstanceClass: instanceClass,
         DBName: originalName,
-        DBSubnetGroupName: refs['subnet-group'],
+        DBSubnetGroupName: subnetGroup,
         Engine: 'postgres',
         EngineVersion: '9.3.3',
         MasterUsername: username,
@@ -52,9 +52,10 @@ function Rds(options) {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('Instance')])
         }
-    });
+    }));
 
-    this.refs = refs;
+    this.subnetGroup = subnetGroup;
+    this.dbinstance = dbinstance;
 }
 Rds.prototype = Object.create(Template.prototype);
 
