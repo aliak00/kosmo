@@ -28,7 +28,7 @@ var nat = novastl.Nat({
 var ebapp = novastl.EBApp({
     vpc: vpc.vpc,
     keyName: 'stupid-key-pair',
-    bastionSecurityGroup: bastion.refs['sg'],
+    bastionSecurityGroup: bastion.securityGroup,
     natSecurityGroup: nat.securityGroup,
     publicSubnets: vpc.publicSubnets,
     privateSubnets: vpc.privateSubnets,

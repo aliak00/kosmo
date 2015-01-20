@@ -22,6 +22,8 @@ function Bastion(options) {
         return new Bastion(options);
     }
 
+    Template.call(this);
+
     var vpc = options.vpc;
     var keyName = options.keyName;
     var imageId = options.imageId;
@@ -35,20 +37,12 @@ function Bastion(options) {
         return name + str;
     }
 
-    var refs = {};
-    function addref(key, value) {
-        if (refs[key]) {
-            throw new Error('Cannot add duplicate key: ' + key);
-        }
-        refs[key] = value;
-    }
-
-    addref('eip', novaform.ec2.EIP(mkname('Eip'), {
+    var elasticIp = this._addResource(novaform.ec2.EIP(mkname('Eip'), {
         Domain: 'vpc',
         DependsOn: vpc.internetGatewayAttachment.name
     }));
 
-    addref('sg', novaform.ec2.SecurityGroup(mkname('Sg'), {
+    var securityGroup = this._addResource(novaform.ec2.SecurityGroup(mkname('Sg'), {
         VpcId: vpc.vpc,
         GroupDescription: 'Bastion host security group',
         Tags: {
@@ -57,55 +51,55 @@ function Bastion(options) {
         }
     }));
 
-    addref('sgi-icmp', novaform.ec2.SecurityGroupIngress(mkname('SgiIcmp'), {
-        GroupId: refs['sg'],
+    this._addResource(novaform.ec2.SecurityGroupIngress(mkname('SgiIcmp'), {
+        GroupId: securityGroup,
         IpProtocol: 'icmp',
         FromPort: -1,
-        ToPort: -1, 
+        ToPort: -1,
         CidrIp: vpc.vpc.properties.CidrBlock
     }));
 
-    addref('sgi-ssh', novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
-        GroupId: refs['sg'],
+    this._addResource(novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
+        GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 22,
-        ToPort: 22, 
+        ToPort: 22,
         CidrIp: allowedSshCidr
     }));
 
-    addref('sge-http', novaform.ec2.SecurityGroupEgress(mkname('SgeHttp'), {
-        GroupId: refs['sg'],
+    this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeHttp'), {
+        GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 80,
         ToPort: 80,
         CidrIp: '0.0.0.0/0'
     }));
 
-    addref('sge-https', novaform.ec2.SecurityGroupEgress(mkname('SgeHttps'), {
-        GroupId: refs['sg'],
+    this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeHttps'), {
+        GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 443,
         ToPort: 443,
         CidrIp: '0.0.0.0/0'
     }));
 
-    addref('sge-icmp', novaform.ec2.SecurityGroupEgress(mkname('SgeIcmp'), {
-        GroupId: refs['sg'],
+    this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeIcmp'), {
+        GroupId: securityGroup,
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1,
         CidrIp: '0.0.0.0/0'
     }));
 
-    addref('sge-ssh', novaform.ec2.SecurityGroupEgress(mkname('SgeSsh'), {
-        GroupId: refs['sg'],
+    this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeSsh'), {
+        GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 22,
-        ToPort: 22, 
+        ToPort: 22,
         CidrIp: vpc.vpc.properties.CidrBlock
     }));
 
-    addref('role', novaform.iam.Role(mkname('IAmRole'), {
+    var role = this._addResource(novaform.iam.Role(mkname('IAmRole'), {
         AssumeRolePolicyDocument: {
             Version: '2012-10-17',
             Statement: [{
@@ -119,9 +113,9 @@ function Bastion(options) {
         Path: '/'
     }));
 
-    addref('policy', novaform.iam.Policy(mkname('IAmRolePolicy'), {
+    this._addResource(novaform.iam.Policy(mkname('IAmRolePolicy'), {
         PolicyName: 'root',
-        Roles: [refs['role']],
+        Roles: [ role ],
         PolicyDocument: {
             Version : '2012-10-17',
             Statement: [{
@@ -134,24 +128,24 @@ function Bastion(options) {
         }
     }));
 
-    addref('instance-profile', novaform.iam.InstanceProfile(mkname('IAmInstanceProfile'), {
+    var instanceProfile = this._addResource(novaform.iam.InstanceProfile(mkname('IAmInstanceProfile'), {
         Path: novaform.join('', ['/', novaform.refs.StackName, '/bastion/']),
-        Roles: [refs['role']]
+        Roles: [ role ]
     }));
 
-    addref('launch-config', novaform.asg.LaunchConfiguration(mkname('LaunchConfig'), {
+    var launchConfiguration = this._addResource(novaform.asg.LaunchConfiguration(mkname('LaunchConfig'), {
         KeyName: keyName,
         ImageId: imageId,
-        SecurityGroups: [refs['sg']],
+        SecurityGroups: [ securityGroup ],
         InstanceType: instanceType,
         AssociatePublicIpAddress: true,
-        IamInstanceProfile: refs['instance-profile'],
+        IamInstanceProfile: instanceProfile,
         UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/bastion-user-data.sh', {
             ASGName: name,
             LaunchConfigName: mkname('LaunchConfig'),
-            EIPAllocId: novaform.getAtt(refs['eip'].name, 'AllocationId')
+            EIPAllocId: novaform.getAtt(elasticIp.name, 'AllocationId')
         })),
-        DependsOn: refs['role'].name
+        DependsOn: role.name
     }, {
         'AWS::CloudFormation::Init': {
             'config': {
@@ -170,9 +164,9 @@ function Bastion(options) {
 
     var publicSubnets = vpc.publicSubnets;
 
-    addref('asg', novaform.asg.AutoScalingGroup(name, {
+    this._addResource(novaform.asg.AutoScalingGroup(name, {
         AvailabilityZones: publicAvailabilityZones,
-        LaunchConfigurationName: refs['launch-config'],
+        LaunchConfigurationName: launchConfiguration,
         VPCZoneIdentifier: publicSubnets,
         MinSize: 1,
         MaxSize: publicAvailabilityZones.length + 1, // 1 more for rolling update,
@@ -192,7 +186,7 @@ function Bastion(options) {
         }
     }));
 
-    this.refs = refs;
+    this.securityGroup = securityGroup;
 }
 
 Bastion.prototype = Object.create(Template.prototype);
