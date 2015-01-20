@@ -29,14 +29,14 @@ var ebapp = novastl.EBApp({
     vpc: vpc.vpc,
     keyName: 'stupid-key-pair',
     bastionSecurityGroup: bastion.refs['sg'],
-    natSecurityGroup: nat.refs['sg'],
+    natSecurityGroup: nat.securityGroup,
     publicSubnets: vpc.publicSubnets,
     privateSubnets: vpc.privateSubnets,
     sourceBundle: {
         S3Bucket: 'aliak-comoyo-example',
         S3Key: 'nodejs-sample.zip'
     },
-    dependsOn: nat.refs['asg'].name
+    dependsOn: nat.autoScalingGroup.name
 });
 
 var stack = novaform.Stack('mystack');

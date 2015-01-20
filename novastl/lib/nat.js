@@ -28,6 +28,8 @@ function Nat(options) {
         return new Nat(options);
     }
 
+    Template.call(this);
+
     var vpc = options.vpc;
     var keyName = options.keyName;
     var imageId = options.imageId;
@@ -41,16 +43,9 @@ function Nat(options) {
         return name + str;
     }
 
-    var refs = {};
+    var self = this;
 
-    function addref(key, value) {
-        if (refs[key]) {
-            throw new Error('Cannot add duplicate key: ' + key);
-        }
-        refs[key] = value;
-    }
-
-    addref('sg', novaform.ec2.SecurityGroup(mkname('Sg'), {
+    var securityGroup = this._addResource(novaform.ec2.SecurityGroup(mkname('Sg'), {
         VpcId: vpc.vpc,
         GroupDescription: name + ' security group',
         Tags: {
@@ -64,71 +59,68 @@ function Nat(options) {
         var availabilityZone = subnet.properties.AvailabilityZone;
         var az = availabilityZone[availabilityZone.length - 1];
 
-        refs.private = refs.private || {};
-        refs.private[az] = refs.private[az] || {};
-
         function mknameAz(str) {
             return util.format('%sAZ%s', mkname(str), az);
         }
 
-        refs.private[az]['sgi-http'] = novaform.ec2.SecurityGroupIngress(mknameAz('SgiHttpPrivate'), {
-            GroupId: refs['sg'],
+        self._addResource(novaform.ec2.SecurityGroupIngress(mknameAz('SgiHttpPrivate'), {
+            GroupId: securityGroup,
             IpProtocol: 'tcp',
             FromPort: 80,
             ToPort: 80,
             CidrIp: cidr
-        });
+        }));
 
-        refs.private[az]['sgi-https'] = novaform.ec2.SecurityGroupIngress(mknameAz('SgiHttpsPrivate'), {
-            GroupId: refs['sg'],
+        self._addResource(novaform.ec2.SecurityGroupIngress(mknameAz('SgiHttpsPrivate'), {
+            GroupId: securityGroup,
             IpProtocol: 'tcp',
             FromPort: 443,
             ToPort: 443,
             CidrIp: cidr
-        });
+        }));
     });
 
-    addref('sgi-ssh', novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
-        GroupId: refs['sg'],
+    this._addResource(novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
+        GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 22,
         ToPort: 22,
         CidrIp: allowedSshCidr
     }));
 
-    addref('sgi-icmp', novaform.ec2.SecurityGroupIngress(mkname('SgiIcmp'), {
-        GroupId: refs['sg'],
+    this._addResource(novaform.ec2.SecurityGroupIngress(mkname('SgiIcmp'), {
+        GroupId: securityGroup,
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1,
         CidrIp: vpc.vpc.properties.CidrBlock
     }));
 
-    addref('sge-http', novaform.ec2.SecurityGroupEgress(mkname('SgeHttp'), {
-        GroupId: refs['sg'],
+    this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeHttp'), {
+        GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 80,
         ToPort: 80,
         CidrIp: '0.0.0.0/0'
     }));
 
-    addref('sge-https', novaform.ec2.SecurityGroupEgress(mkname('SgeHttps'), {
-        GroupId: refs['sg'],
+    this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeHttps'), {
+        GroupId: securityGroup,
         IpProtocol: 'tcp',
         FromPort: 443,
         ToPort: 443,
         CidrIp: '0.0.0.0/0'
     }));
 
-    addref('sge-icmp', novaform.ec2.SecurityGroupEgress(mkname('SgeIcmp'), {
-        GroupId: refs['sg'],
+    this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeIcmp'), {
+        GroupId: securityGroup,
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1,
         CidrIp: '0.0.0.0/0'
     }));
 
-    addref('role', novaform.iam.Role(mkname('IAmRole'), {
+    var role = this._addResource(novaform.iam.Role(mkname('IAmRole'), {
         AssumeRolePolicyDocument: {
             Version: '2012-10-17',
             Statement: [{
@@ -142,9 +134,9 @@ function Nat(options) {
         Path: '/'
     }));
 
-    addref('policy', novaform.iam.Policy(mkname('IAmRolePolicy'), {
+    this._addResource(novaform.iam.Policy(mkname('IAmRolePolicy'), {
         PolicyName: 'root',
-        Roles: [refs['role']],
+        Roles: [ role ],
         PolicyDocument: {
             Version : '2012-10-17',
             Statement: [{
@@ -161,18 +153,18 @@ function Nat(options) {
         }
     }));
 
-    addref('instance-profile', novaform.iam.InstanceProfile(mkname('IAmInstanceProfile'), {
+    var instanceProfile = this._addResource(novaform.iam.InstanceProfile(mkname('IAmInstanceProfile'), {
         Path: novaform.join('', ['/', novaform.refs.StackName, '/nat/']),
-        Roles: [refs['role']]
+        Roles: [ role ]
     }));
 
-    addref('launch-config', novaform.asg.LaunchConfiguration(mkname('LaunchConfig'), {
+    var launchConfiguration = this._addResource(novaform.asg.LaunchConfiguration(mkname('LaunchConfig'), {
         KeyName: keyName,
         ImageId: imageId,
-        SecurityGroups: [refs['sg']],
+        SecurityGroups: [ securityGroup ],
         InstanceType: instanceType,
         AssociatePublicIpAddress: true,
-        IamInstanceProfile: refs['instance-profile'],
+        IamInstanceProfile: instanceProfile,
         UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/nat-user-data.sh', {
             ASGName: name,
             VPCNameRef: novaform.ref(vpc.vpc.name),
@@ -196,9 +188,9 @@ function Nat(options) {
 
     var publicSubnets = vpc.publicSubnets;
 
-    addref('asg', novaform.asg.AutoScalingGroup(name, {
+    var autoScalingGroup = this._addResource(novaform.asg.AutoScalingGroup(name, {
         AvailabilityZones: publicAvailabilityZones,
-        LaunchConfigurationName: refs['launch-config'],
+        LaunchConfigurationName: launchConfiguration,
         VPCZoneIdentifier: publicSubnets,
         MinSize: 1,
         MaxSize: publicAvailabilityZones.length + 1, // 1 more for rolling update,
@@ -218,7 +210,8 @@ function Nat(options) {
         }
     }));
 
-    this.refs = refs;
+    this.securityGroup = securityGroup;
+    this.autoScalingGroup = autoScalingGroup;
 }
 Nat.prototype = Object.create(Template.prototype);
 
