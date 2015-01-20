@@ -45,11 +45,11 @@ function Bastion(options) {
 
     addref('eip', novaform.ec2.EIP(mkname('Eip'), {
         Domain: 'vpc',
-        DependsOn: vpc.refs['gateway-attachment'].name
+        DependsOn: vpc.internetGatewayAttachment.name
     }));
 
     addref('sg', novaform.ec2.SecurityGroup(mkname('Sg'), {
-        VpcId: vpc.refs['vpc'],
+        VpcId: vpc.vpc,
         GroupDescription: 'Bastion host security group',
         Tags: {
             Application: novaform.refs.StackId,
@@ -62,7 +62,7 @@ function Bastion(options) {
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1, 
-        CidrIp: vpc.refs['vpc'].properties.CidrBlock
+        CidrIp: vpc.vpc.properties.CidrBlock
     }));
 
     addref('sgi-ssh', novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
@@ -102,7 +102,7 @@ function Bastion(options) {
         IpProtocol: 'tcp',
         FromPort: 22,
         ToPort: 22, 
-        CidrIp: vpc.refs['vpc'].properties.CidrBlock
+        CidrIp: vpc.vpc.properties.CidrBlock
     }));
 
     addref('role', novaform.iam.Role(mkname('IAmRole'), {
@@ -164,13 +164,11 @@ function Bastion(options) {
         }
     }));
 
-    var publicAvailabilityZones = _.map(vpc.refs.public, function(az) {
-        return az.subnet.properties.AvailabilityZone;
+    var publicAvailabilityZones = _.map(vpc.publicSubnets, function(subnet) {
+        return subnet.properties.AvailabilityZone;
     });
 
-    var publicSubnets = _.map(vpc.refs.public, function(az) {
-        return az.subnet
-    });
+    var publicSubnets = vpc.publicSubnets;
 
     addref('asg', novaform.asg.AutoScalingGroup(name, {
         AvailabilityZones: publicAvailabilityZones,

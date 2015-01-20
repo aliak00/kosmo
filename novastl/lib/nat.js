@@ -42,6 +42,7 @@ function Nat(options) {
     }
 
     var refs = {};
+
     function addref(key, value) {
         if (refs[key]) {
             throw new Error('Cannot add duplicate key: ' + key);
@@ -50,7 +51,7 @@ function Nat(options) {
     }
 
     addref('sg', novaform.ec2.SecurityGroup(mkname('Sg'), {
-        VpcId: vpc.refs['vpc'],
+        VpcId: vpc.vpc,
         GroupDescription: name + ' security group',
         Tags: {
             Application: novaform.refs.StackId,
@@ -58,12 +59,7 @@ function Nat(options) {
         }
     }));
 
-    var subnetsPerAZ = _.map(vpc.refs.private, function(az) {
-        return az.subnet;
-    });
-
-    for (i in subnetsPerAZ) {
-        var subnet = subnetsPerAZ[i];
+    vpc.privateSubnets.forEach(function(subnet) {
         var cidr = subnet.properties.CidrBlock;
         var availabilityZone = subnet.properties.AvailabilityZone;
         var az = availabilityZone[availabilityZone.length - 1];
@@ -90,7 +86,7 @@ function Nat(options) {
             ToPort: 443,
             CidrIp: cidr
         });
-    }
+    });
 
     addref('sgi-ssh', novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
         GroupId: refs['sg'],
@@ -105,7 +101,7 @@ function Nat(options) {
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1,
-        CidrIp: vpc.refs['vpc'].properties.CidrBlock
+        CidrIp: vpc.vpc.properties.CidrBlock
     }));
 
     addref('sge-http', novaform.ec2.SecurityGroupEgress(mkname('SgeHttp'), {
@@ -179,7 +175,7 @@ function Nat(options) {
         IamInstanceProfile: refs['instance-profile'],
         UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/nat-user-data.sh', {
             ASGName: name,
-            VPCNameRef: novaform.ref(vpc.refs['vpc'].name),
+            VPCNameRef: novaform.ref(vpc.vpc.name),
             LaunchConfigName: mkname('LaunchConfig'),
         }))
     }, {
@@ -194,13 +190,11 @@ function Nat(options) {
         }
     }));
 
-    var publicAvailabilityZones = _.map(vpc.refs.public, function(az) {
-        return az.subnet.properties.AvailabilityZone;
+    var publicAvailabilityZones = _.map(vpc.publicSubnets, function(subnet) {
+        return subnet.properties.AvailabilityZone;
     });
 
-    var publicSubnets = _.map(vpc.refs.public, function(az) {
-        return az.subnet
-    });
+    var publicSubnets = vpc.publicSubnets;
 
     addref('asg', novaform.asg.AutoScalingGroup(name, {
         AvailabilityZones: publicAvailabilityZones,

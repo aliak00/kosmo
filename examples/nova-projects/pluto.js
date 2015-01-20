@@ -60,16 +60,6 @@ module.exports = function(novaform, novastl) {
                 instanceType: 't2.micro'
             });
 
-            function subnets(obj) {
-                var result = [];
-                for (var az in obj) {
-                    result.push(obj[az].subnet);
-                }
-                return result;
-            }
-            var privateSubnetRefs = subnets(vpc.refs.private);
-            var publicSubnetRefs = subnets(vpc.refs.public);
-
             return {
                 resourceGroups: [
                     vpc.toResourceGroup(),
@@ -77,9 +67,9 @@ module.exports = function(novaform, novastl) {
                 ],
 
                 outputs: [
-                    novaform.Output('vpcId', vpc.refs.vpc),
-                    novaform.Output('privateSubnets', novaform.join(',', privateSubnetRefs)),
-                    novaform.Output('publicSubnets', novaform.join(',', publicSubnetRefs)),
+                    novaform.Output('vpcId', vpc.vpc),
+                    novaform.Output('privateSubnets', novaform.join(',', vpc.privateSubnets)),
+                    novaform.Output('publicSubnets', novaform.join(',', vpc.publicSubnets)),
                 ],
             };
         }

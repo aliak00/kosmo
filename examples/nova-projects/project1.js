@@ -58,12 +58,8 @@ module.exports = function(novaform, novastl) {
                 instanceType: 't2.micro'
             });
 
-            var privateSubnetRefs = _.map(vpc.refs.private, function(az) {
-                return az.subnet;
-            });
-
             var vpcPrivateSubnetOutput = novaform.Output('privateSubnets', {
-                Value: novaform.join(',', privateSubnetRefs),
+                Value: novaform.join(',', vpc.privateSubnets),
                 Description: 'Private subnets from ' + vpc.name
             });
 

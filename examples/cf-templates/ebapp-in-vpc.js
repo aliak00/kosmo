@@ -25,21 +25,13 @@ var nat = novastl.Nat({
     instanceType: 't2.micro'
 });
 
-var publicSubnets = _.map(vpc.refs.public, function(az) {
-    return az.subnet;
-});
-
-var privateSubnets = _.map(vpc.refs.private, function(az) {
-    return az.subnet;
-});
-
 var ebapp = novastl.EBApp({
-    vpc: vpc.refs['vpc'],
+    vpc: vpc.vpc,
     keyName: 'stupid-key-pair',
     bastionSecurityGroup: bastion.refs['sg'],
     natSecurityGroup: nat.refs['sg'],
-    publicSubnets: publicSubnets,
-    privateSubnets: privateSubnets,
+    publicSubnets: vpc.publicSubnets,
+    privateSubnets: vpc.privateSubnets,
     sourceBundle: {
         S3Bucket: 'aliak-comoyo-example',
         S3Key: 'nodejs-sample.zip'

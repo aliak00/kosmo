@@ -12,15 +12,3 @@ var stack = novaform.Stack();
 stack.add(vpc.toResourceGroup())
 
 console.log(stack.toJson());
-
-
-
-
-
-
-
-
-
-
-
-

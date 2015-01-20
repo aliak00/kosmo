@@ -9,12 +9,8 @@ var vpc = novastl.Vpc({
     privateSubnetsPerAz: config.privateSubnetsPerAz
 });
 
-var privateSubnets = _.map(vpc.refs.private, function(az) {
-    return az.subnet;
-});
-
 var rds = novastl.Rds({
-    subnets: privateSubnets
+    subnets: vpc.privateSubnets
 });
 
 var stack = novaform.Stack('mystack');
