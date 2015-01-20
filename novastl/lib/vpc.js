@@ -447,7 +447,7 @@ Vpc.prototype.createPrivateSubnets = function(subnets) {
         }));
 
         push(novaform.ec2.SubnetNetworkAclAssociation(mknameAz('PrivateSubnetNaclAssociation', az), {
-            SubnetId: resources['subnet'],
+            SubnetId: subnet,
             NetworkAclId: nacl
         }));
 
