@@ -6,7 +6,6 @@ function Template() {
         return new Template();
     }
 
-    this.refs = {}; // TODO: keeping this until everything is converted to new format
     this._resources = {};
 }
 
@@ -22,8 +21,6 @@ function createResourceGroupFromRefs(resourceGroup, refs) {
 
 Template.prototype.toResourceGroup = function() {
     var resourceGroup = novaform.ResourceGroup();
-    createResourceGroupFromRefs(resourceGroup, this.refs); // TODO: just keeping this for backward compat until
-                                                           //       everything is converted to new format.
     createResourceGroupFromRefs(resourceGroup, this._resources);
     return resourceGroup;
 };
