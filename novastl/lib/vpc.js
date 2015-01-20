@@ -94,20 +94,22 @@ function Vpc(options) {
         InternetGatewayId: this.internetGateway
     }));
 
-    var public_subnet = this.createPublicSubnets(publicSubnetsPerAz);
-    var private_subnet = this.createPrivateSubnets(privateSubnetsPerAz);
+    var publicSubnet = this.createPublicSubnets(publicSubnetsPerAz);
+    var privateSubnet = this.createPrivateSubnets(privateSubnetsPerAz);
 
-    _.map(public_subnet.allResourcesPerAz, _.bind(_.extend, this._resources));
-    _.map(private_subnet.allResourcesPerAz, _.bind(_.extend, this._resources));
+    var publicSubnetResourcesPerName = _.object(_.map(_.flatten(_.values(publicSubnet.allResourcesPerAz)), function(o) { return [o.name, o]}));
+    var privateSubnetResourcesPerName = _.object(_.map(_.flatten(_.values(privateSubnet.allResourcesPerAz)), function(o) { return [o.name, o]}));
+    _.extend(this._resources, publicSubnetResourcesPerName);
+    _.extend(this._resources, privateSubnetResourcesPerName);
 
-    this._publicSubnetResourcesPerAz = public_subnet.publicResourcesPerAz;
-    this._privateSubnetResourcesPerAz = private_subnet.publicResourcesPerAz;
+    this._publicSubnetResourcesPerAz = publicSubnet.publicResourcesPerAz;
+    this._privateSubnetResourcesPerAz = privateSubnet.publicResourcesPerAz;
 
-    this.publicSubnetsPerAz = public_subnet.publicResourcesPerAz;
-    this.privateSubnetsPerAz = private_subnet.publicResourcesPerAz;
+    this.publicSubnetsPerAz = publicSubnet.publicResourcesPerAz;
+    this.privateSubnetsPerAz = privateSubnet.publicResourcesPerAz;
 
-    this.publicSubnets = _.flatten(_.values(public_subnet.publicResourcesPerAz));
-    this.privateSubnets = _.flatten(_.values(private_subnet.publicResourcesPerAz));
+    this.publicSubnets = _.flatten(_.values(publicSubnet.publicResourcesPerAz));
+    this.privateSubnets = _.flatten(_.values(privateSubnet.publicResourcesPerAz));
 }
 
 Vpc.prototype = Object.create(Template.prototype);
