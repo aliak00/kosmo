@@ -10,6 +10,8 @@ function EBApp(options) {
         return new EBApp(options);
     }
 
+    Template.call(this);
+
     var name = options.name || 'EBApp';
     var sourceBundle = options.sourceBundle;
     var vpc = options.vpc;
@@ -25,9 +27,7 @@ function EBApp(options) {
         return name + str;
     }
 
-    var refs = {};
-
-    refs['role'] = novaform.iam.Role(mkname('IAmRole'), {
+    var role = this._addResource(novaform.iam.Role(mkname('IAmRole'), {
         AssumeRolePolicyDocument: {
             Statement: [{
                 Effect: 'Allow',
@@ -38,11 +38,11 @@ function EBApp(options) {
             }]
         },
         Path: '/'
-    });
+    }));
 
-    refs['policy'] = novaform.iam.Policy(mkname('IAmRolePolicy'), {
-        PolicyName: refs['role'].name,
-        Roles: [refs['role']],
+    this._addResource(novaform.iam.Policy(mkname('IAmRolePolicy'), {
+        PolicyName: role.name,
+        Roles: [ role ],
         PolicyDocument: {
             Statement: [{
                 Effect: 'Allow',
@@ -50,37 +50,37 @@ function EBApp(options) {
                 Resource: '*'
             }]
         }
-    });
+    }));
 
-    refs['instance-profile'] = novaform.iam.InstanceProfile(mkname('IAmInstanceProfile'), {
+    var instanceProfile = this._addResource(novaform.iam.InstanceProfile(mkname('IAmInstanceProfile'), {
         Path: novaform.join('', ['/', novaform.refs.StackName, '/ebapp/']),
-        Roles: [refs['role']]
-    });
+        Roles: [ role ]
+    }));
 
-    refs['application'] = novaform.eb.Application(name, {
+    var application = this._addResource(novaform.eb.Application(name, {
         ApplicationName: name,
         Description: name + ' beanstalk application'
-    });
+    }));
 
-    refs['version'] = novaform.eb.ApplicationVersion(mkname('Version'), {
-        ApplicationName: refs['application'],
+    var applicationVersion = this._addResource(novaform.eb.ApplicationVersion(mkname('Version'), {
+        ApplicationName: application,
         Description: name + ' beanstalk application version',
         SourceBundle: sourceBundle
-    });
+    }));
 
-    refs['sg'] = novaform.ec2.SecurityGroup(mkname('Sg'), {
+    var securityGroup = this._addResource(novaform.ec2.SecurityGroup(mkname('Sg'), {
         VpcId: vpc,
         GroupDescription: name + ' security group',
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('Sg')])
         }
-    });
+    }));
 
     var templateOptionSettings = [{
         Namespace: 'aws:autoscaling:launchconfiguration',
         OptionName: 'SecurityGroups',
-        Value: refs['sg']
+        Value: securityGroup
     },{
         Namespace: 'aws:autoscaling:launchconfiguration',
         OptionName: 'SSHSourceRestriction',
@@ -92,7 +92,7 @@ function EBApp(options) {
     },{
         Namespace: 'aws:autoscaling:launchconfiguration',
         OptionName: 'IamInstanceProfile',
-        Value: refs['instance-profile']
+        Value: instanceProfile
     },{
         Namespace: 'aws:ec2:vpc',
         OptionName: 'VPCId',
@@ -107,10 +107,10 @@ function EBApp(options) {
         Value: novaform.join(',', publicSubnets)
     }];
 
-    refs['environment'] = novaform.eb.Environment(mkname('Environment'), {
-        ApplicationName: refs['application'],
+    var environment = this._addResource(novaform.eb.Environment(mkname('Environment'), {
+        ApplicationName: application,
         Description: name + ' beanstalk environment',
-        VersionLabel: refs['version'],
+        VersionLabel: applicationVersion,
         SolutionStackName: '64bit Amazon Linux 2014.09 v1.0.9 running Node.js',
         Tier: {
             Name: 'WebServer',
@@ -118,9 +118,7 @@ function EBApp(options) {
             Version: '1.0'
         },
         OptionSettings: templateOptionSettings
-    });
-
-    this.refs = refs;
+    }));
 }
 EBApp.prototype = Object.create(Template.prototype);
 
