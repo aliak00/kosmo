@@ -333,8 +333,13 @@ Ref.parse = function(ref) {
 }
 
 Ref.prototype.makeStackName = function() {
-    // TODO: make camel case and validate limits
-    return this.project + this.component;
+    assert(this.project);
+    assert(this.component);
+
+    var project = this.project[0].toUpperCase() + this.project.substr(1).toLowerCase();
+    var component = this.component[0].toUpperCase() + this.component.substr(1).toLowerCase();
+
+    return project + component;
 };
 
 function Project(config) {
