@@ -8,7 +8,8 @@ var getopt = require('node-getopt')
     , AWS = require('aws-sdk')
     , uuid = require('node-uuid')
     , moment = require('moment')
-    , stackUtils = require('../stack-utils');
+    , stackUtils = require('../stack-utils')
+    , assert = require('assert');
 
 var cmdopts = module.exports.opts = getopt.create([
     ['w', 'wait', 'Wait for completion'],
@@ -100,13 +101,70 @@ Command.prototype.execute = function() {
     var that = this;
     return q().then(function() {
         // TODO: validate project's components, make sure dependencies exist
-    }).then(function() {
-        // TODO: fetch output for each dependant component
-    }).then(function() {
+        var deplist = [];
+
+        function walkDeps(result, componentName, walked) {
+            if (!walked) {
+                walked = [];
+            }
+            if (walked.indexOf(componentName) !== -1) {
+                throw new Error('recursive dependency');
+            }
+
+            walked.push(componentName);
+
+            var component = that.project.findComponent(componentName);
+            if (!component) {
+                throw new Error(util.format('Could not find dependent component "%s"', componentName));
+            }
+            var deps = component.dependencies.map(function(depname) {
+                var w = walked ? walked.slice() : [];
+                return walkDeps([depname], depname, w);
+            });
+
+            deps.sort(function(a, b) { return a.length - b.length; });
+
+            deps.forEach(function(deps) {
+                deps.reverse();
+                deps.forEach(function(d) {
+                    var idx = result.indexOf(d);
+                    if (idx !== -1) {
+                        result.splice(idx, 1);
+                    }
+                    result.unshift(d);
+                });
+            });
+
+            return result;
+        }
+
+        var deplist = walkDeps([], that.component.name);
+        return deplist;
+    }).then(function(dependencies) {
+        // fetch output for each dependent component
+
+        var getStackOutput = q.nbind(stackUtils.getStackOutput, stackUtils);
+        if (that.commonOptions.verbose) {
+            console.log('Fetching outputs of dependent stacks...');
+        }
+
+        var region = that.component.region;
+        var cfn = that.cfn = new AWS.CloudFormation({ region : region });
+
+        var outputsPromises = dependencies.map(function(depname) {
+            return Ref(that.ref.project, depname).makeStackName();
+        }).map(function(stackName) {
+            return getStackOutput(cfn, stackName);
+        });
+
+        return q.all(outputsPromises).then(function(results) {
+            return _.object(_.zip(dependencies, results));
+        });
+    }).then(function(dependencies) {
         // TODO: inject dependencies into the component
-        var dependencies = {
+        // var dependencies = {
             // infrastructure: { vpc: 'vpc-123' }
-        };
+        // };
 
         return dependencies;
     }).then(function(dependencies) {
@@ -171,8 +229,7 @@ Command.prototype.execute = function() {
         });
     }).then(function(deploymentConfig) {
         // initiate cloudformation deployment
-        var region = that.component.region;
-        var cfn = that.cfn = new AWS.CloudFormation({ region : region });
+        var cfn = that.cfn;
         var getStackStatus = q.nbind(stackUtils.getStackStatus, stackUtils);
         if (that.commonOptions.verbose) {
             console.log('Checking cloudformation stack status...');
@@ -311,6 +368,10 @@ module.exports = Command;
 // TODO: this should probably be shared in lib/shared ?
 
 function Ref(project, component) {
+    if (!(this instanceof Ref)) {
+        return new Ref(project, component);
+    }
+
     this.project = project;
     this.component = component;
 }

@@ -1,4 +1,5 @@
-var AWS = require('aws-sdk');
+var AWS = require('aws-sdk')
+    , _ = require('underscore');
 
 var Status = {
     DOES_NOT_EXIST: '__DOES_NOT_EXIST',
@@ -23,6 +24,26 @@ var Status = {
 
 module.exports = {
     Status: Status,
+
+    getStackOutput: function(cfn, stackName, callback) {
+        cfn.describeStacks({
+            StackName: stackName
+        }, function(err, data) {
+            if (err) {
+                if (err.code === 'ValidationError' && err.message.indexOf('does not exist') !== -1) {
+                    callback(Status.DOES_NOT_EXIST);
+                    return;
+                }
+                callback(err);
+                return;
+            }
+            var stack = data.Stacks[0];
+            var outputs = _.object(_.map(stack.Outputs, function(e) {
+                return [ e.OutputKey, e.OutputValue ];
+            }));
+            callback(null, outputs);
+        });
+    },
 
     getStackStatus: function(cfn, stackName, callback) {
         cfn.describeStacks({
