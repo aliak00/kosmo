@@ -21,7 +21,14 @@ function Rds(options) {
     var availabilityZone = options.availabilityZone = 'None';
     var instanceClass = options.instanceClass || 'db.t1.micro';
     var username = options.username || 'root';
-    var password = options.password || 'admin';
+    var password = options.password;
+
+    if (typeof password !== 'string') {
+        throw new Error('RDS password was not specified');
+    }
+    if (password.length < 8) {
+        throw new Error('RDS password has to be at least 8 characters');
+    }
 
     var originalName = name;
     name = name.charAt(0).toUpperCase() + name.slice(1);
@@ -47,7 +54,7 @@ function Rds(options) {
         Engine: 'postgres',
         EngineVersion: '9.3.3',
         MasterUsername: username,
-        MasterPassword: password,
+        MasterUserPassword: password,
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('Instance')])
