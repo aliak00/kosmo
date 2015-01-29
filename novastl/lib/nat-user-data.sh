@@ -25,6 +25,15 @@ ETH0_MAC=$(cat /sys/class/net/eth0/address) ||
     die "Unable to determine MAC address on eth0."
 log "Found MAC ${ETH0_MAC} for eth0."
 
+VPC_ID_URI="http://169.254.169.254/latest/meta-data/network/interfaces/macs/${ETH0_MAC}/vpc-id"
+log "Metadata location for vpc id: ${VPC_ID_URI}"
+VPC_ID=$(curl --retry 3 --silent --fail ${VPC_ID_URI})
+if [ $? -ne 0 ]; then
+    log "Unable to retrive VPC ID from meta-data!"
+else
+    log "Retrieved VPC ID ${VPC_ID} from meta-data."
+fi
+
 VPC_CIDR_URI="http://169.254.169.254/latest/meta-data/network/interfaces/macs/${ETH0_MAC}/vpc-ipv4-cidr-block"
 log "Metadata location for vpc ipv4 range: ${VPC_CIDR_URI}"
 
@@ -51,11 +60,10 @@ region="{{ "Ref" : "AWS::Region" }}"
 export AWS_DEFAULT_REGION=$region
 # Set CLI Output to text
 export AWS_DEFAULT_OUTPUT="text"
-vpc_id="{{ VPCNameRef }}"
 instance_id=`curl --retry 3 --retry-delay 0 --silent --fail http://169.254.169.254/latest/meta-data/instance-id`
 availability_zone=`curl --retry 3 --retry-delay 0 --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone`
-log "HA NAT configuration parameters: Instance ID=$instance_id, Region=$region, Availability Zone=$availability_zone, VPC=$vpc_id"
-subnets="`aws ec2 describe-subnets --query 'Subnets[*].SubnetId' --filters Name=vpc-id,Values=$vpc_id Name=tag:Network,Values=private`"
+log "HA NAT configuration parameters: Instance ID=$instance_id, Region=$region, Availability Zone=$availability_zone, VPC=$VPC_ID"
+subnets="`aws ec2 describe-subnets --query 'Subnets[*].SubnetId' --filters Name=vpc-id,Values=$VPC_ID Name=tag:Network,Values=private`"
 if [ -z "$subnets" ]; then
   log "Error: No subnets found"
 else
