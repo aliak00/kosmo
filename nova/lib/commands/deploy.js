@@ -185,7 +185,9 @@ Command.prototype.execute = function() {
         var result = that.component.build(dependencies);
         var stack = novaform.Stack(stackName);
         stack.add(result.resourceGroups);
-        stack.add(result.outputs);
+        if (result.outputs) {
+            stack.add(result.outputs);
+        }
 
         var templateBody = stack.toJson();
         return {
