@@ -13,6 +13,8 @@ var getopt = require('node-getopt')
 
 var cmdopts = module.exports.opts = getopt.create([
     ['w', 'wait', 'Wait for completion'],
+    ['n', 'noop', 'Do not actually deploy'],
+    ['', 'template-output=ARG', 'Dump the generated CloudFormation template to a file'],
     ['h', 'help', 'Display help']
 ]);
 
@@ -190,6 +192,16 @@ Command.prototype.execute = function() {
         }
 
         var templateBody = stack.toJson();
+
+        var templateOutput = that.commandOptions['template-output'];
+        if (templateOutput === '-') {
+            console.log(templateBody);
+        } else if (templateOutput) {
+            var fd = fs.openSync(templateOutput, 'w');
+            fs.writeSync(fd, templateBody);
+            fs.closeSync(fd);
+        }
+
         return {
             projectName: that.ref.project,
             componentName: that.ref.component,
@@ -199,6 +211,10 @@ Command.prototype.execute = function() {
             templateBody: templateBody,
         };
     }).then(function(deploymentConfig) {
+        if (that.commandOptions.noop) {
+            return deploymentConfig;
+        }
+
         if (that.commonOptions.verbose) {
             console.log('Uploading cloudformation template to S3...');
         }
@@ -235,6 +251,10 @@ Command.prototype.execute = function() {
             throw new Error(util.format('Failed to upload to S3: %s', JSON.stringify(e)));
         });
     }).then(function(deploymentConfig) {
+        if (that.commandOptions.noop) {
+            return deploymentConfig;
+        }
+
         // initiate cloudformation deployment
         var cfn = that.cfn;
         var getStackStatus = q.nbind(stackUtils.getStackStatus, stackUtils);
@@ -316,6 +336,10 @@ Command.prototype.execute = function() {
             }
         });
     }).then(function(deploymentConfig) {
+        if (that.commandOptions.noop) {
+            return deploymentConfig;
+        }
+
         // wait for completion
         if (that.commandOptions.wait) {
             if (that.commonOptions.verbose) {
