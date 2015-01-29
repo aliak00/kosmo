@@ -35,6 +35,42 @@ function makeConfig(region){
 }
 
 module.exports = function(novaform, novastl) {
+    var setup = {
+        name: 'setup',
+
+        dependencies: [
+        ],
+
+        region: 'eu-west-1',
+
+        build: function(deps) {
+            var eipa = novaform.ec2.EIP('RouterIpAZa', {
+                Domain: 'vpc',
+            });
+            var eipb = novaform.ec2.EIP('RouterIpAZb', {
+                Domain: 'vpc',
+            });
+
+            var wowboxHostedZone = novaform.r53.HostedZone('wowbox', {
+                Name: 'wowbox.telenor.io',
+            });
+
+            return {
+                resourceGroups: [
+                    eipa,
+                    eipb,
+                    wowboxHostedZone,
+                ],
+
+                outputs: [
+                    novaform.Output('RouterIpAZa', eipa),
+                    novaform.Output('RouterIpAZb', eipb),
+                    novaform.Output('wowboxHostedZoneId', wowboxHostedZone),
+                ]
+            };
+        }
+    };
+
     var infrastructure = {
         name: 'infrastructure',
 
@@ -53,7 +89,11 @@ module.exports = function(novaform, novastl) {
             });
 
             var nat = novastl.Nat({
-                vpc: vpc,
+                vpcId: vpc.vpcId,
+                vpcCidrBlock: vpc.vpcCidrBlock,
+                publicSubnets: vpc.publicSubnets,
+                privateSubnets: vpc.privateSubnets,
+
                 allowedSshCidr: '0.0.0.0/0',
                 keyName: 'ddenis', // TODO: how do we want to bootstrap key pairs?
                 imageId: config.genericImageId,
@@ -63,7 +103,7 @@ module.exports = function(novaform, novastl) {
             return {
                 resourceGroups: [
                     vpc.toResourceGroup(),
-                    nat.toResourceGroup()
+                    nat.toResourceGroup(),
                 ],
 
                 outputs: [
@@ -105,6 +145,7 @@ module.exports = function(novaform, novastl) {
         name: 'pluto',
 
         components: [
+            setup,
             infrastructure,
             database,
         ],
