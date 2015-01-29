@@ -159,6 +159,11 @@ Command.prototype.execute = function() {
 
         return q.all(outputsPromises).then(function(results) {
             return _.object(_.zip(dependencies, results));
+        }).catch(function(e) {
+            if (e === stackUtils.Status.DOES_NOT_EXIST) {
+                throw new Error('One of the dependent stacks is not yet deployed!');
+            }
+            throw e;
         });
     }).then(function(dependencies) {
         // TODO: inject dependencies into the component

@@ -89,7 +89,8 @@ module.exports = function(novaform, novastl) {
             var subnets = deps.infrastructure.privateSubnets.split(',');
 
             var rds = novastl.Rds({
-                subnets: subnets
+                subnets: subnets,
+                password: '12345678',
             });
 
             return {
