@@ -30,12 +30,15 @@ function Nat(options) {
 
     Template.call(this);
 
-    var vpc = options.vpc;
     var keyName = options.keyName;
     var imageId = options.imageId;
     var allowedSshCidr = options.allowedSshCidr || '0.0.0.0/0'
     var instanceType = options.instanceType || 't2.micro';
     var name = options.name || 'Nat';
+    var publicSubnets = options.publicSubnets;
+    var privateSubnets = options.privateSubnets;
+    var vpcId = options.vpcId;
+    var vpcCidrBlock = options.vpcCidrBlock;
 
     name = name.charAt(0).toUpperCase() + name.slice(1);
 
@@ -46,7 +49,7 @@ function Nat(options) {
     var self = this;
 
     var securityGroup = this._addResource(novaform.ec2.SecurityGroup(mkname('Sg'), {
-        VpcId: vpc.vpc,
+        VpcId: vpcId,
         GroupDescription: name + ' security group',
         Tags: {
             Application: novaform.refs.StackId,
@@ -54,7 +57,7 @@ function Nat(options) {
         }
     }));
 
-    vpc.privateSubnets.forEach(function(subnet) {
+    privateSubnets.forEach(function(subnet) {
         var cidr = subnet.properties.CidrBlock;
         var availabilityZone = subnet.properties.AvailabilityZone;
         var az = availabilityZone[availabilityZone.length - 1];
@@ -93,7 +96,7 @@ function Nat(options) {
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1,
-        CidrIp: vpc.vpc.properties.CidrBlock
+        CidrIp: vpcCidrBlock
     }));
 
     this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeHttp'), {
@@ -167,7 +170,6 @@ function Nat(options) {
         IamInstanceProfile: instanceProfile,
         UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/nat-user-data.sh', {
             ASGName: name,
-            VPCNameRef: novaform.ref(vpc.vpc.name),
             LaunchConfigName: mkname('LaunchConfig'),
         }))
     }, {
@@ -182,11 +184,9 @@ function Nat(options) {
         }
     }));
 
-    var publicAvailabilityZones = _.map(vpc.publicSubnets, function(subnet) {
+    var publicAvailabilityZones = _.map(publicSubnets, function(subnet) {
         return subnet.properties.AvailabilityZone;
     });
-
-    var publicSubnets = vpc.publicSubnets;
 
     var autoScalingGroup = this._addResource(novaform.asg.AutoScalingGroup(name, {
         AvailabilityZones: publicAvailabilityZones,

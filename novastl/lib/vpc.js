@@ -110,6 +110,10 @@ function Vpc(options) {
 
     this.publicSubnets = _.flatten(_.values(publicSubnet.publicResourcesPerAz));
     this.privateSubnets = _.flatten(_.values(privateSubnet.publicResourcesPerAz));
+
+    this.vpcId = this.vpc;
+
+    this.vpcCidrBlock = vpcCidr;
 }
 
 Vpc.prototype = Object.create(Template.prototype);
