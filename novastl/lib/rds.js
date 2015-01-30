@@ -1,6 +1,7 @@
 var novaform = require('novaform')
     , Template = require('./template')
-    , _ = require('underscore');
+    , _ = require('underscore')
+    , util = require('util');
 
 /**
     Refs include:
@@ -23,6 +24,10 @@ function Rds(options) {
     var username = options.username || 'root';
     var password = options.password;
 
+    if (name.toLowerCase() === 'db' || name.toLowerCase() === 'database') {
+        throw new Error(util.format('"%s" name is reserved', name));
+    }
+
     if (typeof password !== 'string') {
         throw new Error('RDS password was not specified');
     }
@@ -30,15 +35,13 @@ function Rds(options) {
         throw new Error('RDS password has to be at least 8 characters');
     }
 
-    var originalName = name;
-    name = name.charAt(0).toUpperCase() + name.slice(1);
-
     function mkname(str) {
-        return name + str;
+        var camelCaseName = name.charAt(0).toUpperCase() + name.slice(1)
+        return camelCaseName + str;
     }
 
     var subnetGroup = this._addResource(novaform.rds.DBSubnetGroup(mkname('PrivateSubnet'), {
-        DBSubnetGroupDescription: originalName + ' db private subnets',
+        DBSubnetGroupDescription: name + ' db private subnets',
         SubnetIds: subnets,
         Tags: {
             Application: novaform.refs.StackId,
@@ -49,7 +52,7 @@ function Rds(options) {
     var dbinstance = this._addResource(novaform.rds.DBInstance(mkname('Instance'), {
         AllocatedStorage: allocatedStorage,
         DBInstanceClass: instanceClass,
-        DBName: originalName,
+        DBName: name,
         DBSubnetGroupName: subnetGroup,
         Engine: 'postgres',
         EngineVersion: '9.3.3',
