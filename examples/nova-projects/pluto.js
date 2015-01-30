@@ -1,3 +1,5 @@
+var util = require('util');
+
 var publicSubnetsMap = {
     'eu-west-1': {
         'eu-west-1a': '10.42.1.0/24',
@@ -34,6 +36,9 @@ function makeConfig(region){
     }
 }
 
+var publicZone = 'wowbox.telenor.io';
+var internalZone = 'c.wowbox.telenor.io';
+
 module.exports = function(novaform, novastl) {
     var setup = {
         name: 'setup',
@@ -52,11 +57,11 @@ module.exports = function(novaform, novastl) {
             });
 
             var wowboxHostedZone = novaform.r53.HostedZone('Wowbox', {
-                Name: 'wowbox.telenor.io',
+                Name: publicZone,
             });
 
             var internalHostedZone = novaform.r53.HostedZone('WowboxInternal', {
-                Name: 'c.wowbox.telenor.io',
+                Name: internalZone,
             });
 
             return {
@@ -81,12 +86,15 @@ module.exports = function(novaform, novastl) {
         name: 'infrastructure',
 
         dependencies: [
+            'setup',
         ],
 
         region: 'eu-west-1',
 
         build: function(deps) {
             var config = makeConfig(this.region);
+
+            var internalHostedZoneId = deps.setup.internalHostedZoneId;
 
             var vpc = novastl.Vpc({
                 cidr: config.vpcCidrBlock,
@@ -106,10 +114,30 @@ module.exports = function(novaform, novastl) {
                 instanceType: 't2.micro'
             });
 
+            var bastion = novastl.Bastion({
+                vpc: vpc,
+                allowedSshCidr: '0.0.0.0/0',
+                keyName: 'ddenis',
+                imageId: config.genericImageId,
+                instanceType: 't2.micro'
+            });
+
+            var bastionr53record = novaform.r53.RecordSet('BastionR53', {
+                HostedZoneId: internalHostedZoneId,
+                Type: 'A',
+                Name: util.format('login.%s.', internalZone),
+                TTL: '60',
+                ResourceRecords: [
+                    novaform.ref(bastion.elasticIp)
+                ],
+            });
+
             return {
                 resourceGroups: [
                     vpc.toResourceGroup(),
                     nat.toResourceGroup(),
+                    bastion.toResourceGroup(),
+                    bastionr53record,
                 ],
 
                 outputs: [

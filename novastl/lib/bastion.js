@@ -187,6 +187,7 @@ function Bastion(options) {
     }));
 
     this.securityGroup = securityGroup;
+    this.elasticIp = elasticIp;
 }
 
 Bastion.prototype = Object.create(Template.prototype);
