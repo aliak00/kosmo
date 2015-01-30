@@ -96,7 +96,8 @@ Stack.isStatusRolledBack = function(status) {
 };
 
 Stack.isStatusRollingback = function(status) {
-    return status === Status.ROLLBACK_IN_PROGRESS;
+    return status === Status.ROLLBACK_IN_PROGRESS ||
+        status === Status.UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS;
 };
 
 module.exports = Stack;
