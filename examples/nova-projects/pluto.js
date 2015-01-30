@@ -51,8 +51,12 @@ module.exports = function(novaform, novastl) {
                 Domain: 'vpc',
             });
 
-            var wowboxHostedZone = novaform.r53.HostedZone('wowbox', {
+            var wowboxHostedZone = novaform.r53.HostedZone('Wowbox', {
                 Name: 'wowbox.telenor.io',
+            });
+
+            var internalHostedZone = novaform.r53.HostedZone('WowboxInternal', {
+                Name: 'c.wowbox.telenor.io',
             });
 
             return {
@@ -60,12 +64,14 @@ module.exports = function(novaform, novastl) {
                     eipa,
                     eipb,
                     wowboxHostedZone,
+                    internalHostedZone,
                 ],
 
                 outputs: [
                     novaform.Output('RouterIpAZa', eipa),
                     novaform.Output('RouterIpAZb', eipb),
                     novaform.Output('wowboxHostedZoneId', wowboxHostedZone),
+                    novaform.Output('internalHostedZoneId', internalHostedZone),
                 ]
             };
         }
@@ -119,6 +125,7 @@ module.exports = function(novaform, novastl) {
         name: 'database',
 
         dependencies: [
+            'setup',
             'infrastructure',
         ],
 
@@ -128,14 +135,34 @@ module.exports = function(novaform, novastl) {
             var region = this.region;
             var subnets = deps.infrastructure.privateSubnets.split(',');
 
+            var internalHostedZoneId = deps.setup.internalHostedZoneId;
+
             var rds = novastl.Rds({
+                name: 'prod',
                 subnets: subnets,
                 password: '12345678',
             });
 
+            var r53record = novaform.r53.RecordSet('DbR53', {
+                HostedZoneId: internalHostedZoneId,
+                Type: 'CNAME',
+                Name: 'prod',
+                TTL: '60',
+                ResourceRecords: [
+                    novaform.getAtt(rds.dbinstance, 'Endpoint.Address'),
+                ],
+            });
+
             return {
                 resourceGroups: [
-                    rds.toResourceGroup()
+                    rds.toResourceGroup(),
+                    r53record,
+                ],
+
+                outputs: [
+                    novaform.Output('DbId', rds.dbinstance),
+                    novaform.Output('DbAddress', novaform.getAtt(rds.dbinstance, 'Endpoint.Address')),
+                    novaform.Output('DbPort', novaform.getAtt(rds.dbinstance, 'Endpoint.Port')),
                 ],
             };
         }
