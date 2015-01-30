@@ -174,7 +174,7 @@ module.exports = function(novaform, novastl) {
             var r53record = novaform.r53.RecordSet('DbR53', {
                 HostedZoneId: internalHostedZoneId,
                 Type: 'CNAME',
-                Name: 'prod',
+                Name: util.format('prod.%s.', internalZone),
                 TTL: '60',
                 ResourceRecords: [
                     novaform.getAtt(rds.dbinstance, 'Endpoint.Address'),
