@@ -62,8 +62,12 @@ function GetAtt(id, attr) {
 
     Function.call(this);
 
+    var name = id;
+    if (id instanceof Resource) {
+        name = id.name;
+    }
     this['Fn::GetAtt'] = [
-        id,
+        name,
         attr
     ];
 }
