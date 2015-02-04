@@ -217,9 +217,11 @@ Command.prototype.execute = function() {
         if (typeof result === 'undefined') {
             // looks like component wants to use async building, lets wait for done callback to be called.
             return doneDeferred.promise.timeout(30000).then(returnResult);
-        } else {
+        } else if (_.has(result, 'then') && typeof result.then === 'function') {
             // async building with promises. Assume build() returned a promise
             return result.then(returnResult);
+        } else {
+            return returnResult(result);
         }
     }).then(function(deploymentConfig) {
         // build cloudformation resources
