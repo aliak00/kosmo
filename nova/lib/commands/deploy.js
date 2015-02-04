@@ -399,7 +399,13 @@ Command.prototype.execute = function() {
         }
         return deploymentConfig;
     }).then(function(deploymentConfig) {
-        // TODO: fetch stack output and print it
+        var getStackOutput = q.nbind(Stack.getStackOutput, Stack);
+        return getStackOutput(deploymentConfig.cfn, deploymentConfig.stackName).then(function(outputs) {
+            return _.extend(deploymentConfig, {
+                stackOutput: outputs,
+            });
+        });
+    }).then(function(deploymentConfig) {
         var output = {
             project: deploymentConfig.projectName,
             component: deploymentConfig.componentName,
@@ -407,14 +413,21 @@ Command.prototype.execute = function() {
             stackId: deploymentConfig.stackId,
         };
 
+        var stackOutput = deploymentConfig.stackOutput;
+
         if (that.commonOptions['output-format'] == 'json') {
-            console.log(output);
+            console.log(_.extend({}, output, stackOutput));
         } else if (that.commonOptions['output-format'] == 'text') {
-            console.log('Output:\n')
-            for (var key in output) {
-                var value = output[key];
-                console.log(util.format('%s: %s', key, value));
+            function print(x) {
+                for (var key in x) {
+                    var value = x[key];
+                    console.log(util.format('\t%s: %s', key, value));
+                }
             }
+
+            console.log('\nOutput:\n')
+            print(output);
+            print(stackOutput);
         }
     }).catch(function(e) {
         // TODO: differentiate between internal errors and valid exits like timeout or stack deployment failed
