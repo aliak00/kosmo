@@ -251,13 +251,24 @@ module.exports = function(nova) {
                     },
                 });
 
+                var r53record = nova.resources.r53.RecordSet('PlutoR53', {
+                    HostedZoneId: wowboxHostedZoneId,
+                    Type: 'CNAME',
+                    Name: util.format('pluto.%s.', publicZone),
+                    TTL: '60',
+                    ResourceRecords: [
+                        nova.resources.getAtt(ebapp.environment, 'EndpointURL'),
+                    ],
+                });
+
                 return {
                     resourceGroups: [
                         ebapp.toResourceGroup(),
+                        r53record,
                     ],
 
                     outputs: [
-                        nova.resources.Output('address', nova.resources.getAtt(ebapp.environment, 'EndpointURL')),
+                        nova.resources.Output('address', r53record),
                     ],
                 };
             }
