@@ -37,8 +37,8 @@ function makeConfig(region){
     }
 }
 
-var publicZone = 'wowbox.telenor.io';
-var internalZone = 'i.wowbox.telenor.io';
+var externalZone = 'pluto.novajs.io';
+var internalZone = 'i.pluto.novajs.io';
 
 module.exports = function(nova) {
     var setup = {
@@ -57,11 +57,11 @@ module.exports = function(nova) {
                 Domain: 'vpc',
             });
 
-            var wowboxHostedZone = nova.resources.r53.HostedZone('Wowbox', {
-                Name: publicZone,
+            var externalHostedZone = nova.resources.r53.HostedZone('PlutoExternalZone', {
+                Name: externalZone,
             });
 
-            var internalHostedZone = nova.resources.r53.HostedZone('WowboxInternal', {
+            var internalHostedZone = nova.resources.r53.HostedZone('PlutoInternalZone', {
                 Name: internalZone,
             });
 
@@ -69,15 +69,15 @@ module.exports = function(nova) {
                 resourceGroups: [
                     eipa,
                     eipb,
-                    wowboxHostedZone,
+                    externalHostedZone,
                     internalHostedZone,
                 ],
 
                 outputs: [
                     nova.resources.Output('routerIpAZa', eipa),
                     nova.resources.Output('routerIpAZb', eipb),
-                    nova.resources.Output('wowboxHostedZoneName', publicZone),
-                    nova.resources.Output('wowboxHostedZoneId', wowboxHostedZone),
+                    nova.resources.Output('externalHostedZoneName', externalZone),
+                    nova.resources.Output('externalHostedZoneId', externalHostedZone),
                     nova.resources.Output('internalHostedZoneName', internalZone),
                     nova.resources.Output('internalHostedZoneId', internalHostedZone),
                 ]
@@ -238,6 +238,8 @@ module.exports = function(nova) {
                 var bastionSecurityGroup = deps.infrastructure.bastionSecurityGroup;
                 var natSecurityGroup = deps.infrastructure.natSecurityGroup;
 
+                var externalHostedZoneId = deps.setup.externalHostedZoneId;
+
                 var ebapp = nova.templates.EBApp({
                     vpcId: vpcId,
                     publicSubnets: publicSubnets,
@@ -252,9 +254,9 @@ module.exports = function(nova) {
                 });
 
                 var r53record = nova.resources.r53.RecordSet('PlutoR53', {
-                    HostedZoneId: wowboxHostedZoneId,
+                    HostedZoneId: externalHostedZoneId,
                     Type: 'CNAME',
-                    Name: util.format('pluto.%s.', publicZone),
+                    Name: util.format('pluto.%s.', externalZone),
                     TTL: '60',
                     ResourceRecords: [
                         nova.resources.getAtt(ebapp.environment, 'EndpointURL'),
