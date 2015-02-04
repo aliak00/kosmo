@@ -16,6 +16,10 @@ module.exports.createArchive = function(destinationName, sourcePath, callback) {
         deferred = q.defer();
     }
 
+    if (!path.extname(destinationName)) {
+        destinationName += '.tgz';
+    }
+
     var tempdir = '/tmp/';
     var destinationPath = path.join(tempdir, destinationName);
 
