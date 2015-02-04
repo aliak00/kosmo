@@ -9,7 +9,7 @@ var getopt = require('node-getopt')
     , AWS = require('aws-sdk')
     , uuid = require('node-uuid')
     , moment = require('moment')
-    , stackUtils = require('../stack-utils')
+    , Stack = require('../stack')
     , s3utils = require('../s3utils')
     , config = require('../configuration')
     , assert = require('assert');
@@ -84,7 +84,7 @@ Command.prototype._waitForStack = function(options, shouldStopCallback) {
     var maxEnd = moment(start);
     maxEnd.add(maxWaitSeconds, 'seconds');
 
-    var getStackStatus = q.nbind(stackUtils.getStackStatus, stackUtils);
+    var getStackStatus = q.nbind(Stack.getStackStatus, Stack);
 
     var f = function() {
         return getStackStatus(cfn, stackName).then(function(status) {
@@ -171,7 +171,7 @@ Command.prototype.execute = function() {
     }).then(function(deploymentConfig) {
         // fetch output for each dependent component
 
-        var getStackOutput = q.nbind(stackUtils.getStackOutput, stackUtils);
+        var getStackOutput = q.nbind(Stack.getStackOutput, Stack);
         if (that.commonOptions.verbose) {
             console.log('Fetching outputs of dependent stacks...');
         }
@@ -193,7 +193,7 @@ Command.prototype.execute = function() {
                 dependencies: dependencyObject
             });
         }).catch(function(e) {
-            if (e === stackUtils.Status.DOES_NOT_EXIST) {
+            if (e === Stack.Status.DOES_NOT_EXIST) {
                 throw new Error('One of the dependent stacks is not yet deployed!');
             }
             throw e;
@@ -290,12 +290,12 @@ Command.prototype.execute = function() {
 
         // initiate cloudformation deployment
         var cfn = that.cfn;
-        var getStackStatus = q.nbind(stackUtils.getStackStatus, stackUtils);
+        var getStackStatus = q.nbind(Stack.getStackStatus, Stack);
         if (that.commonOptions.verbose) {
             console.log('Checking cloudformation stack status...');
         }
         return getStackStatus(cfn, deploymentConfig.stackName).then(function(status) {
-            if (status !== stackUtils.Status.ROLLBACK_COMPLETE) {
+            if (status !== Stack.Status.ROLLBACK_COMPLETE) {
                 // all good, nothing to do here.
                 return status;
             }
@@ -314,7 +314,7 @@ Command.prototype.execute = function() {
                     cfn: cfn,
                     stackName: deploymentConfig.stackName,
                 }, function(status) {
-                    if (status === stackUtils.Status.DOES_NOT_EXIST) {
+                    if (status === Stack.Status.DOES_NOT_EXIST) {
                         return status;
                     }
                     console.log('Still waiting...');
@@ -327,7 +327,7 @@ Command.prototype.execute = function() {
             if (that.commonOptions.verbose) {
                 console.log('Deploying cloudformation stack...');
             }
-            if (status === stackUtils.Status.DOES_NOT_EXIST) {
+            if (status === Stack.Status.DOES_NOT_EXIST) {
                 // create a new stack
                 var createStack = q.nbind(cfn.createStack, cfn);
                 return createStack({
@@ -347,7 +347,7 @@ Command.prototype.execute = function() {
                     throw new Error(util.format('Failed to initiate stack creation:\n%j', err));
                 });
             } else {
-                if (!stackUtils.isStatusComplete(status)) {
+                if (!Stack.isStatusComplete(status)) {
                     // already in progress?
                     throw new Error(util.format('Stack is not in a valid state for deployment (%s)', status));
                 }
@@ -383,12 +383,12 @@ Command.prototype.execute = function() {
                 cfn: deploymentConfig.cfn,
                 stackName: deploymentConfig.stackName,
             }, function(status) {
-                if (stackUtils.isStatusFailed(status)
-                    || stackUtils.isStatusRolledBack(status)
-                    || stackUtils.isStatusRollingback(status)) {
+                if (Stack.isStatusFailed(status)
+                    || Stack.isStatusRolledBack(status)
+                    || Stack.isStatusRollingback(status)) {
                     throw new Error('Stack deployment failed');
                 }
-                if (!stackUtils.isStatusComplete(status)) {
+                if (!Stack.isStatusComplete(status)) {
                     if (that.commonOptions.verbose) {
                         console.log('Still waiting...');
                     }
