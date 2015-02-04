@@ -47,7 +47,7 @@ module.exports.createArchive = function(destinationName, sourcePath, callback) {
     archive.pipe(output);
 
     archive
-        .directory(sourcePath)
+        .directory(sourcePath, false)
         .finalize();
 
     return deferred ? deferred.promise : undefined;
