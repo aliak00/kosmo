@@ -1,4 +1,5 @@
-var util = require('util');
+var util = require('util')
+    , path = require('path');
 
 var publicSubnetsMap = {
     'eu-west-1': {
@@ -213,8 +214,8 @@ module.exports = function(nova) {
         region: 'eu-west-1',
 
         build: function(deps, options, done) {
-            var applicationPath = __dirname;
-            nova.utils.createArchive('pluto.zip', applicationPath, function(err, path) {
+            var applicationPath = path.join(__dirname, '..');
+            nova.utils.createArchive('pluto', applicationPath, function(err, path) {
                 if (err) {
                     return done(err);
                 }
