@@ -261,7 +261,7 @@ Command.prototype.execute = function() {
         var bucketname = that.config.s3.bucket;
         var region = that.config.s3.region;
         var datestring = deploymentConfig.deploymentDate.format();
-        var keypath = util.format('%s%s/%s/%s/templates/%s-%s',
+        var keypath = util.format('%s%s/%s/%s/templates/%s-%s.json',
             that.config.s3.keyPrefix,
             that.ref.project, that.ref.component,
             deploymentConfig.deploymentId,
