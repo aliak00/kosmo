@@ -3,12 +3,15 @@ var getopt = require('node-getopt')
     , _ = require('underscore')
     , util = require('util')
     , fs = require('fs')
+    , novautils = require('../component-utils')
     , novaform = require('novaform')
     , novastl = require('novastl')
     , AWS = require('aws-sdk')
     , uuid = require('node-uuid')
     , moment = require('moment')
     , stackUtils = require('../stack-utils')
+    , s3utils = require('../s3utils')
+    , config = require('../configuration')
     , assert = require('assert');
 
 var cmdopts = module.exports.opts = getopt.create([
@@ -101,7 +104,27 @@ Command.prototype._waitForStack = function(options, shouldStopCallback) {
 
 Command.prototype.execute = function() {
     var that = this;
+
     return q().then(function() {
+        // init deployment
+
+        var stackName = that.ref.makeStackName();
+
+        var deploymentDate = moment.utc();
+        var deploymentId = uuid.v4();
+
+        config.currentDeployment.id = deploymentId;
+        config.currentDeployment.date = deploymentDate;
+        config.currentDeployment.ref = that.ref;
+
+        return {
+            projectName: that.ref.project,
+            componentName: that.ref.component,
+            deploymentDate: deploymentDate,
+            deploymentId: deploymentId,
+            stackName: stackName,
+        };
+    }).then(function(deploymentConfig) {
         // TODO: validate project's components, make sure dependencies exist
         var deplist = [];
 
@@ -141,8 +164,11 @@ Command.prototype.execute = function() {
         }
 
         var deplist = walkDeps([], that.component.name);
-        return deplist;
-    }).then(function(dependencies) {
+
+        return _.extend(deploymentConfig, {
+            dependentComponents: deplist,
+        });
+    }).then(function(deploymentConfig) {
         // fetch output for each dependent component
 
         var getStackOutput = q.nbind(stackUtils.getStackOutput, stackUtils);
@@ -153,42 +179,60 @@ Command.prototype.execute = function() {
         var region = that.component.region;
         var cfn = that.cfn = new AWS.CloudFormation({ region : region });
 
-        var outputsPromises = dependencies.map(function(depname) {
+        var componentNames = deploymentConfig.dependentComponents;
+
+        var outputsPromises = componentNames.map(function(depname) {
             return Ref(that.ref.project, depname).makeStackName();
         }).map(function(stackName) {
             return getStackOutput(cfn, stackName);
         });
 
         return q.all(outputsPromises).then(function(results) {
-            return _.object(_.zip(dependencies, results));
+            var dependencyObject = _.object(_.zip(componentNames, results));
+            return _.extend(deploymentConfig, {
+                dependencies: dependencyObject
+            });
         }).catch(function(e) {
             if (e === stackUtils.Status.DOES_NOT_EXIST) {
                 throw new Error('One of the dependent stacks is not yet deployed!');
             }
             throw e;
         });
-    }).then(function(dependencies) {
-        // TODO: inject dependencies into the component
-        // var dependencies = {
-            // infrastructure: { vpc: 'vpc-123' }
-        // };
+    }).then(function(deploymentConfig) {
+        // build the component
+        if (that.commonOptions.verbose) {
+            console.log('Building component...');
+        }
 
-        return dependencies;
-    }).then(function(dependencies) {
+        function returnResult(result) {
+            return _.extend(deploymentConfig, {
+                buildResult: result,
+            });
+        }
+
+        var doneDeferred = q.defer();
+
+        var options = {}; // Currently unused but reserved for the future use.
+        var result = that.component.build(deploymentConfig.dependencies, options, doneDeferred.makeNodeResolver());
+        if (typeof result === 'undefined') {
+            // looks like component wants to use async building, lets wait for done callback to be called.
+            return doneDeferred.promise.timeout(30000).then(returnResult);
+        } else {
+            // async building with promises. Assume build() returned a promise
+            return result.then(returnResult);
+        }
+    }).then(function(deploymentConfig) {
         // build cloudformation resources
         if (that.commonOptions.verbose) {
             console.log('Generating cloudformation template...');
         }
 
-        var stackName = that.ref.makeStackName();
-        var deploymentDate = moment.utc();
-        var deploymentId = uuid.v4();
+        var stack = novaform.Stack(deploymentConfig.stackName);
+        stack.add(deploymentConfig.buildResult.resourceGroups || []);
+        stack.add(deploymentConfig.buildResult.outputs || []);
 
-        var result = that.component.build(dependencies);
-        var stack = novaform.Stack(stackName);
-        stack.add(result.resourceGroups);
-        if (result.outputs) {
-            stack.add(result.outputs);
+        if (stack.isEmpty()) {
+            throw new Error('Nothing to deploy. Lets call it a success!');
         }
 
         var templateBody = stack.toJson();
@@ -202,14 +246,9 @@ Command.prototype.execute = function() {
             fs.closeSync(fd);
         }
 
-        return {
-            projectName: that.ref.project,
-            componentName: that.ref.component,
-            deploymentDate: deploymentDate,
-            deploymentId: deploymentId,
-            stackName: stackName,
+        return _.extend(deploymentConfig, {
             templateBody: templateBody,
-        };
+        });
     }).then(function(deploymentConfig) {
         if (that.commandOptions.noop) {
             return deploymentConfig;
@@ -222,8 +261,10 @@ Command.prototype.execute = function() {
         var bucketname = that.config.s3.bucket;
         var region = that.config.s3.region;
         var datestring = deploymentConfig.deploymentDate.format();
-        var keypath = util.format('%s%s/%s-%s',
-            that.config.s3.keyPrefix, that.ref.project,
+        var keypath = util.format('%s%s/%s/%s/templates/%s-%s',
+            that.config.s3.keyPrefix,
+            that.ref.project, that.ref.component,
+            deploymentConfig.deploymentId,
             deploymentConfig.stackName, datestring);
 
         var params = {
@@ -232,18 +273,10 @@ Command.prototype.execute = function() {
             Body: deploymentConfig.templateBody,
         };
 
-        function s3_endpoint(region) {
-            if (!region) {
-                return 'https://s3.amazonaws.com';
-            }
-            return util.format('https://s3-%s.amazonaws.com', region);
-        }
-
         var s3 = new AWS.S3({ region : region });
         var s3upload = q.nbind(s3.upload, s3);
         return s3upload(params).then(function() {
-            var s3endpoint = s3_endpoint(that.config.s3.region);
-            var url = util.format('%s/%s/%s', s3endpoint, bucketname, keypath);
+            var url = s3utils.urlForUploadParams(that.config.s3.region, params);
             return _.extend(deploymentConfig, {
                 templateUrl: url,
             });
@@ -447,7 +480,11 @@ Project.load = function(name, callback) {
         if (fs.existsSync(filepath) || fs.existsSync(filepath + '.js')) {
             try {
                 var module = require(filepath);
-                var config = module(novaform, novastl);
+                var config = module({
+                    utils: novautils,
+                    resources: novaform,
+                    templates: novastl,
+                });
                 return new Project(config);
             } catch (e) {
                 if (callback) {

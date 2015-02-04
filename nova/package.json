@@ -12,6 +12,7 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "archiver": "^0.14.2",
     "aws-sdk": "^2.1.2",
     "moment": "^2.8.4",
     "node-getopt": "^0.2.3",

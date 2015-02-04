@@ -6,7 +6,8 @@ var nova = require('../lib')
     , AWS = require('aws-sdk')
     , _ = require('underscore')
     , fs = require('fs')
-    , util = require('util');
+    , util = require('util')
+    , config = require('../lib/configuration');
 
 function parseArguments(commands) {
     var args = process.argv.slice(2);
@@ -135,23 +136,6 @@ function init(callback) {
     }
 }
 
-function loadConfiguration() {
-    var default_config = {
-        s3: {
-            region: null,
-            bucket: null,
-            keyPrefix: '',
-        }
-    };
-
-    var filename = process.env['HOME'] + '/.novacfg';
-    if (fs.existsSync(filename)) {
-        var data = fs.readFileSync(filename);
-        var config = JSON.parse(data) || {};
-    }
-    return _.extend(default_config, config);
-}
-
 var opts = parseArguments(nova.commands);
 
 if (opts.commonOptions.help) {
@@ -168,7 +152,6 @@ if (!opts.command) {
     process.exit(0);
 }
 
-var config = loadConfiguration();
 init(function(err) {
     opts.showHelp(err);
     process.exit(0);

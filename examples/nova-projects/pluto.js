@@ -37,9 +37,9 @@ function makeConfig(region){
 }
 
 var publicZone = 'wowbox.telenor.io';
-var internalZone = 'c.wowbox.telenor.io';
+var internalZone = 'i.wowbox.telenor.io';
 
-module.exports = function(novaform, novastl) {
+module.exports = function(nova) {
     var setup = {
         name: 'setup',
 
@@ -49,18 +49,18 @@ module.exports = function(novaform, novastl) {
         region: 'eu-west-1',
 
         build: function(deps) {
-            var eipa = novaform.ec2.EIP('RouterIpAZa', {
+            var eipa = nova.resources.ec2.EIP('RouterIpAZa', {
                 Domain: 'vpc',
             });
-            var eipb = novaform.ec2.EIP('RouterIpAZb', {
+            var eipb = nova.resources.ec2.EIP('RouterIpAZb', {
                 Domain: 'vpc',
             });
 
-            var wowboxHostedZone = novaform.r53.HostedZone('Wowbox', {
+            var wowboxHostedZone = nova.resources.r53.HostedZone('Wowbox', {
                 Name: publicZone,
             });
 
-            var internalHostedZone = novaform.r53.HostedZone('WowboxInternal', {
+            var internalHostedZone = nova.resources.r53.HostedZone('WowboxInternal', {
                 Name: internalZone,
             });
 
@@ -73,10 +73,12 @@ module.exports = function(novaform, novastl) {
                 ],
 
                 outputs: [
-                    novaform.Output('RouterIpAZa', eipa),
-                    novaform.Output('RouterIpAZb', eipb),
-                    novaform.Output('wowboxHostedZoneId', wowboxHostedZone),
-                    novaform.Output('internalHostedZoneId', internalHostedZone),
+                    nova.resources.Output('routerIpAZa', eipa),
+                    nova.resources.Output('routerIpAZb', eipb),
+                    nova.resources.Output('wowboxHostedZoneName', publicZone),
+                    nova.resources.Output('wowboxHostedZoneId', wowboxHostedZone),
+                    nova.resources.Output('internalHostedZoneName', internalZone),
+                    nova.resources.Output('internalHostedZoneId', internalHostedZone),
                 ]
             };
         }
@@ -96,13 +98,13 @@ module.exports = function(novaform, novastl) {
 
             var internalHostedZoneId = deps.setup.internalHostedZoneId;
 
-            var vpc = novastl.Vpc({
+            var vpc = nova.templates.Vpc({
                 cidr: config.vpcCidrBlock,
                 publicSubnetsPerAz: config.publicSubnetsPerAz,
                 privateSubnetsPerAz: config.privateSubnetsPerAz
             });
 
-            var nat = novastl.Nat({
+            var nat = nova.templates.Nat({
                 vpcId: vpc.vpcId,
                 vpcCidrBlock: vpc.vpcCidrBlock,
                 publicSubnets: vpc.publicSubnets,
@@ -114,7 +116,7 @@ module.exports = function(novaform, novastl) {
                 instanceType: 't2.micro'
             });
 
-            var bastion = novastl.Bastion({
+            var bastion = nova.templates.Bastion({
                 vpc: vpc,
                 allowedSshCidr: '0.0.0.0/0',
                 keyName: 'ddenis',
@@ -122,13 +124,13 @@ module.exports = function(novaform, novastl) {
                 instanceType: 't2.micro'
             });
 
-            var bastionr53record = novaform.r53.RecordSet('BastionR53', {
+            var bastionr53record = nova.resources.r53.RecordSet('BastionR53', {
                 HostedZoneId: internalHostedZoneId,
                 Type: 'A',
                 Name: util.format('login.%s.', internalZone),
                 TTL: '60',
                 ResourceRecords: [
-                    novaform.ref(bastion.elasticIp)
+                    nova.resources.ref(bastion.elasticIp)
                 ],
             });
 
@@ -141,9 +143,12 @@ module.exports = function(novaform, novastl) {
                 ],
 
                 outputs: [
-                    novaform.Output('vpcId', vpc.vpc),
-                    novaform.Output('privateSubnets', novaform.join(',', vpc.privateSubnets)),
-                    novaform.Output('publicSubnets', novaform.join(',', vpc.publicSubnets)),
+                    nova.resources.Output('vpcId', vpc.vpc),
+                    nova.resources.Output('privateSubnets', nova.resources.join(',', vpc.privateSubnets)),
+                    nova.resources.Output('publicSubnets', nova.resources.join(',', vpc.publicSubnets)),
+                    nova.resources.Output('natSecurityGroup', nat.securityGroup),
+                    nova.resources.Output('bastionSecurityGroup', bastion.securityGroup),
+                    nova.resources.Output('bastionHostname', bastionr53record),
                 ],
             };
         }
@@ -165,19 +170,19 @@ module.exports = function(novaform, novastl) {
 
             var internalHostedZoneId = deps.setup.internalHostedZoneId;
 
-            var rds = novastl.Rds({
+            var rds = nova.templates.Rds({
                 name: 'prod',
                 subnets: subnets,
                 password: '12345678',
             });
 
-            var r53record = novaform.r53.RecordSet('DbR53', {
+            var r53record = nova.resources.r53.RecordSet('DbR53', {
                 HostedZoneId: internalHostedZoneId,
                 Type: 'CNAME',
                 Name: util.format('prod.%s.', internalZone),
                 TTL: '60',
                 ResourceRecords: [
-                    novaform.getAtt(rds.dbinstance, 'Endpoint.Address'),
+                    nova.resources.getAtt(rds.dbinstance, 'Endpoint.Address'),
                 ],
             });
 
@@ -188,11 +193,73 @@ module.exports = function(novaform, novastl) {
                 ],
 
                 outputs: [
-                    novaform.Output('DbId', rds.dbinstance),
-                    novaform.Output('DbAddress', novaform.getAtt(rds.dbinstance, 'Endpoint.Address')),
-                    novaform.Output('DbPort', novaform.getAtt(rds.dbinstance, 'Endpoint.Port')),
+                    nova.resources.Output('id', rds.dbinstance),
+                    nova.resources.Output('dbaddress', nova.resources.getAtt(rds.dbinstance, 'Endpoint.Address')),
+                    nova.resources.Output('dbport', nova.resources.getAtt(rds.dbinstance, 'Endpoint.Port')),
+                    nova.resources.Output('hostname', r53record),
                 ],
             };
+        }
+    };
+
+    var ebapp = {
+        name: 'app',
+
+        dependencies: [
+            'infrastructure',
+            'database',
+        ],
+
+        region: 'eu-west-1',
+
+        build: function(deps, options, done) {
+            var applicationPath = __dirname;
+            nova.utils.createArchive('pluto.zip', applicationPath, function(err, path) {
+                if (err) {
+                    return done(err);
+                }
+                nova.utils.deployArchive(path, function(err, archive) {
+                    if (err) {
+                        return done(err);
+                    }
+
+                    var result = build(archive.bucket, archive.key);
+                    done(null, result);
+                });
+            });
+
+
+            function build(bucket, key) {
+                var vpcId = deps.infrastructure.vpcId;
+                var publicSubnets = deps.infrastructure.publicSubnets.split(',');
+                var privateSubnets = deps.infrastructure.privateSubnets.split(',');
+
+                var bastionSecurityGroup = deps.infrastructure.bastionSecurityGroup;
+                var natSecurityGroup = deps.infrastructure.natSecurityGroup;
+
+                var ebapp = nova.templates.EBApp({
+                    vpcId: vpcId,
+                    publicSubnets: publicSubnets,
+                    privateSubnets: privateSubnets,
+                    keyName: 'ddenis',
+                    bastionSecurityGroup: bastionSecurityGroup,
+                    natSecurityGroup: natSecurityGroup,
+                    sourceBundle: {
+                        S3Bucket: bucket,
+                        S3Key: key,
+                    },
+                });
+
+                return {
+                    resourceGroups: [
+                        ebapp.toResourceGroup(),
+                    ],
+
+                    outputs: [
+                        nova.resources.Output('address', nova.resources.getAtt(ebapp.environment, 'EndpointURL')),
+                    ],
+                };
+            }
         }
     };
 
@@ -203,6 +270,7 @@ module.exports = function(novaform, novastl) {
             setup,
             infrastructure,
             database,
+            ebapp,
         ],
     };
 

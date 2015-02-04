@@ -65,4 +65,8 @@ Stack.prototype.toJson = function() {
     return JSON.stringify(this.toObject(), utils.jsonReplacer, 2);
 }
 
+Stack.prototype.isEmpty = function() {
+    return this.resourceGroups.length === 0;
+}
+
 module.exports = Stack;

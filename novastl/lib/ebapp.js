@@ -14,12 +14,12 @@ function EBApp(options) {
 
     var name = options.name || 'EBApp';
     var sourceBundle = options.sourceBundle;
-    var vpc = options.vpc;
+    var vpcId = options.vpcId;
+    var publicSubnets = options.publicSubnets;
+    var privateSubnets = options.privateSubnets;
     var bastionSecurityGroup = options.bastionSecurityGroup;
     var natSecurityGroup = options.natSecurityGroup;
     var keyName = options.keyName;
-    var publicSubnets = options.publicSubnets;
-    var privateSubnets = options.privateSubnets;
 
     name = name.charAt(0).toUpperCase() + name.slice(1);
 
@@ -69,7 +69,7 @@ function EBApp(options) {
     }));
 
     var securityGroup = this._addResource(novaform.ec2.SecurityGroup(mkname('Sg'), {
-        VpcId: vpc,
+        VpcId: vpcId,
         GroupDescription: name + ' security group',
         Tags: {
             Application: novaform.refs.StackId,
@@ -96,7 +96,7 @@ function EBApp(options) {
     },{
         Namespace: 'aws:ec2:vpc',
         OptionName: 'VPCId',
-        Value: vpc
+        Value: vpcId
     },{
         Namespace: 'aws:ec2:vpc',
         OptionName: 'Subnets',
@@ -119,6 +119,8 @@ function EBApp(options) {
         },
         OptionSettings: templateOptionSettings
     }));
+
+    this.environment = environment;
 }
 EBApp.prototype = Object.create(Template.prototype);
 
