@@ -17,7 +17,7 @@ module.exports.createArchive = function(destinationName, sourcePath, callback) {
     }
 
     if (!path.extname(destinationName)) {
-        destinationName += '.tgz';
+        destinationName += '.zip';
     }
 
     var tempdir = '/tmp/';
@@ -28,9 +28,7 @@ module.exports.createArchive = function(destinationName, sourcePath, callback) {
     }
 
     var output = fs.createWriteStream(destinationPath);
-    var archive = archiver('tar', {
-        gzip: true,
-    });
+    var archive = archiver('zip');
 
     output.on('close', function() {
         console.log(archive.pointer() + ' total bytes');
