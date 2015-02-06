@@ -64,7 +64,7 @@ module.exports = function(novaform, novastl) {
             });
 
             return {
-                resourceGroups: [
+                resources: [
                     vpc.toResourceGroup(),
                     nat.toResourceGroup()
                 ],
@@ -88,7 +88,7 @@ module.exports = function(novaform, novastl) {
             });
 
             return {
-                resourceGroups: [
+                resources: [
                     rds.toResourceGroup()
                 ]
             };

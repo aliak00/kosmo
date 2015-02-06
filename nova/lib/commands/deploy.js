@@ -230,7 +230,7 @@ Command.prototype.execute = function() {
         }
 
         var stack = novaform.Stack(deploymentConfig.stackName);
-        stack.add(deploymentConfig.buildResult.resourceGroups || []);
+        stack.add(deploymentConfig.buildResult.resources || []);
         stack.add(deploymentConfig.buildResult.outputs || []);
 
         if (stack.isEmpty()) {

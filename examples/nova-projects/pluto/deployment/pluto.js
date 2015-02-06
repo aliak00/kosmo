@@ -66,7 +66,7 @@ module.exports = function(nova) {
             });
 
             return {
-                resourceGroups: [
+                resources: [
                     eipa,
                     eipb,
                     externalHostedZone,
@@ -136,7 +136,7 @@ module.exports = function(nova) {
             });
 
             return {
-                resourceGroups: [
+                resources: [
                     vpc.toResourceGroup(),
                     nat.toResourceGroup(),
                     bastion.toResourceGroup(),
@@ -188,7 +188,7 @@ module.exports = function(nova) {
             });
 
             return {
-                resourceGroups: [
+                resources: [
                     rds.toResourceGroup(),
                     r53record,
                 ],
@@ -264,7 +264,7 @@ module.exports = function(nova) {
                 });
 
                 return {
-                    resourceGroups: [
+                    resources: [
                         ebapp.toResourceGroup(),
                         r53record,
                     ],

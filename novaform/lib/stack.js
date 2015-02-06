@@ -10,7 +10,7 @@ function Stack(name, description) {
 
     this.name = name;
     this.description = description;
-    this.resourceGroups = [];
+    this.resources = [];
     this.outputs = {};
 }
 
@@ -21,11 +21,11 @@ Stack.prototype.add = function(stackItems) {
     var that = this;
     stackItems.forEach(function(stackItem) {
         if (stackItem instanceof ResourceGroup) {
-            that.resourceGroups.push(stackItem);
+            that.resources.push(stackItem);
         } else if (stackItem instanceof Resource) {
             var rg = ResourceGroup();
             rg.add(stackItem);
-            that.resourceGroups.push(rg);
+            that.resources.push(rg);
         } else if (stackItem instanceof Output) {
             if (that.outputs[stackItem.name]) {
                 throw new Error('Cannot add duplicate output: ' + stackItem.name);
@@ -46,7 +46,7 @@ Stack.prototype.toObject = function() {
         object.Description = this.description;
     }
 
-    this.resourceGroups.forEach(function(rg) {
+    this.resources.forEach(function(rg) {
         for (key in rg.resources) {
             object.Resources = object.Resources || {};
             object.Resources[key] = rg.resources[key].toObject();
@@ -66,7 +66,7 @@ Stack.prototype.toJson = function() {
 }
 
 Stack.prototype.isEmpty = function() {
-    return this.resourceGroups.length === 0;
+    return this.resources.length === 0;
 }
 
 module.exports = Stack;
