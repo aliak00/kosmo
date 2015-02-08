@@ -1,42 +1,6 @@
 var _ = require('underscore')
     , TagValue = require('./tag-value');
 
-
-function expandTags(options) {
-    if (!options || !options.Tags) {
-        return;
-    }
-
-    var tags = [];
-    for (var key in options.Tags) {
-        var value = options.Tags[key];
-        var tag = {
-            Key: key
-        };
-        if (value instanceof TagValue) {
-            tag = _.extend(tag, value)
-        } else {
-            tag.Value = value;
-        }
-        tags.push(tag);
-    }
-
-    options.Tags = tags;
-}
-
-function modifyPortRange(options) {
-    if (!options || !options.PortRange || !Array.isArray(options.PortRange)) {
-        return;
-    }
-
-    var portRange = {
-        From: options.PortRange[0],
-        To: options.PortRange[1],
-    };
-
-    options.PortRange = portRange;
-}
-
 function Resource(type, name, properties) {
     if (!(this instanceof Resource)) {
         return new Resource(type, name, properties);
@@ -49,9 +13,46 @@ function Resource(type, name, properties) {
     this.metadata = undefined;
 }
 
+Resource.prototype._expandTags = function() {
+    if (!this.properties.Tags) {
+        return;
+    }
+
+    var tags = [];
+    for (var key in this.properties.Tags) {
+        var value = this.properties.Tags[key];
+        var tag = {
+            Key: key
+        };
+        if (value instanceof TagValue) {
+            tag = _.extend(tag, value)
+        } else {
+            tag.Value = value;
+        }
+        tags.push(tag);
+    }
+
+    this.properties.Tags = tags;
+}
+
+Resource.prototype._modifyPortRange = function() {
+    if (!this.PortRange || !Array.isArray(this.PortRange)) {
+        return;
+    }
+
+    var portRange = {
+        From: this.PortRange[0],
+        To: this.PortRange[1],
+    };
+
+    this.PortRange = portRange;
+}
+
 Resource.prototype.toObject = function() {
-    expandTags(this.properties);
-    modifyPortRange(this.properties);
+    // TODO: fix me, remove this hack from generic Resource object to the concrete subclasses where needed.
+    this._expandTags();
+    this._modifyPortRange();
+
     var object = {
         Type: this.type
     };
