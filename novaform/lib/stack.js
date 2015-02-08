@@ -1,7 +1,8 @@
-var ResourceGroup = require('./resource-group')
-    , Resource = require('./resource')
+var Resource = require('./resource')
+    , Template = require('./template')
     , Output = require('./output')
-    , utils = require('./utils');
+    , utils = require('./utils')
+    , _ = require('underscore');
 
 function Stack(name, description) {
     if (!(this instanceof Stack)) {
@@ -20,45 +21,37 @@ Stack.prototype.add = function(stackItems) {
     }
     var that = this;
     stackItems.forEach(function(stackItem) {
-        if (stackItem instanceof ResourceGroup) {
+        if (stackItem instanceof Resource) {
             that.resources.push(stackItem);
-        } else if (stackItem instanceof Resource) {
-            var rg = ResourceGroup();
-            rg.add(stackItem);
-            that.resources.push(rg);
+        } else if (stackItem instanceof Template) {
+            that.resources.push.apply(that.resources, stackItem.resources());
         } else if (stackItem instanceof Output) {
             if (that.outputs[stackItem.name]) {
                 throw new Error('Cannot add duplicate output: ' + stackItem.name);
             }
             that.outputs[stackItem.name] = stackItem;
         } else {
-            throw new Error('stackItem must be instanceof Resource, ResourceGroup or Output');
+            throw new Error('stackItem must be instanceof Resource, Template or Output');
         }
     });
 }
 
 Stack.prototype.toObject = function() {
-    var object = {
-        AWSTemplateFormatVersion: '2010-09-09'
+    var description = this.description;
+
+    var resources = _.reduce(this.resources, function(memo, resource) {
+        return _.extend(memo, _.object([resource.name], [resource.toObject()]));
+    }, {});
+    var outputs = _.reduce(this.outputs, function(memo, resource) {
+        return _.extend(memo, _.object([resource.name], [resource.toObject()]));
+    }, {});
+
+    return {
+        AWSTemplateFormatVersion: '2010-09-09',
+        Description: description,
+        Resources: resources,
+        Outputs: outputs,
     };
-
-    if (this.description) {
-        object.Description = this.description;
-    }
-
-    this.resources.forEach(function(rg) {
-        for (key in rg.resources) {
-            object.Resources = object.Resources || {};
-            object.Resources[key] = rg.resources[key].toObject();
-        }
-    });
-
-    for (key in this.outputs) {
-        object.Outputs = object.Outputs || {};
-        object.Outputs[key] = this.outputs[key].toObject();
-    }
-
-    return object;
 }
 
 Stack.prototype.toJson = function() {

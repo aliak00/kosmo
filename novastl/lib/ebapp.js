@@ -1,5 +1,4 @@
 var novaform = require('novaform')
-    , Template = require('./template')
     , _ = require('underscore');
 
 /**
@@ -10,7 +9,7 @@ function EBApp(options) {
         return new EBApp(options);
     }
 
-    Template.call(this);
+    novaform.Template.call(this);
 
     var name = options.name || 'EBApp';
     var sourceBundle = options.sourceBundle;
@@ -122,6 +121,6 @@ function EBApp(options) {
 
     this.environment = environment;
 }
-EBApp.prototype = Object.create(Template.prototype);
+EBApp.prototype = Object.create(novaform.Template.prototype);
 
 module.exports = EBApp;

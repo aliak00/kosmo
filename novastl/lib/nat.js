@@ -1,7 +1,6 @@
 var novaform = require('novaform')
     , util = require('util')
-    , _ = require('underscore')
-    , Template = require('./template');
+    , _ = require('underscore');
 
 /**
     Refs include:
@@ -28,7 +27,7 @@ function Nat(options) {
         return new Nat(options);
     }
 
-    Template.call(this);
+    novaform.Template.call(this);
 
     var keyName = options.keyName;
     var imageId = options.imageId;
@@ -213,6 +212,6 @@ function Nat(options) {
     this.securityGroup = securityGroup;
     this.autoScalingGroup = autoScalingGroup;
 }
-Nat.prototype = Object.create(Template.prototype);
+Nat.prototype = Object.create(novaform.Template.prototype);
 
 module.exports = Nat;

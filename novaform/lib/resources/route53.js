@@ -1,14 +1,11 @@
-var Resource = require('./../resource');
+var Resource = require('../resource');
 
 function HealthCheck(name, properties) {
     if (!(this instanceof HealthCheck)) {
         return new HealthCheck(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::Route53::HealthCheck';
-    this.name = name;
-
+    Resource.call(this, 'AWS::Route53::HealthCheck', name, properties);
 }
 HealthCheck.prototype = Object.create(Resource.prototype);
 
@@ -17,10 +14,7 @@ function HostedZone(name, properties) {
         return new HostedZone(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::Route53::HostedZone';
-    this.name = name;
-
+    Resource.call(this, 'AWS::Route53::HostedZone', name, properties);
 }
 HostedZone.prototype = Object.create(Resource.prototype);
 
@@ -29,10 +23,7 @@ function RecordSet(name, properties) {
         return new RecordSet(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::Route53::RecordSet';
-    this.name = name;
-
+    Resource.call(this, 'AWS::Route53::RecordSet', name, properties);
 }
 RecordSet.prototype = Object.create(Resource.prototype);
 
@@ -41,10 +32,7 @@ function RecordSetGroup(name, properties) {
         return new RecordSetGroup(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::Route53::RecordSetGroup';
-    this.name = name;
-
+    Resource.call(this, 'AWS::Route53::RecordSetGroup', name, properties);
 }
 RecordSetGroup.prototype = Object.create(Resource.prototype);
 

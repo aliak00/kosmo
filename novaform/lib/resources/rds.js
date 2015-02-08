@@ -1,14 +1,11 @@
-var Resource = require('./../resource');
+var Resource = require('../resource');
 
 function DBSubnetGroup(name, properties) {
     if (!(this instanceof DBSubnetGroup)) {
         return new DBSubnetGroup(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::RDS::DBSubnetGroup';
-    this.name = name;
-
+    Resource.call(this, 'AWS::RDS::DBSubnetGroup', name, properties);
 }
 DBSubnetGroup.prototype = Object.create(Resource.prototype);
 
@@ -17,10 +14,7 @@ function DBInstance(name, properties) {
         return new DBInstance(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::RDS::DBInstance';
-    this.name = name;
-
+    Resource.call(this, 'AWS::RDS::DBInstance', name, properties);
 }
 DBInstance.prototype = Object.create(Resource.prototype);
 

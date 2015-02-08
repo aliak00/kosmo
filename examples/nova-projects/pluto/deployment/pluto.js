@@ -137,9 +137,9 @@ module.exports = function(nova) {
 
             return {
                 resources: [
-                    vpc.toResourceGroup(),
-                    nat.toResourceGroup(),
-                    bastion.toResourceGroup(),
+                    vpc,
+                    nat,
+                    bastion,
                     bastionr53record,
                 ],
 
@@ -189,7 +189,7 @@ module.exports = function(nova) {
 
             return {
                 resources: [
-                    rds.toResourceGroup(),
+                    rds,
                     r53record,
                 ],
 
@@ -265,7 +265,7 @@ module.exports = function(nova) {
 
                 return {
                     resources: [
-                        ebapp.toResourceGroup(),
+                        ebapp,
                         r53record,
                     ],
 

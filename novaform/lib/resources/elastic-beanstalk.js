@@ -1,13 +1,11 @@
-var Resource = require('./../resource');
+var Resource = require('../resource');
 
 function Application(name, properties) {
     if (!(this instanceof Application)) {
         return new Application(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::ElasticBeanstalk::Application';
-    this.name = name;
+    Resource.call(this, 'AWS::ElasticBeanstalk::Application', name, properties);
 
 }
 Application.prototype = Object.create(Resource.prototype);
@@ -17,10 +15,7 @@ function ApplicationVersion(name, properties) {
         return new ApplicationVersion(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::ElasticBeanstalk::ApplicationVersion';
-    this.name = name;
-
+    Resource.call(this, 'AWS::ElasticBeanstalk::ApplicationVersion', name, properties);
 }
 ApplicationVersion.prototype = Object.create(Resource.prototype);
 
@@ -29,10 +24,7 @@ function ConfigurationTemplate(name, properties) {
         return new ConfigurationTemplate(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::ElasticBeanstalk::ConfigurationTemplate';
-    this.name = name;
-
+    Resource.call(this, 'AWS::ElasticBeanstalk::ConfigurationTemplate', name, properties);
 }
 ConfigurationTemplate.prototype = Object.create(Resource.prototype);
 
@@ -41,10 +33,7 @@ function Environment(name, properties) {
         return new Environment(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::ElasticBeanstalk::Environment';
-    this.name = name;
-
+    Resource.call(this, 'AWS::ElasticBeanstalk::Environment', name, properties);
 }
 Environment.prototype = Object.create(Resource.prototype);
 

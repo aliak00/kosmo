@@ -1,13 +1,11 @@
-var Resource = require('./../resource');
+var Resource = require('../resource');
 
 function VPC(name, properties) {
     if (!(this instanceof VPC)) {
         return new VPC(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::VPC';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::VPC', name, properties);
 
     this.cidrBlock = this.properties.CidrBlock;
 }
@@ -18,9 +16,7 @@ function InternetGateway(name, properties) {
         return new InternetGateway(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::InternetGateway';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::InternetGateway', name, properties);
 }
 InternetGateway.prototype = Object.create(Resource.prototype);
 
@@ -29,9 +25,7 @@ function VPCGatewayAttachment(name, properties) {
         return new VPCGatewayAttachment(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::VPCGatewayAttachment';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::VPCGatewayAttachment', name, properties);
 }
 VPCGatewayAttachment.prototype = Object.create(Resource.prototype);
 
@@ -40,9 +34,7 @@ function Subnet(name, properties) {
         return new Subnet(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::Subnet';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::Subnet', name, properties);
 
     this.cidrBlock = properties.CidrBlock;
     this.availabilityZone = properties.AvailabilityZone;
@@ -54,9 +46,7 @@ function RouteTable(name, properties) {
         return new RouteTable(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::RouteTable';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::RouteTable', name, properties);
 }
 RouteTable.prototype = Object.create(Resource.prototype);
 
@@ -65,9 +55,7 @@ function Route(name, properties) {
         return new Route(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::Route';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::Route', name, properties);
 }
 Route.prototype = Object.create(Resource.prototype);
 
@@ -76,9 +64,7 @@ function SubnetRouteTableAssociation(name, properties) {
         return new SubnetRouteTableAssociation(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::SubnetRouteTableAssociation';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::SubnetRouteTableAssociation', name, properties);
 }
 SubnetRouteTableAssociation.prototype = Object.create(Resource.prototype);
 
@@ -87,9 +73,7 @@ function NetworkAcl(name, properties) {
         return new NetworkAcl(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::NetworkAcl';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::NetworkAcl', name, properties);
 }
 NetworkAcl.prototype = Object.create(Resource.prototype);
 
@@ -98,9 +82,7 @@ function NetworkAclEntry(name, properties) {
         return new NetworkAclEntry(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::NetworkAclEntry';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::NetworkAclEntry', name, properties);
 }
 NetworkAclEntry.prototype = Object.create(Resource.prototype);
 
@@ -109,9 +91,7 @@ function SubnetNetworkAclAssociation(name, properties) {
         return new SubnetNetworkAclAssociation(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::SubnetNetworkAclAssociation';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::SubnetNetworkAclAssociation', name, properties);
 }
 SubnetNetworkAclAssociation.prototype = Object.create(Resource.prototype);
 
@@ -120,9 +100,7 @@ function SecurityGroup(name, properties) {
         return new SecurityGroup(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::SecurityGroup';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::SecurityGroup', name, properties);
 }
 SecurityGroup.prototype = Object.create(Resource.prototype);
 
@@ -131,9 +109,7 @@ function SecurityGroupIngress(name, properties) {
         return new SecurityGroupIngress(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::SecurityGroupIngress';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::SecurityGroupIngress', name, properties);
 }
 SecurityGroupIngress.prototype = Object.create(Resource.prototype);
 
@@ -142,9 +118,7 @@ function SecurityGroupEgress(name, properties) {
         return new SecurityGroupEgress(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::SecurityGroupEgress';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::SecurityGroupEgress', name, properties);
 }
 SecurityGroupEgress.prototype = Object.create(Resource.prototype);
 
@@ -153,9 +127,7 @@ function EIP(name, properties) {
         return new EIP(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::EIP';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::EIP', name, properties);
 }
 EIP.prototype = Object.create(Resource.prototype);
 
@@ -164,9 +136,7 @@ function Instance(name, properties) {
         return new Intance(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::EC2::Instance';
-    this.name = name;
+    Resource.call(this, 'AWS::EC2::Instance', name, properties);
 }
 Instance.prototype = Object.create(Resource.prototype);
 

@@ -1,15 +1,13 @@
-var Resource = require('./../resource');
+var Resource = require('../resource');
 
 function LaunchConfiguration(name, properties, metadata) {
     if (!(this instanceof LaunchConfiguration)) {
         return new LaunchConfiguration(name, properties, metadata);
     }
 
-    this.properties = properties;
-    this.metadata = metadata;
-    this.type = 'AWS::AutoScaling::LaunchConfiguration';
-    this.name = name;
+    Resource.call(this, 'AWS::AutoScaling::LaunchConfiguration', name, properties);
 
+    this.metadata = metadata;
 }
 LaunchConfiguration.prototype = Object.create(Resource.prototype);
 
@@ -18,13 +16,11 @@ function AutoScalingGroup(name, properties) {
         return new AutoScalingGroup(name, properties);
     }
 
-    this.properties = properties;
-    this.type = 'AWS::AutoScaling::AutoScalingGroup';
-    this.name = name;
+    Resource.call(this, 'AWS::AutoScaling::AutoScalingGroup', name, properties);
 
     this.extendWith = {};
     if (this.properties.UpdatePolicy) {
-        this.extendWith.UpdatePolicy = this.properties.UpdatePolicy;    
+        this.extendWith.UpdatePolicy = this.properties.UpdatePolicy;
     }
 }
 AutoScalingGroup.prototype = Object.create(Resource.prototype);

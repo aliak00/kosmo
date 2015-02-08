@@ -1,5 +1,5 @@
-var ResourceGroup = require('./lib/resource-group')
-    , Resource = require('./lib/resource')
+var Resource = require('./lib/resource')
+    , Template = require('./lib/template')
     , Output = require('./lib/output')
     , TagValue = require('./lib/tag-value')
     , fn = require('./lib/fn')
@@ -48,11 +48,11 @@ function loadUserDataFromFile(filename, params) {
 
 module.exports = {
     Stack: Stack,
-    ResourceGroup: ResourceGroup,
     Resource: Resource,
+    Template: Template,
 
     Output: Output,
-    
+
     TagValue: TagValue,
 
     ec2: require('./lib/resources/ec2'),

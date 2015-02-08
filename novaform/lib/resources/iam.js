@@ -1,40 +1,34 @@
-var Resource = require('./../resource');
+var Resource = require('../resource');
 
-function Role(name, options) {
+function Role(name, properties) {
     if (!(this instanceof Role)) {
-        return new Role(name, options);
+        return new Role(name, properties);
     }
 
-    this.properties = options;
-    this.type = 'AWS::IAM::Role';
-    this.name = name;
+    Resource.call(this, 'AWS::IAM::Role', name, properties);
 
     // TODO: Support this use case
-    if (options.Policies) {
+    if (properties.Policies) {
         throw new Error('AWS::IAM::Role.Policies not supported right now.');
     }
 }
 Role.prototype = Object.create(Resource.prototype);
 
-function Policy(name, options) {
+function Policy(name, properties) {
     if (!(this instanceof Policy)) {
-        return new Policy(name, options);
+        return new Policy(name, properties);
     }
 
-    this.properties = options;
-    this.type = 'AWS::IAM::Policy';
-    this.name = name;
+    Resource.call(this, 'AWS::IAM::Policy', name, properties);
 }
 Policy.prototype = Object.create(Resource.prototype);
 
-function InstanceProfile(name, options) {
+function InstanceProfile(name, properties) {
     if (!(this instanceof InstanceProfile)) {
-        return new InstanceProfile(name, options);
+        return new InstanceProfile(name, properties);
     }
 
-    this.properties = options;
-    this.type = 'AWS::IAM::InstanceProfile';
-    this.name = name;
+    Resource.call(this, 'AWS::IAM::InstanceProfile', name, properties);
 }
 InstanceProfile.prototype = Object.create(Resource.prototype);
 

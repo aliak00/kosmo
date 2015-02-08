@@ -37,10 +37,16 @@ function modifyPortRange(options) {
     options.PortRange = portRange;
 }
 
-function Resource() {
+function Resource(type, name, properties) {
     if (!(this instanceof Resource)) {
-        return new Resource();
+        return new Resource(type, name, properties);
     }
+
+    this.type = type;
+    this.name = name;
+    this.properties = properties;
+    this.extendWith = undefined;
+    this.metadata = undefined;
 }
 
 Resource.prototype.toObject = function() {
@@ -69,6 +75,6 @@ Resource.prototype.toObject = function() {
     }
 
     return object;
-}
+};
 
 module.exports = Resource;

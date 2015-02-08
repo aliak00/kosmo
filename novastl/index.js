@@ -3,5 +3,5 @@ module.exports = {
     Nat: require('./lib/nat'),
     Bastion: require('./lib/bastion'),
     Rds: require('./lib/rds'),
-    EBApp: require('./lib/ebapp')
+    EBApp: require('./lib/ebapp'),
 };

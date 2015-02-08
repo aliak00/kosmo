@@ -1,7 +1,6 @@
 var novaform = require('novaform')
     , util = require('util')
-    , _ = require('underscore')
-    , Template = require('./template');
+    , _ = require('underscore');
 
 /**
     Refs include:
@@ -58,7 +57,7 @@ function Vpc(options) {
         return new Vpc(options);
     }
 
-    Template.call(this);
+    novaform.Template.call(this);
 
     var vpcCidr = options.cidr;
     var publicSubnetsPerAz = options.publicSubnetsPerAz;
@@ -116,7 +115,7 @@ function Vpc(options) {
     this.vpcCidrBlock = vpcCidr;
 }
 
-Vpc.prototype = Object.create(Template.prototype);
+Vpc.prototype = Object.create(novaform.Template.prototype);
 
 function mknameAz(str, az) {
     return util.format('%sAZ%s', str, az);

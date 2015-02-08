@@ -1,6 +1,5 @@
 var novaform = require('novaform')
-    , _ = require('underscore')
-    , Template = require('./template');
+    , _ = require('underscore');
 
 /**
     Refs include:
@@ -22,7 +21,7 @@ function Bastion(options) {
         return new Bastion(options);
     }
 
-    Template.call(this);
+    novaform.Template.call(this);
 
     var vpc = options.vpc;
     var keyName = options.keyName;
@@ -190,6 +189,6 @@ function Bastion(options) {
     this.elasticIp = elasticIp;
 }
 
-Bastion.prototype = Object.create(Template.prototype);
+Bastion.prototype = Object.create(novaform.Template.prototype);
 
 module.exports = Bastion;

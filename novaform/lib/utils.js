@@ -18,4 +18,4 @@ function jsonReplacer(key, value) {
 
 module.exports = {
     jsonReplacer: jsonReplacer
-}
+};

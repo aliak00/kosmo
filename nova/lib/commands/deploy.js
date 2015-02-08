@@ -125,6 +125,12 @@ Command.prototype.execute = function() {
             stackName: stackName,
         };
     }).then(function(deploymentConfig) {
+        var region = that.component.region;
+        var cfn = that.cfn = new AWS.CloudFormation({ region : region });
+        return _.extend(deploymentConfig, {
+            cfn: cfn,
+        });
+    }).then(function(deploymentConfig) {
         // TODO: validate project's components, make sure dependencies exist
         var deplist = [];
 
@@ -176,9 +182,7 @@ Command.prototype.execute = function() {
             console.log('Fetching outputs of dependent stacks...');
         }
 
-        var region = that.component.region;
-        var cfn = that.cfn = new AWS.CloudFormation({ region : region });
-
+        var cfn = deploymentConfig.cfn;
         var componentNames = deploymentConfig.dependentComponents;
 
         var outputsPromises = componentNames.map(function(depname) {
@@ -342,7 +346,6 @@ Command.prototype.execute = function() {
                     ],
                 }).then(function(data) {
                     return _.extend(deploymentConfig, {
-                        cfn: cfn,
                         stackId: data.StackId,
                     });
                 }).catch(function(err) {
@@ -362,7 +365,6 @@ Command.prototype.execute = function() {
                     TemplateURL: deploymentConfig.templateUrl,
                 }).then(function(data) {
                     return _.extend(deploymentConfig, {
-                        cfn: cfn,
                         stackId: data.StackId,
                     });
                 }).catch(function(err) {

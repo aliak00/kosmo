@@ -1,5 +1,4 @@
 var novaform = require('novaform')
-    , Template = require('./template')
     , _ = require('underscore')
     , util = require('util');
 
@@ -13,7 +12,7 @@ function Rds(options) {
         return new Rds(options);
     }
 
-    Template.call(this);
+    novaform.Template.call(this);
 
     var subnets = options.subnets;
     var name = options.name || 'mydb';
@@ -67,6 +66,6 @@ function Rds(options) {
     this.subnetGroup = subnetGroup;
     this.dbinstance = dbinstance;
 }
-Rds.prototype = Object.create(Template.prototype);
+Rds.prototype = Object.create(novaform.Template.prototype);
 
 module.exports = Rds;
