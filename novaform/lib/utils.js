@@ -1,4 +1,5 @@
-var Resource = require('./resource');
+var Resource = require('./resource')
+    , AWSResource = require('./awsresource');
 
 function jsonReplacer(key, value) {
     if (typeof value === 'boolean') {
@@ -10,6 +11,10 @@ function jsonReplacer(key, value) {
     }
 
     if (value instanceof Resource) {
+        return { Ref: value.name };
+    }
+
+    if (value instanceof AWSResource) {
         return { Ref: value.name };
     }
 

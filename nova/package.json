@@ -20,7 +20,7 @@
     "novaform": "*",
     "novastl": "*",
     "q": "^1.1.2",
-    "underscore": "^1.7.0"
+    "underscore": "^1.8.0"
   },
   "bin": {
     "nova": "bin/nova"

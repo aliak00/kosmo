@@ -160,7 +160,8 @@ Vpc.prototype.createPublicSubnets = function(subnets) {
             RouteTableId: routeTable,
             DestinationCidrBlock: '0.0.0.0/0',
             GatewayId: internetGateway,
-            DependsOn: internetGatewayAttachment.name
+        }, {
+            DependsOn: internetGatewayAttachment.name,
         }));
 
         push(novaform.ec2.SubnetRouteTableAssociation(mknameAz('PublicSubnetRouteTableAssociation', az), {

@@ -38,7 +38,8 @@ function Bastion(options) {
 
     var elasticIp = this._addResource(novaform.ec2.EIP(mkname('Eip'), {
         Domain: 'vpc',
-        DependsOn: vpc.internetGatewayAttachment.name
+    }, {
+        DependsOn: vpc.internetGatewayAttachment.name,
     }));
 
     var securityGroup = this._addResource(novaform.ec2.SecurityGroup(mkname('Sg'), {

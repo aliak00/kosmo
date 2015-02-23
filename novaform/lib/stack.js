@@ -1,4 +1,5 @@
 var Resource = require('./resource')
+    , AWSResource = require('./awsresource')
     , Template = require('./template')
     , Output = require('./output')
     , utils = require('./utils')
@@ -21,7 +22,7 @@ Stack.prototype.add = function(stackItems) {
     }
     var that = this;
     stackItems.forEach(function(stackItem) {
-        if (stackItem instanceof Resource) {
+        if (stackItem instanceof Resource || stackItem instanceof AWSResource) {
             that.resources.push(stackItem);
         } else if (stackItem instanceof Template) {
             that.resources.push.apply(that.resources, stackItem.resources());
@@ -34,6 +35,14 @@ Stack.prototype.add = function(stackItems) {
             throw new Error('stackItem must be instanceof Resource, Template or Output');
         }
     });
+}
+
+Stack.prototype.validate = function() {
+    this.resources.forEach(function(resource) {
+        if (_.has(resource, 'validate')) {
+            resource.validate();
+        }
+    })
 }
 
 Stack.prototype.toObject = function() {

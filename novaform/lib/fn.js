@@ -1,4 +1,5 @@
-var Resource = require('./resource');
+var Resource = require('./resource')
+    , AWSResource = require('./awsresource');
 
 function Function() {
     if (!(this instanceof Function)) {
@@ -14,6 +15,8 @@ function Ref(resource) {
     Function.call(this);
 
     if (resource instanceof Resource) {
+        this.Ref = resource.name;
+    } else if (resource instanceof AWSResource) {
         this.Ref = resource.name;
     } else {
         this.Ref = resource;
@@ -31,6 +34,8 @@ function Join(separator, values) {
     var modifiedValues = [];
     values.forEach(function(value) {
         if (value instanceof Resource) {
+            modifiedValues.push(Ref(value));
+        } else if (value instanceof AWSResource) {
             modifiedValues.push(Ref(value));
         } else {
             modifiedValues.push(value);
@@ -64,6 +69,8 @@ function GetAtt(id, attr) {
 
     var name = id;
     if (id instanceof Resource) {
+        name = id.name;
+    } else if (id instanceof AWSResource) {
         name = id.name;
     }
     this['Fn::GetAtt'] = [

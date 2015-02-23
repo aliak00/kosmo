@@ -403,6 +403,10 @@ Command.prototype.execute = function() {
         }
         return deploymentConfig;
     }).then(function(deploymentConfig) {
+        if (that.commandOptions.noop) {
+            return deploymentConfig;
+        }
+
         var getStackOutput = q.nbind(Stack.getStackOutput, Stack);
         return getStackOutput(deploymentConfig.cfn, deploymentConfig.stackName).then(function(outputs) {
             return _.extend(deploymentConfig, {
@@ -410,6 +414,10 @@ Command.prototype.execute = function() {
             });
         });
     }).then(function(deploymentConfig) {
+        if (that.commandOptions.noop) {
+            return deploymentConfig;
+        }
+
         var output = {
             project: deploymentConfig.projectName,
             component: deploymentConfig.componentName,
@@ -436,7 +444,6 @@ Command.prototype.execute = function() {
     }).catch(function(e) {
         // TODO: differentiate between internal errors and valid exits like timeout or stack deployment failed
         console.error(util.format('Internal error: %s', e.stack));
-        console.log(e);
     });
 }
 

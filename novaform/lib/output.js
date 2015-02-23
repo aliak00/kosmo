@@ -1,4 +1,5 @@
 var Resource = require('./resource')
+    , AWSResource = require('./awsresource')
     , fn = require('./fn');
 
 function Output(name, value, description) {
@@ -6,7 +7,7 @@ function Output(name, value, description) {
         return new Output(name, value, description);
     }
 
-    if (!(value instanceof Resource) && !(value instanceof fn.Function) && !(typeof value === 'string')) {
+    if (!(value instanceof Resource) && !(value instanceof AWSResource) && !(value instanceof fn.Function) && !(typeof value === 'string')) {
         throw new Error('Output value can only be a string or another resource or a join, getatt or an other function');
     }
     if (description && !(typeof description !== 'string')) {
@@ -19,8 +20,13 @@ function Output(name, value, description) {
 }
 
 Output.prototype.toObject = function() {
+    value = this.value;
+    if (value instanceof AWSResource) {
+        value = fn.ref(value);
+    }
+
     return {
-        Value : this.value,
+        Value : value,
         Description : this.description,
     };
 }

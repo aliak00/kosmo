@@ -1,144 +1,162 @@
-var Resource = require('../resource');
+var AWSResource = require('../awsresource')
+    , types = require('../types');
 
-function VPC(name, properties) {
-    if (!(this instanceof VPC)) {
-        return new VPC(name, properties);
+var VPC = AWSResource.define('AWS::EC2::VPC', {
+    CidrBlock : { type: types.cidr, required: true },
+    EnableDnsSupport : { type: types.boolean },
+    EnableDnsHostnames : { type: types.boolean },
+    InstanceTenancy : { type: types.enum('default', 'dedicated') },
+    Tags : { type: types.tags },
+});
+
+var InternetGateway = AWSResource.define('AWS::EC2::InternetGateway', {
+    Tags : { type: types.tags },
+});
+
+var VPCGatewayAttachment = AWSResource.define('AWS::EC2::VPCGatewayAttachment', {
+    VpcId: { type: types.string, required: true },
+    InternetGatewayId: { type: types.string },
+    VpnGatewayId: { type: types.string },
+});
+
+var Subnet = AWSResource.define('AWS::EC2::Subnet', {
+    VpcId: { type: types.string, required: true },
+    CidrBlock : { type: types.cidr, required: true },
+    AvailabilityZone: { type: types.string },
+    Tags : { type: types.tags },
+});
+
+var RouteTable = AWSResource.define('AWS::EC2::RouteTable', {
+    VpcId: { type: types.string, required: true },
+    Tags : { type: types.tags },
+});
+
+var Route = AWSResource.define('AWS::EC2::Route', {
+    DestinationCidrBlock: { type: types.cidr, required: true },
+    GatewayId: { type: types.string, required: 'conditional' },
+    InstanceId: { type: types.string, required: 'conditional' },
+    NetworkInterfaceId: { type: types.string, required: 'conditional' },
+    RouteTableId: { type: types.string, required: true },
+    VpcPeeringConnectionId: { type: types.string, required: 'conditional' },
+});
+Route.prototype.validate = function() {
+    AWSResource.prototype.validate.call(this);
+
+    if (!(this.properties.GatewayId || this.properties.InstanceId ||
+        this.properties.NetworkInterfaceId || this.properties.VpcPeeringConnectionId)) {
+        throw new AWSResource.ValidationError('One of GatewayId, InstanceId, NetworkInterfaceId, or VpcPeeringConnectionId should be set');
     }
+};
 
-    Resource.call(this, 'AWS::EC2::VPC', name, properties);
+var SubnetRouteTableAssociation = AWSResource.define('AWS::EC2::SubnetRouteTableAssociation', {
+    RouteTableId: { type: types.string, required: true },
+    SubnetId: { type: types.string, required: true },
+});
 
-    this.cidrBlock = this.properties.CidrBlock;
-}
-VPC.prototype = Object.create(Resource.prototype);
+var NetworkAcl = AWSResource.define('AWS::EC2::NetworkAcl', {
+    VpcId: { type: types.string, required: true },
+    Tags : { type: types.tags },
+});
 
-function InternetGateway(name, properties) {
-    if (!(this instanceof InternetGateway)) {
-        return new InternetGateway(name, properties);
+var NetworkAclEntry = AWSResource.define('AWS::EC2::NetworkAclEntry', {
+    CidrBlock: { type: types.cidr, required: true },
+    Egress: { type: types.boolean, required: true },
+    Icmp: { type: types.icmp, required: 'conditional' },
+    NetworkAclId: { type: types.string, required: true },
+    PortRange: { type: types.portrange, required: 'conditional' },
+    Protocol: { type: types.protocol, required: true },
+    RuleAction: { type: types.enum('allow', 'deny'), required: true },
+    RuleNumber: { type: types.number(1, 32766), required: true },
+});
+NetworkAclEntry.prototype.validate = function() {
+    AWSResource.prototype.validate.call(this);
+
+    if (types.protocol.valueAsName(this.properties.Protocol) === 'icmp') {
+        if (!this.properties.Icmp) {
+            throw new AWSResource.ValidationError('Icmp property is not set');
+        }
     }
+};
 
-    Resource.call(this, 'AWS::EC2::InternetGateway', name, properties);
-}
-InternetGateway.prototype = Object.create(Resource.prototype);
+var SubnetNetworkAclAssociation = AWSResource.define('AWS::EC2::SubnetNetworkAclAssociation', {
+    SubnetId: { type: types.string, required: true },
+    NetworkAclId: { type: types.string, required: true },
+});
 
-function VPCGatewayAttachment(name, properties) {
-    if (!(this instanceof VPCGatewayAttachment)) {
-        return new VPCGatewayAttachment(name, properties);
-    }
+var SecurityGroup = AWSResource.define('AWS::EC2::SecurityGroup', {
+    GroupDescription: { type: types.string, required: true },
+    SecurityGroupEgress: { type: types.array },
+    SecurityGroupIngress: { type: types.array },
+    Tags : { type: types.tags },
+    VpcId: { type: types.string },
+});
 
-    Resource.call(this, 'AWS::EC2::VPCGatewayAttachment', name, properties);
-}
-VPCGatewayAttachment.prototype = Object.create(Resource.prototype);
+var SecurityGroupIngress = AWSResource.define('AWS::EC2::SecurityGroupIngress', {
+    CidrIp: { type: types.string, required: 'conditional' },
+    FromPort: { type: types.number, required: 'conditional' },
+    ToPort: { type: types.number, required: 'conditional' },
+    GroupId: { type: types.string, required: 'conditional' },
+    GroupName : { type: types.string, required: 'conditional' },
+    IpProtocol: { type: types.protocol, required: true },
+    SourceSecurityGroupId: { type: types.string, required: 'conditional' },
+    SourceSecurityGroupName: { type: types.string, required: 'conditional' },
+    SourceSecurityGroupOwnerId: { type: types.string, required: 'conditional' },
+});
+SecurityGroupIngress.prototype.validate = function() {
+    AWSResource.prototype.validate.call(this);
 
-function Subnet(name, properties) {
-    if (!(this instanceof Subnet)) {
-        return new Subnet(name, properties);
-    }
+    // TODO:
+};
 
-    Resource.call(this, 'AWS::EC2::Subnet', name, properties);
+var SecurityGroupEgress = AWSResource.define('AWS::EC2::SecurityGroupEgress', {
+    CidrIp: { type: types.string, required: 'conditional' },
+    DestinationSecurityGroupId: { type: types.string, required: 'conditional' },
+    FromPort: { type: types.number, required: 'conditional' },
+    GroupId: { type: types.string, required: 'conditional' },
+    IpProtocol: { type: types.protocol, required: true },
+    ToPort: { type: types.number, required: 'conditional' },
+});
+SecurityGroupEgress.prototype.validate = function() {
+    AWSResource.prototype.validate.call(this);
 
-    this.cidrBlock = properties.CidrBlock;
-    this.availabilityZone = properties.AvailabilityZone;
-}
-Subnet.prototype = Object.create(Resource.prototype);
+    // TODO:
+};
 
-function RouteTable(name, properties) {
-    if (!(this instanceof RouteTable)) {
-        return new RouteTable(name, properties);
-    }
+var EIP = AWSResource.define('AWS::EC2::EIP', {
+    InstanceId: { type: types.string },
+    Domain: { type: types.enum('vpc') },
+});
 
-    Resource.call(this, 'AWS::EC2::RouteTable', name, properties);
-}
-RouteTable.prototype = Object.create(Resource.prototype);
+var Instance = AWSResource.define('AWS::EC2::Instance', {
+    AvailabilityZone: { type: types.string },
+    BlockDeviceMappings: { type: types.array },
+    DisableApiTermination: { type: types.boolean },
+    EbsOptimized: { type: types.boolean },
+    IamInstanceProfile: { type: types.string },
+    ImageId: { type: types.string, required: true },
+    InstanceInitiatedShutdownBehavior: { type: types.enum('stop', 'terminate') },
+    InstanceType: { type: types.string },
+    KernelId: { type: types.string },
+    KeyName: { type: types.string },
+    Monitoring: { type: types.boolean },
+    NetworkInterfaces: { type: types.array },
+    PlacementGroupName: { type: types.string },
+    PrivateIpAddress: { type: types.string },
+    RamdiskId: { type: types.string },
+    SecurityGroupIds: { type: types.stringarray, required: 'conditional' },
+    SecurityGroups: { type: types.stringarray },
+    SourceDestCheck: { type: types.boolean },
+    SubnetId: { type: types.string },
+    Tags: { type: types.tags },
+    Tenancy: { type: types.enum('default', 'dedicated') },
+    UserData: { type: types.string },
+    Volumes: { type: types.array },
+});
+Instance.prototype.validate = function() {
+    AWSResource.prototype.validate.call(this);
 
-function Route(name, properties) {
-    if (!(this instanceof Route)) {
-        return new Route(name, properties);
-    }
-
-    Resource.call(this, 'AWS::EC2::Route', name, properties);
-}
-Route.prototype = Object.create(Resource.prototype);
-
-function SubnetRouteTableAssociation(name, properties) {
-    if (!(this instanceof SubnetRouteTableAssociation)) {
-        return new SubnetRouteTableAssociation(name, properties);
-    }
-
-    Resource.call(this, 'AWS::EC2::SubnetRouteTableAssociation', name, properties);
-}
-SubnetRouteTableAssociation.prototype = Object.create(Resource.prototype);
-
-function NetworkAcl(name, properties) {
-    if (!(this instanceof NetworkAcl)) {
-        return new NetworkAcl(name, properties);
-    }
-
-    Resource.call(this, 'AWS::EC2::NetworkAcl', name, properties);
-}
-NetworkAcl.prototype = Object.create(Resource.prototype);
-
-function NetworkAclEntry(name, properties) {
-    if (!(this instanceof NetworkAclEntry)) {
-        return new NetworkAclEntry(name, properties);
-    }
-
-    Resource.call(this, 'AWS::EC2::NetworkAclEntry', name, properties);
-}
-NetworkAclEntry.prototype = Object.create(Resource.prototype);
-
-function SubnetNetworkAclAssociation(name, properties) {
-    if (!(this instanceof SubnetNetworkAclAssociation)) {
-        return new SubnetNetworkAclAssociation(name, properties);
-    }
-
-    Resource.call(this, 'AWS::EC2::SubnetNetworkAclAssociation', name, properties);
-}
-SubnetNetworkAclAssociation.prototype = Object.create(Resource.prototype);
-
-function SecurityGroup(name, properties) {
-    if (!(this instanceof SecurityGroup)) {
-        return new SecurityGroup(name, properties);
-    }
-
-    Resource.call(this, 'AWS::EC2::SecurityGroup', name, properties);
-}
-SecurityGroup.prototype = Object.create(Resource.prototype);
-
-function SecurityGroupIngress(name, properties) {
-    if (!(this instanceof SecurityGroupIngress)) {
-        return new SecurityGroupIngress(name, properties);
-    }
-
-    Resource.call(this, 'AWS::EC2::SecurityGroupIngress', name, properties);
-}
-SecurityGroupIngress.prototype = Object.create(Resource.prototype);
-
-function SecurityGroupEgress(name, properties) {
-    if (!(this instanceof SecurityGroupEgress)) {
-        return new SecurityGroupEgress(name, properties);
-    }
-
-    Resource.call(this, 'AWS::EC2::SecurityGroupEgress', name, properties);
-}
-SecurityGroupEgress.prototype = Object.create(Resource.prototype);
-
-function EIP(name, properties) {
-    if (!(this instanceof EIP)) {
-        return new EIP(name, properties);
-    }
-
-    Resource.call(this, 'AWS::EC2::EIP', name, properties);
-}
-EIP.prototype = Object.create(Resource.prototype);
-
-function Instance(name, properties) {
-    if (!(this instanceof Intance)) {
-        return new Intance(name, properties);
-    }
-
-    Resource.call(this, 'AWS::EC2::Instance', name, properties);
-}
-Instance.prototype = Object.create(Resource.prototype);
+    // TODO:
+};
 
 module.exports = {
     VPC: VPC,
@@ -155,5 +173,5 @@ module.exports = {
     SecurityGroupIngress: SecurityGroupIngress,
     SecurityGroupEgress: SecurityGroupEgress,
     EIP: EIP,
-    Instance: Instance
+    Instance: Instance,
 };

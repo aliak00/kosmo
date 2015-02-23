@@ -1,0 +1,241 @@
+var _ = require('underscore')
+    , util = require('util')
+    , fn = require('./fn')
+    , AWSResource = require('./awsresource');
+
+var numberValidator = function(from, to) {
+    return {
+        name: 'number',
+        validate: function(x) { return typeof x === 'number' && x >= from && x <= to; },
+        toCloudFormationValue: function(x) {
+            return x.toString();
+        },
+    };
+};
+numberValidator.name = 'number';
+numberValidator.validate = function(x) { return typeof x === 'number'; };
+numberValidator.toCloudFormationValue = function(x) { return x.toString(); };
+
+module.exports = {
+    string: {
+        name: 'string',
+        validate: function(x) {
+            if (typeof x === 'string') {
+                return true;
+            }
+
+            // implicit ref
+            if (x instanceof AWSResource) {
+                return true;
+            }
+
+            if (x instanceof fn.Function) {
+                return true;
+            }
+
+            // TODO: allow manually created function objects
+
+            return false;
+        },
+        toCloudFormationValue: function(x) {
+            if (x instanceof AWSResource) {
+                return fn.ref(x);
+            }
+            return x;
+        },
+    },
+
+    boolean: {
+        name: 'boolean',
+        validate: function(x) {
+            return typeof x === 'boolean';
+        },
+        toCloudFormationValue: function(x) {
+            return x.toString();
+        },
+    },
+
+    enum: function() {
+        var values = Array.prototype.slice.call(arguments);
+        return {
+            name: 'enum',
+            validate: function(x) { return values.indexOf(x) !== -1; },
+        };
+    },
+
+    number: numberValidator,
+
+    cidr: {
+        name: 'CIDR',
+        validate: function(x) { return typeof x === 'string'; /* TODO: also check value format */},
+    },
+
+    protocol: {
+        name: 'protocol',
+        validate: function(x) {
+            if (typeof x === 'number') {
+                x = ''+x;
+            }
+            if (typeof x !== 'string') {
+                return false;
+            }
+
+            if (x === '-1') {
+                // meaning "allow all"
+                return true;
+            }
+
+            var protocolNames = _.map(_.values(this.protocols), function(x) { return x.toLowerCase(); });
+            var protocolNumberStrings = _.map(_.keys(this.protocols), function(x) { return ''+x; });
+
+            // check valid protocol names and numbers
+            return _.contains(protocolNumberStrings, x) || _.contains(protocolNames, x.toLowerCase());
+        },
+        valueAsNumber: function(x) {
+            if (typeof x === 'number') {
+                return x;
+            }
+            if (typeof x !== 'string') {
+                return undefined;
+            }
+            var v = parseInt(x, 10);
+            if (!_.isNaN(v)) {
+                return v;
+            }
+            return _.findKey(this.protocols, function(name) {
+                return name.toLowerCase() === x.toLowerCase();
+            });
+        },
+        valueAsName: function(x) {
+            if (typeof x !== 'number') {
+                x = parseInt(x, 10);
+            }
+
+            return this.protocols[x];
+        },
+        toCloudFormationValue: function(x) {
+            return this.valueAsNumber(x).toString();
+        },
+
+        protocols: {
+             1: 'ICMP',
+             4: 'IPv4',
+             6: 'TCP',
+            17: 'UDP',
+        },
+    },
+
+    tags: {
+        name: 'tags',
+        validate: function(x) {
+            if (typeof x !== 'object') {
+                return false;
+            }
+
+            return _.all(x, function(value, key) {
+                if (typeof key !== 'string') {
+                    return false;
+                }
+
+                if (typeof value === 'string') {
+                    return true;
+                }
+                if (value instanceof AWSResource) {
+                    return true;
+                }
+                if (value instanceof fn.Function) {
+                    return true;
+                }
+
+                var options;
+                if (typeof value === 'object') {
+                    value = value.value;
+                    options = _.omit(value, 'value');
+                }
+                if (options) {
+                    // the only accepted option at the moment is 'PropagateAtLaunch'
+                    var valid = _.all(options, function(value, key) {
+                        if (key === 'PropagateAtLaunch') {
+                            return typeof value === 'boolean';
+                        }
+                        return false;
+                    });
+                    if (!valid) {
+                        return false;
+                    }
+                }
+
+                return false;
+            });
+        },
+        getValueAndOptions: function(valueOrOptions) {
+            var value = valueOrOptions;
+            var options;
+
+            if (typeof value === 'object' &&
+                !(value instanceof AWSResource) &&
+                !(value instanceof fn.Function)) {
+                value = value.value;
+                options = _.omit(value, 'value');
+            }
+
+            return {
+                value: value,
+                options: options || {},
+            };
+        },
+        toCloudFormationValue: function(x) {
+            var self = this;
+            return _.map(x, function(value, key) {
+                var v = self.getValueAndOptions(value);
+                return {
+                    Key: key,
+                    Value: v.value,
+                    PropagateAtLaunch: v.options.PropagateAtLaunch,
+                };
+            });
+        },
+    },
+
+    portrange: {
+        name: 'portrange',
+        validate: function(x) {
+            if (!_.isArray(x)) {
+                return false;
+            }
+
+            if (x.length !== 2) {
+                return false;
+            }
+
+            function isValidPort(x) { return _.isNumber(x) && (x % 1 === 0); }
+
+            return _.all(x, isValidPort);
+        },
+        toCloudFormationValue: function(x) {
+            return {
+                From: ''+x[0],
+                To: ''+x[1],
+            };
+        },
+    },
+
+    icmp: {
+        name: 'icmp',
+        validate: function(x) {
+            if (!_.isObject(x)) {
+                return false;
+            }
+            var valid = _.all(x, function(value, key) {
+                if (key === 'Code') {
+                    return typeof _.isNumber(value);
+                }
+                if (key === 'Type') {
+                    return typeof _.isNumber(value);
+                }
+                return false;
+            });
+            return valid;
+        },
+    },
+};
