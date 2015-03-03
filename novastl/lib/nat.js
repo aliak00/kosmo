@@ -172,15 +172,17 @@ function Nat(options) {
             LaunchConfigName: mkname('LaunchConfig'),
         }))
     }, {
-        'AWS::CloudFormation::Init': {
-            'config': {
-                'packages': {
-                    'yum': {
-                        'aws-cli': []
+        Metadata: {
+            'AWS::CloudFormation::Init': {
+                'config': {
+                    'packages': {
+                        'yum': {
+                            'aws-cli': []
+                        }
                     }
                 }
             }
-        }
+        },
     }));
 
     var publicAvailabilityZones = _.map(publicSubnets, function(subnet) {
@@ -195,10 +197,11 @@ function Nat(options) {
         MaxSize: publicAvailabilityZones.length + 1, // 1 more for rolling update,
         DesiredCapacity: publicAvailabilityZones.length,
         Tags: {
-            Application: novaform.TagValue(novaform.refs.StackId, true),
-            Name: novaform.TagValue(novaform.join('-', [novaform.refs.StackName, name]), true),
-            Network: novaform.TagValue('public', true)
+            Application: { Value: novaform.refs.StackId, PropagateAtLaunch: true },
+            Name: { Value: novaform.join('-', [novaform.refs.StackName, name]), PropagateAtLaunch: true },
+            Network: { Value: 'public', PropagateAtLaunch: true },
         },
+    }, {
         UpdatePolicy: {
             AutoScalingRollingUpdate: {
                 MaxBatchSize: 1,
@@ -206,7 +209,7 @@ function Nat(options) {
                 PauseTime: "PT15M",
                 WaitOnResourceSignals: true
             }
-        }
+        },
     }));
 
     this.securityGroup = securityGroup;

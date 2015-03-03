@@ -1,36 +1,24 @@
-var Resource = require('../resource');
+var AWSResource = require('../awsresource')
+    , types = require('../types');
 
-function Role(name, properties) {
-    if (!(this instanceof Role)) {
-        return new Role(name, properties);
-    }
+var Role = AWSResource.define('AWS::IAM::Role', {
+    AssumeRolePolicyDocument : { type: types.object('iam-assume-role-policy-document'), required: true },
+    Path : { type: types.string, required: true },
+    Policies : { type: types.array },
+});
 
-    Resource.call(this, 'AWS::IAM::Role', name, properties);
+var Policy = AWSResource.define('AWS::IAM::Policy', {
+    Groups : { type: types.array, required: 'conditional' },
+    PolicyDocument : { type: types.object('iam-policy-document'), required: true },
+    PolicyName : { type: types.string, required: true },
+    Roles : { type: types.array },
+    Users : { type: types.array, required: 'conditional' },
+});
 
-    // TODO: Support this use case
-    if (properties.Policies) {
-        throw new Error('AWS::IAM::Role.Policies not supported right now.');
-    }
-}
-Role.prototype = Object.create(Resource.prototype);
-
-function Policy(name, properties) {
-    if (!(this instanceof Policy)) {
-        return new Policy(name, properties);
-    }
-
-    Resource.call(this, 'AWS::IAM::Policy', name, properties);
-}
-Policy.prototype = Object.create(Resource.prototype);
-
-function InstanceProfile(name, properties) {
-    if (!(this instanceof InstanceProfile)) {
-        return new InstanceProfile(name, properties);
-    }
-
-    Resource.call(this, 'AWS::IAM::InstanceProfile', name, properties);
-}
-InstanceProfile.prototype = Object.create(Resource.prototype);
+var InstanceProfile = AWSResource.define('AWS::IAM::InstanceProfile', {
+    Path : { type: types.string, required: true },
+    Roles : { type: types.array, required: true },
+});
 
 module.exports = {
     Role: Role,

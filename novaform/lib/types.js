@@ -132,51 +132,44 @@ module.exports = {
                 return false;
             }
 
+            var self = this;
+
             return _.all(x, function(value, key) {
                 if (typeof key !== 'string') {
                     return false;
                 }
 
-                if (typeof value === 'string') {
-                    return true;
-                }
-                if (value instanceof AWSResource) {
-                    return true;
-                }
-                if (value instanceof fn.Function) {
-                    return true;
+                var v = self.getValueAndOptions(value);
+
+                if (typeof v.value !== 'string' &&
+                    !(v.value instanceof AWSResource) &&
+                    !(v.value instanceof fn.Function)) {
+                    return false;
                 }
 
-                var options;
-                if (typeof value === 'object') {
-                    value = value.value;
-                    options = _.omit(value, 'value');
-                }
-                if (options) {
-                    // the only accepted option at the moment is 'PropagateAtLaunch'
-                    var valid = _.all(options, function(value, key) {
-                        if (key === 'PropagateAtLaunch') {
-                            return typeof value === 'boolean';
-                        }
-                        return false;
-                    });
-                    if (!valid) {
-                        return false;
+                // the only accepted option at the moment is 'PropagateAtLaunch'
+                var valid = _.all(v.options, function(value, key) {
+                    if (key === 'PropagateAtLaunch') {
+                        return typeof value === 'boolean';
                     }
+                    return false;
+                });
+                if (!valid) {
+                    return false;
                 }
 
-                return false;
+                return true;
             });
         },
         getValueAndOptions: function(valueOrOptions) {
             var value = valueOrOptions;
             var options;
 
-            if (typeof value === 'object' &&
-                !(value instanceof AWSResource) &&
-                !(value instanceof fn.Function)) {
-                value = value.value;
-                options = _.omit(value, 'value');
+            if (typeof valueOrOptions === 'object' &&
+                !(valueOrOptions instanceof AWSResource) &&
+                !(valueOrOptions instanceof fn.Function)) {
+                value = valueOrOptions.Value;
+                options = _.omit(valueOrOptions, 'Value');
             }
 
             return {
@@ -236,6 +229,47 @@ module.exports = {
                 return false;
             });
             return valid;
+        },
+    },
+
+    object: function(name, properties) {
+        return {
+            name: name,
+            validate: function(x) {
+                if (typeof x !== 'object') {
+                    return false;
+                }
+                if (!properties) {
+                    return true;
+                }
+                return _.all(x, function(value, key) {
+                    var type = properties[key];
+                    if (type) {
+                        return type.validate(value);
+                    }
+                    return false;
+                });
+            },
+            toCloudFormationValue: function(x) {
+                if (!properties) {
+                    return x;
+                }
+                return _.mapObject(x, function(value, key) {
+                    var type = properties[key];
+                    if (type && type.toCloudFormationValue) {
+                        return type.toCloudFormationValue(value);
+                    }
+                    return value;
+                });
+            },
+        };
+    },
+
+    // TODO: make typed arrays
+    array: {
+        name: 'array',
+        validate: function(x) {
+            return true;
         },
     },
 };

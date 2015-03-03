@@ -58,7 +58,7 @@ AWSResource.prototype.validate = function() {
             if (typeof propvalue === 'object') {
                 value = JSON.stringify(propvalue);
             }
-            throw new AWSResource.ValidationError(util.format('Invalid value for "%s" should be of type "%s" got "%s"', propname, type.name, value));
+            throw new AWSResource.ValidationError(util.format('Resource "%s": Invalid value for "%s" should be of type "%s" got "%s"', self.name, propname, type.name, value));
         }
     });
 };
