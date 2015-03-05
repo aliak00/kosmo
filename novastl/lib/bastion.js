@@ -166,13 +166,13 @@ function Bastion(options) {
 
     var publicSubnets = vpc.publicSubnets;
 
-    this._addResource(novaform.asg.AutoScalingGroup(name, {
+    var asg = this._addResource(novaform.asg.AutoScalingGroup(name, {
         AvailabilityZones: publicAvailabilityZones,
         LaunchConfigurationName: launchConfiguration,
         VPCZoneIdentifier: publicSubnets,
         MinSize: 1,
-        MaxSize: publicAvailabilityZones.length + 1, // 1 more for rolling update,
-        DesiredCapacity: publicAvailabilityZones.length,
+        MaxSize: 2, // one extra reserved for rolling update,
+        DesiredCapacity: 1,
         Tags: {
             Application: { Value: novaform.refs.StackId, PropagateAtLaunch: true },
             Name: { Value: novaform.join('-', [novaform.refs.StackName, name]), PropagateAtLaunch: true },
@@ -191,6 +191,7 @@ function Bastion(options) {
 
     this.securityGroup = securityGroup;
     this.elasticIp = elasticIp;
+    this.asg = asg;
 }
 
 Bastion.prototype = Object.create(novaform.Template.prototype);
