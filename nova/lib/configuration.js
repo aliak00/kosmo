@@ -3,10 +3,21 @@ var _ = require('underscore')
 
 function loadConfiguration() {
     var default_config = {
-        s3: {
-            region: null,
-            bucket: null,
-            keyPrefix: '',
+        default: {
+            s3: {
+                region: null,
+                bucket: null,
+                keyPrefix: '',
+            },
+        },
+
+        get: function(domain, profile) {
+            var cfg = this.default[domain];
+            if (profile) {
+                var profilecfg = this.profiles[profile] || {};
+                cfg = _.extend({}, cfg, profilecfg[domain]);
+            }
+            return cfg;
         },
 
         currentDeployment: {

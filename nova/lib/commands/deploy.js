@@ -264,11 +264,12 @@ Command.prototype.execute = function() {
             console.log('Uploading cloudformation template to S3...');
         }
 
-        var bucketname = that.config.s3.bucket;
-        var region = that.config.s3.region;
+        var s3config = that.config.get('s3', that.commonOptions.profile);
+        var bucketname = s3config.bucket;
+        var region = s3config.region;
         var datestring = deploymentConfig.deploymentDate.format();
         var keypath = util.format('%s%s/%s/%s/templates/%s-%s.json',
-            that.config.s3.keyPrefix,
+            s3config.keyPrefix,
             that.ref.project, that.ref.component,
             deploymentConfig.deploymentId,
             deploymentConfig.stackName, datestring);
@@ -282,7 +283,7 @@ Command.prototype.execute = function() {
         var s3 = new AWS.S3({ region : region });
         var s3upload = q.nbind(s3.upload, s3);
         return s3upload(params).then(function() {
-            var url = s3utils.urlForUploadParams(that.config.s3.region, params);
+            var url = s3utils.urlForUploadParams(s3config.region, params);
             return _.extend(deploymentConfig, {
                 templateUrl: url,
             });
