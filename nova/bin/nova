@@ -7,6 +7,7 @@ var nova = require('../lib')
     , _ = require('underscore')
     , fs = require('fs')
     , util = require('util')
+    , q = require('q')
     , config = require('../lib/configuration');
 
 function parseArguments(commands) {
@@ -101,39 +102,42 @@ function showCommandHelp(opts, command, errorMessage) {
 ', commandName, commandUsage, commandName, commandOptions));
 }
 
-function init(callback) {
-    var credentials;
-
-    if (!credentials && opts.commonOptions.profile) {
-        var options = {
-            profile : opts.commonOptions.profile,
-        };
-        credentials = new AWS.SharedIniFileCredentials(options);
-        credentials.refresh(function(err) {
-            if (err) {
-                credentials = null;
-            }
-        });
-    }
-
-    if (!credentials) {
-        credentials = new AWS.EnvironmentCredentials('AWS');
-        credentials.refresh(function(err) {
-            if (err) {
-                credentials = null;
-            }
-        });
-    }
-
-    if (!credentials) {
-        callback('Failed to initialize AWS - make sure you provide --profile or set AWS_ACCESS_KEY_ID env var');
-    }
-
-    AWS.config.credentials = credentials;
-
+function init() {
     if (opts.commonOptions.debug) {
         AWS.config.logger = process.stdout;
     }
+
+    return q().then(function() {
+        if (opts.commonOptions.profile) {
+            var options = {
+                profile : opts.commonOptions.profile,
+            };
+            var credentials = new AWS.SharedIniFileCredentials(options);
+            var refresh = q.nbind(credentials.refresh, credentials);
+            return refresh().then(function() {
+                return credentials;
+            }).catch(function(err) {
+                return null;
+            });
+        }
+    }).then(function(credentials) {
+        if (!credentials) {
+            credentials = new AWS.EnvironmentCredentials('AWS');
+            var refresh = q.nbind(credentials.refresh, credentials);
+            return refresh().then(function() {
+                return credentials;
+            }).catch(function(err) {
+                return null;
+            });
+        }
+        return credentials;
+    }).then(function(credentials) {
+        if (!credentials) {
+            throw new Error('Failed to initialize AWS - make sure you provide --profile or set AWS_ACCESS_KEY_ID env var');
+        }
+
+        AWS.config.credentials = credentials;
+    });
 }
 
 var opts = parseArguments(nova.commands);
@@ -152,14 +156,14 @@ if (!opts.command) {
     process.exit(0);
 }
 
-init(function(err) {
-    opts.showHelp(err);
+init().then(function() {
+    var command = new opts.command(config, opts.commonOptions, opts.commandArguments, function help(errorMessage) {
+        showCommandHelp(opts, opts.command, errorMessage);
+        process.exit(0);
+    });
+
+    command.execute();
+}).catch(function(err) {
+    opts.showHelp(err.message);
     process.exit(0);
 });
-
-var command = new opts.command(config, opts.commonOptions, opts.commandArguments, function help(errorMessage) {
-    showCommandHelp(opts, opts.command, errorMessage);
-    process.exit(0);
-});
-
-command.execute();
