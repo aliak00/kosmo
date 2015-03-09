@@ -22,6 +22,7 @@ function Rds(options) {
     var instanceType = options.instanceType || 'db.t1.micro';
     var username = options.username || 'root';
     var password = options.password;
+    var backupRetentionPeriod = options.backupRetentionPeriod;
 
     if (name.toLowerCase() === 'db' || name.toLowerCase() === 'database') {
         throw new Error(util.format('"%s" name is reserved', name));
@@ -57,6 +58,8 @@ function Rds(options) {
         EngineVersion: '9.3.5',
         MasterUsername: username,
         MasterUserPassword: password,
+        BackupRetentionPeriod: backupRetentionPeriod,
+        PubliclyAccessible: false,
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('Instance')])
