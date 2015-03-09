@@ -19,6 +19,8 @@ function EBApp(options) {
     var bastionSecurityGroup = options.bastionSecurityGroup;
     var natSecurityGroup = options.natSecurityGroup;
     var keyName = options.keyName;
+    var cnamePrefix = options.cnamePrefix;
+    var optionSettings = options.optionSettings || [];
 
     name = name.charAt(0).toUpperCase() + name.slice(1);
 
@@ -106,17 +108,26 @@ function EBApp(options) {
         Value: novaform.join(',', publicSubnets)
     }];
 
+    templateOptionSettings = _.reduce(optionSettings, function(memo, optionSetting) {
+        return memo.concat({
+            Namespace: optionSetting.Namespace,
+            OptionName: optionSetting.Name,
+            Value: optionSetting.Value,
+        });
+    }, templateOptionSettings);
+
     var environment = this._addResource(novaform.eb.Environment(mkname('Environment'), {
         ApplicationName: application,
         Description: name + ' beanstalk environment',
         VersionLabel: applicationVersion,
-        SolutionStackName: '64bit Amazon Linux 2014.09 v1.0.9 running Node.js',
+        SolutionStackName: '64bit Amazon Linux 2014.09 v1.2.0 running Node.js',
         Tier: {
             Name: 'WebServer',
             Type: 'Standard',
             Version: '1.0'
         },
-        OptionSettings: templateOptionSettings
+        OptionSettings: templateOptionSettings,
+        CNAMEPrefix: cnamePrefix,
     }));
 
     this.environment = environment;
