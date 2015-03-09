@@ -54,7 +54,7 @@ function Rds(options) {
         DBName: name,
         DBSubnetGroupName: subnetGroup,
         Engine: 'postgres',
-        EngineVersion: '9.3.3',
+        EngineVersion: '9.3.5',
         MasterUsername: username,
         MasterUserPassword: password,
         Tags: {
