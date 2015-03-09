@@ -19,7 +19,7 @@ function Rds(options) {
     var allocatedStorage = options.allocatedStorage || 5;
     var multiAz = typeof options.multiAz === 'boolean' ? options.multiAz : true;
     var availabilityZone = options.availabilityZone = 'None';
-    var instanceClass = options.instanceClass || 'db.t1.micro';
+    var instanceType = options.instanceType || 'db.t1.micro';
     var username = options.username || 'root';
     var password = options.password;
 
@@ -50,7 +50,7 @@ function Rds(options) {
 
     var dbinstance = this._addResource(novaform.rds.DBInstance(mkname('Instance'), {
         AllocatedStorage: allocatedStorage,
-        DBInstanceClass: instanceClass,
+        DBInstanceClass: instanceType,
         DBName: name,
         DBSubnetGroupName: subnetGroup,
         Engine: 'postgres',
