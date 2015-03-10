@@ -220,7 +220,7 @@ Command.prototype.execute = function() {
         var result = that.component.build(deploymentConfig.dependencies, options, doneDeferred.makeNodeResolver());
         if (typeof result === 'undefined') {
             // looks like component wants to use async building, lets wait for done callback to be called.
-            return doneDeferred.promise.timeout(30000).then(returnResult);
+            return doneDeferred.promise.then(returnResult);
         } else if (_.has(result, 'then') && typeof result.then === 'function') {
             // async building with promises. Assume build() returned a promise
             return result.then(returnResult);
