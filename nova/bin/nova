@@ -141,6 +141,7 @@ function init() {
 }
 
 var opts = parseArguments(nova.commands);
+config.commonOptions = opts.commonOptions;
 
 if (opts.commonOptions.help) {
     opts.showHelp();

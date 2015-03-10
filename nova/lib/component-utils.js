@@ -20,6 +20,10 @@ module.exports.createArchive = function(destinationName, sourcePath, callback) {
         destinationName += '.zip';
     }
 
+    if (config.commonOptions.verbose) {
+        console.log('Creating artifact archive...');
+    }
+
     var tempdir = '/tmp/';
     var destinationPath = path.join(tempdir, destinationName);
 
@@ -31,8 +35,18 @@ module.exports.createArchive = function(destinationName, sourcePath, callback) {
     var archive = archiver('zip');
 
     output.on('close', function() {
-        console.log(archive.pointer() + ' total bytes');
-        console.log('archiver has been finalized and the output file descriptor has closed.');
+        if (config.commonOptions.verbose) {
+            var size = archive.pointer();
+            var sizeString;
+            if (size >= 1024*1024) {
+                sizeString = util.format('%dMB', Math.round(size/1024/1024));
+            } else if (size >= 1024) {
+                sizeString = util.format('%dKB', Math.round(size/1024));
+            } else {
+                sizeString = util.format('%dbytes', size);
+            }
+            console.log(util.format('Done. Made %s of size %s', destinationName, sizeString));
+        }
         callback(null, destinationPath);
         deferred && deferred.resolve(destinationPath);
     });
@@ -51,49 +65,105 @@ module.exports.createArchive = function(destinationName, sourcePath, callback) {
     return deferred ? deferred.promise : undefined;
 };
 
-module.exports.deployArchive = function(sourcePath, callback) {
+module.exports.deployArchive = function(sourcePath, options, callback) {
+    options = options || {};
+
     var deferred;
 
-    if (typeof callback !== 'function') {
-        callback = function() {};
-        deferred = q.defer();
+    function resolve(result) {
+        typeof callback === 'function' && callback(null, result);
+        deferred && deferred.resolve(result);
+    }
+    function reject(err) {
+        typeof callback === 'function' && callback(err);
+        deferred && deferred.reject(err);
     }
 
-    var sourceStream = fs.createReadStream(sourcePath);
+    if (!options.region) {
+        reject(new Error('deployArchive: region was not specified in options'));
+        return deferred;
+    }
 
-    var destinationKeyName = path.basename(sourcePath);
+    var s3 = new AWS.S3({ region : options.region });
+    var s3config = config.get('s3');
+    var artifactsBucket = util.format('%s-artifacts-%s', s3config.bucket, options.region);
 
-    var bucketname = config.s3.bucket;
-    var region = config.s3.region;
-    var deploymentDateString = config.currentDeployment.date.format();
-    var deploymentId = config.currentDeployment.id;
-    var keypath = util.format('%s%s/%s/%s/artifacts/%s',
-        config.s3.keyPrefix,
-        config.currentDeployment.ref.project,
-        config.currentDeployment.ref.component,
-        deploymentId,
-        destinationKeyName);
-
-    var params = {
-        Bucket: bucketname,
-        Key: keypath,
-        Body: sourceStream,
-    };
-
-    var s3 = new AWS.S3({ region : region });
-    s3.upload(params, function(err, data) {
-        if (err) {
-            callback(err);
-            deferred && deferred.reject(err);
-            return;
+    q().then(function() {
+        if (config.commonOptions.verbose) {
+            console.log(util.format('Verifying the target S3 bucket for artifacts exists in %s region...', options.region));
         }
-        var url = s3utils.urlForUploadParams(region, params);
+        var getBucketLocation = q.nbind(s3.getBucketLocation, s3);
+        return getBucketLocation({ Bucket : artifactsBucket }).catch(function(err) {
+            if (err.code === 'NoSuchBucket') {
+                return null;
+            }
+            throw new Error(util.format('deployArchive: Unknown error: %s: %s', err.code, err.message));
+        });
+    }).then(function(data) {
+        if (!data) {
+            if (config.commonOptions.verbose) {
+                console.log(util.format('Nope. Creating bucket %s...', artifactsBucket));
+            }
+            var createBucket = q.nbind(s3.createBucket, s3);
+            var params = {
+                Bucket: artifactsBucket,
+                ACL: 'private',
+                CreateBucketConfiguration: {
+                    LocationConstraint: options.region,
+                },
+            };
+            return createBucket(params).catch(function(err) {
+                var errmsg = util.format('deployArchive: failed to create artifacts bucket in the specified region %s: %s',
+                    options.region, err.message);
+                throw new Error(errmsg);
+            });
+        } else {
+            var location = data.LocationConstraint;
+            if (location !== options.region) {
+                var errmsg = util.format('deployArchive: something is wrong, bucket "%s" should be in "%s" region but in fact is in "%s"',
+                    artifactsBucket, options.region, location);
+                throw new Error(errmsg);
+            }
+        }
+    }).then(function() {
+        if (config.commonOptions.verbose) {
+            console.log('Uploading artifact...');
+        }
+        var sourceStream = fs.createReadStream(sourcePath);
+
+        var destinationKeyName = path.basename(sourcePath);
+
+        var deploymentDateString = config.currentDeployment.date.format();
+        var deploymentId = config.currentDeployment.id;
+        var keypath = util.format('%s%s/%s/%s/artifacts/%s',
+            s3config.keyPrefix,
+            config.currentDeployment.ref.project,
+            config.currentDeployment.ref.component,
+            deploymentId,
+            destinationKeyName);
+
+        var params = {
+            Bucket: artifactsBucket,
+            Key: keypath,
+            Body: sourceStream,
+        };
+        var upload = q.nbind(s3.upload, s3);
+        return upload(params).then(function() {
+            return params;
+        }).catch(function(err) {
+            reject(err);
+        });
+    }).then(function(params) {
+        var url = s3utils.urlForUploadParams(options.region, params);
         var result = {
-            bucket: bucketname,
-            key: keypath,
+            bucket: params.Bucket,
+            key: params.Key,
             url: url,
         };
-        callback(null, result);
-        deferred && deferred.resolve(result);
+        resolve(result);
+    }).catch(function(err) {
+        reject(err);
     });
+
+    return deferred ? deferred.promise : undefined;
 };
