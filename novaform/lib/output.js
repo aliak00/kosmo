@@ -1,6 +1,7 @@
 var Resource = require('./resource')
     , AWSResource = require('./awsresource')
-    , fn = require('./fn');
+    , fn = require('./fn')
+    , util = require('util');
 
 function Output(name, value, description) {
     if (!(this instanceof Output)) {
@@ -8,7 +9,9 @@ function Output(name, value, description) {
     }
 
     if (!(value instanceof Resource) && !(value instanceof AWSResource) && !(value instanceof fn.Function) && !(typeof value === 'string')) {
-        throw new Error('Output value can only be a string or another resource or a join, getatt or an other function');
+        var msg = util.format('Output "%s" value for can only be a string or another resource or a join, getatt or an other function. '+
+            'Got "%s" instead ("%s")', name, typeof value, value);
+        throw new Error(msg);
     }
     if (description && !(typeof description !== 'string')) {
         throw new Error('Output description must be string');
