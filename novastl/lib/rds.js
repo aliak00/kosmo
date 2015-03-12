@@ -14,7 +14,9 @@ function Rds(options) {
 
     novaform.Template.call(this);
 
+    var vpcId = options.vpcId;
     var subnets = options.subnets;
+    var allowedCidr = options.allowedCidr;
     var name = options.name || 'mydb';
     var allocatedStorage = options.allocatedStorage || 5;
     var multiAz = typeof options.multiAz === 'boolean' ? options.multiAz : true;
@@ -40,6 +42,19 @@ function Rds(options) {
         return camelCaseName + str;
     }
 
+    var securityGroup = this._addResource(novaform.ec2.SecurityGroup(mkname('Sg'), {
+        VpcId: vpcId,
+        GroupDescription: 'RDS from private subnets',
+    }));
+
+    this._addResource(novaform.ec2.SecurityGroupIngress(mkname('SgiPostgres'), {
+        GroupId: securityGroup,
+        IpProtocol: 'tcp',
+        FromPort: 5432,
+        ToPort: 5432,
+        CidrIp: allowedCidr
+    }));
+
     var subnetGroup = this._addResource(novaform.rds.DBSubnetGroup(mkname('PrivateSubnet'), {
         DBSubnetGroupDescription: name + ' db private subnets',
         SubnetIds: subnets,
@@ -60,11 +75,12 @@ function Rds(options) {
         MasterUserPassword: password,
         BackupRetentionPeriod: backupRetentionPeriod,
         PubliclyAccessible: false,
+        VPCSecurityGroups: [securityGroup],
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('Instance')])
         }
-    }));
+    })); // TODO "DeletionPolicy" : "Snapshot"
 
     this.subnetGroup = subnetGroup;
     this.dbinstance = dbinstance;
