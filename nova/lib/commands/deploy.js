@@ -221,7 +221,7 @@ Command.prototype.execute = function() {
         if (typeof result === 'undefined') {
             // looks like component wants to use async building, lets wait for done callback to be called.
             return doneDeferred.promise.then(returnResult);
-        } else if (_.has(result, 'then') && typeof result.then === 'function') {
+        } else if (q.isPromiseAlike(result)) {
             // async building with promises. Assume build() returned a promise
             return result.then(returnResult);
         } else {
@@ -445,7 +445,7 @@ Command.prototype.execute = function() {
     }).catch(function(e) {
         // TODO: differentiate between internal errors and valid exits like timeout or stack deployment failed
         console.error(util.format('Internal error: %s', e.stack));
-    });
+    }).done();
 }
 
 Command.usageText = '[options] <project>/<component>'
