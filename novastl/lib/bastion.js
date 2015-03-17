@@ -83,6 +83,14 @@ function Bastion(options) {
         CidrIp: '0.0.0.0/0'
     }));
 
+    this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgePostgres'), {
+        GroupId: securityGroup,
+        IpProtocol: 'tcp',
+        FromPort: 5432,
+        ToPort: 5432,
+        CidrIp: vpc.vpc.properties.CidrBlock
+    }));
+
     this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeIcmp'), {
         GroupId: securityGroup,
         IpProtocol: 'icmp',
