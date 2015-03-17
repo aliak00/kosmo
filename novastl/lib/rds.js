@@ -76,6 +76,7 @@ function Rds(options) {
         BackupRetentionPeriod: backupRetentionPeriod,
         PubliclyAccessible: false,
         VPCSecurityGroups: [securityGroup],
+        MultiAZ: multiAz,
         Tags: {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('Instance')])
