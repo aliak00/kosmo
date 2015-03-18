@@ -25,6 +25,11 @@ function loadConfiguration() {
             id: null,
             date: null,
             ref: null,
+            region: null,
+        },
+        currentBuild: {
+            date: null,
+            project: null,
         },
         commonOptions: {
         },

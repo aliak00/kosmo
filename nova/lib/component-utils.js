@@ -69,6 +69,9 @@ module.exports.deployArchive = function(sourcePath, options, callback) {
     options = options || {};
 
     var deferred;
+    if (typeof callback !== 'function') {
+        deferred = q.defer();
+    }
 
     function resolve(result) {
         typeof callback === 'function' && callback(null, result);
@@ -164,6 +167,97 @@ module.exports.deployArchive = function(sourcePath, options, callback) {
     }).catch(function(err) {
         reject(err);
     });
+
+    return deferred ? deferred.promise : undefined;
+};
+
+module.exports.findArtifacts = function(options, callback) {
+    //TODO: options is ignored for now
+    if (typeof options === 'function') {
+        options = null;
+        callback = options;
+    }
+
+    var deferred = typeof callback === 'function' ? undefined : q.defer();
+    function resolve(result) {
+        typeof callback === 'function' && callback(null, result);
+        deferred && deferred.resolve(result);
+    }
+    function reject(err) {
+        typeof callback === 'function' && callback(err);
+        deferred && deferred.reject(err);
+    }
+
+    // get the region for the component that is currently being deployed.
+    // e.g. Elastic Beanstalk expects artifacts in the same region as the EB app.
+    var region = config.currentDeployment.region;
+
+    q().then(function() {
+        return {
+            region: region,
+        };
+    }).then(function(state) {
+        var s3 = new AWS.S3({ region : region });
+        var s3listObjects = q.nbind(s3.listObjects, s3);
+
+        var s3config = config.get('s3', config.commonOptions.profile);
+        var bucketname = util.format('%s-artifacts-%s', s3config.bucket, region);
+
+        var params = {
+            Bucket: bucketname,
+            Prefix: util.format('%s%s/', s3config.keyPrefix, config.currentDeployment.ref.project),
+        };
+
+        return s3listObjects(params).then(function(data) {
+            if (data.IsTruncated) {
+                throw new Error('Internal error: truncated list object requests are not implemented');
+            }
+            var key = _.last(data.Contents).Key;
+            key = key.substr(params.Prefix.length);
+            var timestamp = key.split('/')[0];
+            return _.extend(state, {
+                timestamp: timestamp,
+                bucket: bucketname,
+            });
+        }).then(function(state) {
+            var params = {
+                Bucket: bucketname,
+                Prefix: util.format('%s%s/%s/artifacts/',
+                    s3config.keyPrefix,
+                    config.currentDeployment.ref.project,
+                    state.timestamp),
+            };
+
+            return s3listObjects(params).then(function(data) {
+                if (data.IsTruncated) {
+                    throw new Error('Internal error: truncated list object requests are not implemented');
+                }
+                var keys = _.map(data.Contents, function(elem) {
+                    return elem.Key;
+                });
+                return _.extend(state, {
+                    keys: keys,
+                });
+            });
+        }).then(function(state) {
+            var artifacts = _.map(state.keys, function(key) {
+                return {
+                    timestamp: state.timestamp,
+                    bucket: state.bucket,
+                    key: key,
+                };
+            });
+            if (config.commonOptions.verbose) {
+                var names = _.map(state.keys, function(key) {
+                    return path.basename(key);
+                });
+                console.log(util.format('Found artifact(s) %s: %s', state.timestamp, names.join(', ')));
+            }
+            resolve(artifacts);
+        });
+    }).catch(function(err) {
+        reject(err);
+    }).done();
 
     return deferred ? deferred.promise : undefined;
 };

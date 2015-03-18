@@ -12,6 +12,8 @@ var getopt = require('node-getopt')
     , Stack = require('../stack')
     , s3utils = require('../s3utils')
     , config = require('../configuration')
+    , Project = require('../project')
+    , Ref = require('../ref')
     , assert = require('assert');
 
 var cmdopts = module.exports.opts = getopt.create([
@@ -116,6 +118,7 @@ Command.prototype.execute = function() {
         config.currentDeployment.id = deploymentId;
         config.currentDeployment.date = deploymentDate;
         config.currentDeployment.ref = that.ref;
+        config.currentDeployment.region = that.component.region;
 
         return {
             projectName: that.ref.project,
@@ -453,75 +456,3 @@ Command.descriptionText = 'Deploys project component';
 Command.optionsText = cmdopts.getHelp();
 
 module.exports = Command;
-
-// helpers
-// TODO: this should probably be shared in lib/shared ?
-
-function Ref(project, component) {
-    if (!(this instanceof Ref)) {
-        return new Ref(project, component);
-    }
-
-    this.project = project;
-    this.component = component;
-}
-
-Ref.parse = function(ref) {
-    var project;
-    var component;
-
-    if (typeof ref !== 'string') {
-        return undefined;
-    }
-    var l = ref.split('/');
-    if (l.length > 2) {
-        return undefined;
-    }
-    project = l[0];
-    component = l[1];
-
-    return new Ref(project, component);
-}
-
-Ref.prototype.makeStackName = function() {
-    assert(this.project);
-    assert(this.component);
-
-    var project = this.project[0].toUpperCase() + this.project.substr(1).toLowerCase();
-    var component = this.component[0].toUpperCase() + this.component.substr(1).toLowerCase();
-
-    return project + component;
-};
-
-function Project(config) {
-    this.config = config;
-}
-Project.searchPaths = [process.cwd()];
-Project.load = function(name, callback) {
-    for (var i = 0; i < Project.searchPaths.length; ++i) {
-        var searchPath = Project.searchPaths[i];
-        var filepath = searchPath + '/' + name;
-
-        if (fs.existsSync(filepath) || fs.existsSync(filepath + '.js')) {
-            try {
-                var module = require(filepath);
-                var config = module({
-                    utils: novautils,
-                    resources: novaform,
-                    templates: novastl,
-                });
-                return new Project(config);
-            } catch (e) {
-                if (callback) {
-                    callback(e);
-                }
-            }
-            return null;
-        }
-    }
-    return null;
-};
-Project.prototype.findComponent = function(name) {
-    var component = _.findWhere(this.config.components, { name : name })
-    return component;
-}
