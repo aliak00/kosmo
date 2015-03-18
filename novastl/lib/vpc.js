@@ -208,11 +208,21 @@ Vpc.prototype.createPublicSubnets = function(subnets) {
             PortRange: [22, 22]
         }));
 
-        // Allows inbound return traffic from requests originating in the subnet
-        push(novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundDynamicPorts', az), {
+        // Allows inbound return traffic for requests originating in the subnet
+        push(novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundDynamicPortsTcp', az), {
             NetworkAclId: nacl,
-            RuleNumber: 103,
+            RuleNumber: 106,
             Protocol: 6,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [1024, 65535]
+        }));
+        // Allows inbound return traffic for requests originating in the subnet
+        push(novaform.ec2.NetworkAclEntry(mknameAz('PublicInboundDynamicPortsUdp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 105,
+            Protocol: 17,
             RuleAction: 'allow',
             Egress: false,
             CidrBlock: '0.0.0.0/0',
@@ -246,7 +256,7 @@ Vpc.prototype.createPublicSubnets = function(subnets) {
             PortRange: [80, 80]
         }));
 
-       push(novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundHttps', az), {
+        push(novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundHttps', az), {
             NetworkAclId: nacl,
             RuleNumber: 101,
             Protocol: 6,
@@ -256,7 +266,7 @@ Vpc.prototype.createPublicSubnets = function(subnets) {
             PortRange: [443, 443]
         }));
 
-       push(novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundSsh', az), {
+        push(novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundSsh', az), {
             NetworkAclId: nacl,
             RuleNumber: 102,
             Protocol: 6,
@@ -264,6 +274,25 @@ Vpc.prototype.createPublicSubnets = function(subnets) {
             Egress: true,
             CidrBlock: vpc.properties.CidrBlock,
             PortRange: [22, 22]
+        }));
+
+        push(novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundDnsTcp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 105,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [53, 53]
+        }));
+        push(novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundDnsUdp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 106,
+            Protocol: 17,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [53, 53]
         }));
 
         // Allows outbound responses to clients on the Internet
@@ -373,7 +402,7 @@ Vpc.prototype.createPrivateSubnets = function(subnets) {
             Protocol: 6,
             RuleAction: 'allow',
             Egress: false,
-            CidrBlock: '0.0.0.0/0',
+            CidrBlock: '0.0.0.0/0', // TODO: should this be vpc.properties.CidrBlock ?????
             PortRange: [1024, 65535]
         }));
 
@@ -401,6 +430,16 @@ Vpc.prototype.createPrivateSubnets = function(subnets) {
             }
         }));
 
+        push(novaform.ec2.NetworkAclEntry(mknameAz('PrivateInboundPostgres', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 105,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: false,
+            CidrBlock: vpc.properties.CidrBlock,
+            PortRange: [5432, 5432]
+        }));
+
         //
         // Outound Network ACLs
         //
@@ -423,6 +462,25 @@ Vpc.prototype.createPrivateSubnets = function(subnets) {
             Egress: true,
             CidrBlock: '0.0.0.0/0',
             PortRange: [443, 443]
+        }));
+
+        push(novaform.ec2.NetworkAclEntry(mknameAz('PrivateOutboundDnsTcp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 104,
+            Protocol: 6,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [53, 53]
+        }));
+        push(novaform.ec2.NetworkAclEntry(mknameAz('PrivateOutboundDnsUdp', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 105,
+            Protocol: 17,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+            PortRange: [53, 53]
         }));
 
         // Allows outbound responses to the public subnet
