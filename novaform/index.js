@@ -71,6 +71,10 @@ module.exports = {
 
     refs: {
         StackName: fn.ref('AWS::StackName'),
-        StackId: fn.ref('AWS::StackId')
-    }
+        StackId: fn.ref('AWS::StackId'),
+        Region: fn.ref('AWS::Region'),
+        AccountId: fn.ref('AWS::AccountId'),
+        NotificationARNs: fn.ref('AWS::NotificationARNs'),
+        NoValue: fn.ref('AWS::NoValue'),
+    },
 }
