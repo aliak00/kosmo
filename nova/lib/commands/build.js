@@ -22,7 +22,7 @@ var cmdopts = module.exports.opts = getopt.create([
 
 cmdopts.setHelp('[[OPTIONS]]\n');
 
-function Command(config, commonOptions, args, helpCallback) {
+function Command(config, args, helpCallback) {
     if (!(this instanceof Command)) {
         return new Command(name, properties);
     }
@@ -31,7 +31,6 @@ function Command(config, commonOptions, args, helpCallback) {
     this.displayHelpAndExit = helpCallback;
 
     var opts = this.opts = cmdopts.parse(args);
-    this.commonOptions = commonOptions;
     this.commandOptions = this.opts.options;
 
     if (opts.options.help) {
@@ -67,7 +66,7 @@ Command.prototype.execute = function() {
             buildDate: buildDate,
         };
     }).then(function(buildConfig) {
-        if (that.commonOptions.verbose) {
+        if (that.config.verbose) {
             console.log('Ensuring buckets are full...');
         }
         var regions = _.uniq(_.map(that.project.config.artifacts, function(artifact) {
@@ -75,7 +74,7 @@ Command.prototype.execute = function() {
         }));
 
         // ensure there are buckets in right regions
-        var s3config = that.config.get('s3', that.commonOptions.profile);
+        var s3config = that.config.get('s3', that.config.profile);
         var bucketnamebase = s3config.bucket;
 
         var s3 = new AWS.S3();
@@ -120,7 +119,7 @@ Command.prototype.execute = function() {
             return buildConfig;
         });
     }).then(function(buildConfig) {
-        if (that.commonOptions.verbose) {
+        if (that.config.verbose) {
             console.log('Building artifacts...');
         }
 
@@ -157,11 +156,11 @@ Command.prototype.execute = function() {
             });
         });
     }).then(function(buildConfig) {
-        if (that.commonOptions.verbose) {
+        if (that.config.verbose) {
             console.log('Uploading artifacts...');
         }
 
-        var s3config = that.config.get('s3', that.commonOptions.profile);
+        var s3config = that.config.get('s3', that.config.profile);
         var datestring = buildConfig.buildDate.format('YYYYMMDDTHHmmss');
 
         var keypathbase = util.format('%s%s/%s/artifacts',

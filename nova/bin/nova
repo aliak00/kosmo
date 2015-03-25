@@ -8,7 +8,8 @@ var nova = require('../lib')
     , fs = require('fs')
     , util = require('util')
     , q = require('q')
-    , config = require('../lib/configuration');
+    , config = require('../lib/configuration')
+    , yaml = require('js-yaml');;
 
 function parseArguments(commands) {
     var args = process.argv.slice(2);
@@ -32,10 +33,11 @@ function parseArguments(commands) {
     }
 
     var commonOpts = getopt.create([
-        ['p', 'profile=ARG', 'set which aws profile to use for credentials'],
+        ['', 'profile=ARG', 'Set which aws profile to use for credentials'],
+        ['', 'params=ARG', 'Yml configuration file passed in to your nova deployment definition'],
         ['v', 'verbose', 'Print more stuff'],
-        ['d', 'debug', 'Print insane amount of logs'],
-        ['f', 'output-format=ARG', 'Output format (json or text)'],
+        ['d', 'debug', 'Print insane amounts of logs'],
+        ['f', 'output-format=ARG', 'Output format (json or text) - defaults to json'],
         ['h', 'help', 'Display help']
     ]);
 
@@ -102,17 +104,18 @@ function showCommandHelp(opts, command, errorMessage) {
 ', commandName, commandUsage, commandName, commandOptions));
 }
 
-function init() {
-    if (opts.commonOptions.debug) {
+function initAws(profile, debug) {
+    if (debug) {
         AWS.config.logger = process.stdout;
     }
 
     return q().then(function() {
-        if (opts.commonOptions.profile) {
+        if (profile) {
             var options = {
-                profile : opts.commonOptions.profile,
+                profile : profile,
             };
             var credentials = new AWS.SharedIniFileCredentials(options);
+            // TODO: Look at this
             var refresh = q.nbind(credentials.refresh, credentials);
             return refresh().then(function() {
                 return credentials;
@@ -123,6 +126,7 @@ function init() {
     }).then(function(credentials) {
         if (!credentials) {
             credentials = new AWS.EnvironmentCredentials('AWS');
+            // TODO: Look at this
             var refresh = q.nbind(credentials.refresh, credentials);
             return refresh().then(function() {
                 return credentials;
@@ -130,7 +134,6 @@ function init() {
                 return null;
             });
         }
-        return credentials;
     }).then(function(credentials) {
         if (!credentials) {
             throw new Error('Failed to initialize AWS - make sure you provide --profile or set AWS_ACCESS_KEY_ID env var');
@@ -140,8 +143,26 @@ function init() {
     });
 }
 
+function parseParams(params) {
+    return q().then(function() {
+        if (!params) {
+            return {};
+        }
+
+        var cwd = process.cwd();
+        var filepath = cwd + '/' + params;
+
+        var doc = yaml.safeLoad(fs.readFileSync(filepath, 'utf8'));
+
+        if (!doc) {
+            return {};
+        }
+
+        return doc;
+    });
+}
+
 var opts = parseArguments(nova.commands);
-config.commonOptions = opts.commonOptions;
 
 if (opts.commonOptions.help) {
     opts.showHelp();
@@ -157,14 +178,27 @@ if (!opts.command) {
     process.exit(0);
 }
 
-init().then(function() {
-    var command = new opts.command(config, opts.commonOptions, opts.commandArguments, function help(errorMessage) {
+initAws(opts.commonOptions.profile, opts.commonOptions.debug).then(function() {
+    return parseParams(opts.commonOptions.params);
+}).then(function(params) {
+    var config = {
+        params: params,
+        verbose: opts.commonOptions.verbose,
+        outputFormat: opts.commonOptions['output-format'],
+        profile: opts.commonOptions.profile
+    };
+
+    var command = new opts.command(config, opts.commandArguments, function help(errorMessage) {
         showCommandHelp(opts, opts.command, errorMessage);
         process.exit(0);
     });
 
     command.execute();
 }).catch(function(err) {
+    if (opts.commonOptions.debug) {
+        console.log(err.stack)
+    }
+    opts.showHelp(err.message);
     opts.showHelp(err.message);
     process.exit(0);
 });

@@ -8,7 +8,7 @@ function Project(config) {
     this.config = config;
 }
 Project.searchPaths = [process.cwd()];
-Project.load = function(name, callback) {
+Project.load = function(name, params, callback) {
     for (var i = 0; i < Project.searchPaths.length; ++i) {
         var searchPath = Project.searchPaths[i];
         var filepath = searchPath + '/' + name;
@@ -20,6 +20,7 @@ Project.load = function(name, callback) {
                     utils: novautils,
                     resources: novaform,
                     templates: novastl,
+                    params: params
                 });
                 return new Project(config);
             } catch (e) {

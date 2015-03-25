@@ -25,7 +25,7 @@ var cmdopts = module.exports.opts = getopt.create([
 
 cmdopts.setHelp('[[OPTIONS]]\n');
 
-function Command(config, commonOptions, args, helpCallback) {
+function Command(config, args, helpCallback) {
     if (!(this instanceof Command)) {
         return new Command(name, properties);
     }
@@ -34,7 +34,6 @@ function Command(config, commonOptions, args, helpCallback) {
     this.displayHelpAndExit = helpCallback;
 
     var opts = this.opts = cmdopts.parse(args);
-    this.commonOptions = commonOptions;
     this.commandOptions = this.opts.options;
 
     if (opts.options.help) {
@@ -61,7 +60,7 @@ function Command(config, commonOptions, args, helpCallback) {
         return;
     }
 
-    this.project = Project.load(this.ref.project, function(e) {
+    this.project = Project.load(this.ref.project, this.config.params, function(e) {
         helpCallback(util.format('Failed to load project "%s": %s', ref.project, e.message));
     });
     if (!this.project) {
@@ -181,7 +180,7 @@ Command.prototype.execute = function() {
         // fetch output for each dependent component
 
         var getStackOutput = q.nbind(Stack.getStackOutput, Stack);
-        if (that.commonOptions.verbose) {
+        if (that.config.verbose) {
             console.log('Fetching outputs of dependent stacks...');
         }
 
@@ -207,7 +206,7 @@ Command.prototype.execute = function() {
         });
     }).then(function(deploymentConfig) {
         // build the component
-        if (that.commonOptions.verbose) {
+        if (that.config.verbose) {
             console.log('Building component...');
         }
 
@@ -232,7 +231,7 @@ Command.prototype.execute = function() {
         }
     }).then(function(deploymentConfig) {
         // build cloudformation resources
-        if (that.commonOptions.verbose) {
+        if (that.config.verbose) {
             console.log('Generating cloudformation template...');
         }
 
@@ -263,11 +262,11 @@ Command.prototype.execute = function() {
             return deploymentConfig;
         }
 
-        if (that.commonOptions.verbose) {
+        if (that.config.verbose) {
             console.log('Uploading cloudformation template to S3...');
         }
 
-        var s3config = that.config.get('s3', that.commonOptions.profile);
+        var s3config = that.config.get('s3', that.config.profile);
         var bucketname = s3config.bucket;
         var region = s3config.region;
         var datestring = deploymentConfig.deploymentDate.format();
@@ -301,7 +300,7 @@ Command.prototype.execute = function() {
         // initiate cloudformation deployment
         var cfn = that.cfn;
         var getStackStatus = q.nbind(Stack.getStackStatus, Stack);
-        if (that.commonOptions.verbose) {
+        if (that.config.verbose) {
             console.log('Checking cloudformation stack status...');
         }
         return getStackStatus(cfn, deploymentConfig.stackName).then(function(status) {
@@ -310,7 +309,7 @@ Command.prototype.execute = function() {
                 return status;
             }
 
-            if (that.commonOptions.verbose) {
+            if (that.config.verbose) {
                 console.log('Stack was stuck in a rollback state, deleting it before deploying...');
             }
 
@@ -334,7 +333,7 @@ Command.prototype.execute = function() {
                 throw new Error(util.format('Failed to delete stack "%s": %j', deploymentConfig.stackName, err));
             });
         }).then(function(status) {
-            if (that.commonOptions.verbose) {
+            if (that.config.verbose) {
                 console.log('Deploying cloudformation stack...');
             }
             if (status === Stack.Status.DOES_NOT_EXIST) {
@@ -383,7 +382,7 @@ Command.prototype.execute = function() {
 
         // wait for completion
         if (that.commandOptions.wait) {
-            if (that.commonOptions.verbose) {
+            if (that.config.verbose) {
                 console.log('Waiting for deployment to complete...');
             }
 
@@ -397,7 +396,7 @@ Command.prototype.execute = function() {
                     throw new Error('Stack deployment failed');
                 }
                 if (!Stack.isStatusComplete(status)) {
-                    if (that.commonOptions.verbose) {
+                    if (that.config.verbose) {
                         console.log('Still waiting...');
                     }
                     return null;
@@ -431,9 +430,9 @@ Command.prototype.execute = function() {
 
         var stackOutput = deploymentConfig.stackOutput;
 
-        if (that.commonOptions['output-format'] == 'json') {
+        if (that.config.outputFormat == 'json') {
             console.log(_.extend({}, output, stackOutput));
-        } else if (that.commonOptions['output-format'] == 'text') {
+        } else if (that.config.outputFormat == 'text') {
             function print(x) {
                 for (var key in x) {
                     var value = x[key];
