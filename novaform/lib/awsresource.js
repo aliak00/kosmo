@@ -87,12 +87,12 @@ AWSResource.prototype.toObject = function() {
 };
 
 AWSResource.define = function(type, propdefinitions) {
-    function Resource(name, properties) {
+    function Resource(name, properties, attributes) {
         if (!(this instanceof Resource)) {
-            return new Resource(name, properties);
+            return new Resource(name, properties, attributes);
         }
 
-        AWSResource.call(this, type, propdefinitions, name, properties);
+        AWSResource.call(this, type, propdefinitions, name, properties, attributes);
     }
     Resource.prototype = Object.create(AWSResource.prototype);
     Resource.prototype.constructor = Resource;
