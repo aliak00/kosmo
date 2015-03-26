@@ -37,6 +37,10 @@ function loadUserDataFromFile(filename, params) {
         }
     }
 
+    if (!refs) {
+        return contents;
+    }
+
     var joins = [lines[0]];
     for (var i = 0; i < refs.length; ++i) {
         joins.push(refObject(refs[i]));
