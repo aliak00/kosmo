@@ -134,6 +134,7 @@ function initAws(profile, debug) {
                 return null;
             });
         }
+        return credentials;
     }).then(function(credentials) {
         if (!credentials) {
             throw new Error('Failed to initialize AWS - make sure you provide --profile or set AWS_ACCESS_KEY_ID env var');
