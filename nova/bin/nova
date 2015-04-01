@@ -144,26 +144,21 @@ function initAws(profile, debug) {
     });
 }
 
-function parseParams(params) {
+function readParams(paramsFile) {
     return q().then(function() {
-        if (!params) {
-            return {};
+        if (!paramsFile) {
+            return '';
         }
 
-        var cwd = process.cwd();
-        var filepath = cwd + '/' + params;
-
-        var doc = yaml.safeLoad(fs.readFileSync(filepath, 'utf8'));
-
-        if (!doc) {
-            return {};
-        }
-
-        return doc;
+        var readFile = q.nbind(fs.readFile, fs);
+        return readFile(paramsFile, { encoding: 'utf-8', flag: 'r' });
+    }).then(function(data) {
+        return yaml.safeLoad(data) || {};
     });
 }
 
 var opts = parseArguments(nova.commands);
+config.commonOptions = opts.commonOptions;
 
 if (opts.commonOptions.help) {
     opts.showHelp();
@@ -180,16 +175,11 @@ if (!opts.command) {
 }
 
 initAws(opts.commonOptions.profile, opts.commonOptions.debug).then(function() {
-    return parseParams(opts.commonOptions.params);
-}).then(function(params) {
-    var config = {
-        params: params,
-        verbose: opts.commonOptions.verbose,
-        outputFormat: opts.commonOptions['output-format'],
-        profile: opts.commonOptions.profile
-    };
-
-    var command = new opts.command(config, opts.commandArguments, function help(errorMessage) {
+    return readParams(opts.commonOptions.params);
+}).then(function(paramsObject) {
+    config.paramsObject = paramsObject;
+}).then(function() {
+    var command = new opts.command(opts.commandArguments, function help(errorMessage) {
         showCommandHelp(opts, opts.command, errorMessage);
         process.exit(0);
     });
@@ -200,6 +190,5 @@ initAws(opts.commonOptions.profile, opts.commonOptions.debug).then(function() {
         console.log(err.stack)
     }
     opts.showHelp(err.message);
-    opts.showHelp(err.message);
     process.exit(0);
-});
+}).done();

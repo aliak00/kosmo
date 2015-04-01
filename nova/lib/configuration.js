@@ -33,6 +33,8 @@ function loadConfiguration() {
         },
         commonOptions: {
         },
+        paramsObject: {
+        },
     };
 
     var filename = process.env['HOME'] + '/.novacfg';

@@ -22,12 +22,11 @@ var cmdopts = module.exports.opts = getopt.create([
 
 cmdopts.setHelp('[[OPTIONS]]\n');
 
-function Command(config, args, helpCallback) {
+function Command(args, helpCallback) {
     if (!(this instanceof Command)) {
         return new Command(name, properties);
     }
 
-    this.config = config;
     this.displayHelpAndExit = helpCallback;
 
     var opts = this.opts = cmdopts.parse(args);
@@ -47,7 +46,7 @@ function Command(config, args, helpCallback) {
     }
 
     var projectName = this.projectName = opts.argv[0];
-    this.project = Project.load(projectName, function(e) {
+    this.project = Project.load(projectName, config.paramsObject, function(e) {
         helpCallback(util.format('Failed to load project "%s": %s', projectName, e.message));
     });
 }
@@ -66,7 +65,7 @@ Command.prototype.execute = function() {
             buildDate: buildDate,
         };
     }).then(function(buildConfig) {
-        if (that.config.verbose) {
+        if (config.commonOptions.verbose) {
             console.log('Ensuring buckets are full...');
         }
         var regions = _.uniq(_.map(that.project.config.artifacts, function(artifact) {
@@ -74,7 +73,7 @@ Command.prototype.execute = function() {
         }));
 
         // ensure there are buckets in right regions
-        var s3config = that.config.get('s3', that.config.profile);
+        var s3config = config.get('s3');
         var bucketnamebase = s3config.bucket;
 
         var s3 = new AWS.S3();
@@ -119,7 +118,7 @@ Command.prototype.execute = function() {
             return buildConfig;
         });
     }).then(function(buildConfig) {
-        if (that.config.verbose) {
+        if (config.verbose) {
             console.log('Building artifacts...');
         }
 
@@ -156,11 +155,11 @@ Command.prototype.execute = function() {
             });
         });
     }).then(function(buildConfig) {
-        if (that.config.verbose) {
+        if (config.verbose) {
             console.log('Uploading artifacts...');
         }
 
-        var s3config = that.config.get('s3', that.config.profile);
+        var s3config = config.get('s3');
         var datestring = buildConfig.buildDate.format('YYYYMMDDTHHmmss');
 
         var keypathbase = util.format('%s%s/%s/artifacts',
