@@ -6,10 +6,17 @@ var _ = require('underscore')
     , path = require('path')
     , fs = require('fs')
     , config = require('./configuration')
-    , s3utils = require('./s3utils');
+    , s3utils = require('./s3utils')
+    , minimatch = require('minimatch')
+    , assert = require('assert');
 
-module.exports.createArchive = function(destinationName, sourcePath, callback) {
+module.exports.createArchive = function(destinationName, sourcePath, options, callback) {
     var deferred;
+
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
 
     if (typeof callback !== 'function') {
         callback = function() {};
@@ -58,10 +65,60 @@ module.exports.createArchive = function(destinationName, sourcePath, callback) {
 
     archive.pipe(output);
 
-    archive
-        .directory(sourcePath, false)
-        .finalize();
+    if (options.filter) {
+        readdir = q.nbind(fs.readdir, fs);
+        stat = q.nbind(fs.stat, fs);
 
+        var walk = function(directoryPath) {
+            return readdir(directoryPath).then(function(files) {
+                files = _.map(files, function(file) {
+                    return path.join(directoryPath, file);
+                });
+                var statPromises = _.map(files, function(file) {
+                    return stat(file);
+                });
+                return q.all(statPromises).then(function(stats) {
+                    return _.zip(files, stats);
+                }).then(function(data) {
+                    var entries = _.filter(data, function(e) {
+                        var file = e[0];
+                        var stats = e[1];
+                        return options.filter(file, stats);
+                    });
+
+                    var result = _.reduce(entries, function(memo, e) {
+                        var filepath = e[0];
+                        var stats = e[1];
+                        return {
+                            files: memo.files.concat( stats.isFile() ? [ { path: filepath, stats: stats } ] : [] ),
+                            directories: memo.directories.concat( stats.isDirectory() ? [ { path: filepath, stats: stats } ] : [] ),
+                        };
+                    }, { files: [], directories: [] });
+
+                    _.each(result.files, function(fi) {
+                        assert(fi.path.indexOf(sourcePath) === 0);
+                        var storedPath = fi.path.slice(sourcePath.length);
+                        archive.file(fi.path, {
+                            name: storedPath,
+                            stats: fi.stats,
+                        });
+                    });
+
+                    var promises = _.map(result.directories, function(fi) {
+                        return walk(fi.path);
+                    });
+                    return q.all(promises);
+                });
+            });
+        };
+        walk(sourcePath).then(function() {
+            archive.finalize();
+        }).done();
+    } else {
+        archive
+            .directory(sourcePath, false)
+            .finalize();
+    }
     return deferred ? deferred.promise : undefined;
 };
 
@@ -260,4 +317,19 @@ module.exports.findArtifacts = function(options, callback) {
     }).done();
 
     return deferred ? deferred.promise : undefined;
+};
+
+module.exports.excludesFilter = function(excludes) {
+    var matchers = _.map(excludes, function(excludePattern) {
+        return minimatch.filter(excludePattern, { matchBase: true });
+    });
+    var any = function(filepath) {
+        return _.any(matchers, function(matcher) {
+            return matcher(filepath);
+        });
+    };
+
+    return function(filepath, stats) {
+        return !any(filepath);
+    };
 };
