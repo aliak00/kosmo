@@ -83,6 +83,13 @@ Stack.isStatusComplete = function(status) {
         status === Status.UPDATE_ROLLBACK_COMPLETE;
 };
 
+Stack.isStatusValidCompleteState = function(status) {
+    return status === Status.CREATE_COMPLETE ||
+        status === Status.ROLLBACK_COMPLETE ||
+        status === Status.UPDATE_COMPLETE ||
+        status === Status.UPDATE_ROLLBACK_COMPLETE;
+};
+
 Stack.isStatusFailed = function(status) {
     return status === Status.CREATE_FAILED ||
         status === Status.DELETE_FAILED ||

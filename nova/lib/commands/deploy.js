@@ -178,7 +178,7 @@ Command.prototype.execute = function() {
     }).then(function(deploymentConfig) {
         // fetch output for each dependent component
 
-        var getStackOutput = q.nbind(Stack.getStackOutput, Stack);
+        var getStackInfo = q.nbind(Stack.getStackInfo, Stack);
         if (config.commonOptions.verbose) {
             console.log('Fetching outputs of dependent stacks...');
         }
@@ -186,14 +186,23 @@ Command.prototype.execute = function() {
         var cfn = deploymentConfig.cfn;
         var componentNames = deploymentConfig.dependentComponents;
 
-        var outputsPromises = componentNames.map(function(depname) {
+        var stackInfoPromises = componentNames.map(function(depname) {
             return Ref(that.ref.project, depname).makeStackName();
         }).map(function(stackName) {
-            return getStackOutput(cfn, stackName);
+            return getStackInfo(cfn, stackName);
         });
 
-        return q.all(outputsPromises).then(function(results) {
-            var dependencyObject = _.object(_.zip(componentNames, results));
+        return q.all(stackInfoPromises).then(function(stackInfos) {
+            var invalidStacks = _.filter(stackInfos, function(stackInfo) {
+                return !Stack.isStatusValidCompleteState(stackInfo.status);
+            });
+            if (invalidStacks.length !== 0) {
+                throw new Error('One of the dependent stacks is not yet deployed!');
+            }
+            var outputs = _.map(stackInfos, function(stackInfo) {
+                return stackInfo.outputs;
+            });
+            var dependencyObject = _.object(_.zip(componentNames, outputs));
             return _.extend(deploymentConfig, {
                 dependencies: dependencyObject
             });
