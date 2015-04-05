@@ -118,7 +118,7 @@ Command.prototype.execute = function() {
             return buildConfig;
         });
     }).then(function(buildConfig) {
-        if (config.verbose) {
+        if (config.commonOptions.verbose) {
             console.log('Building artifacts...');
         }
 
@@ -155,7 +155,7 @@ Command.prototype.execute = function() {
             });
         });
     }).then(function(buildConfig) {
-        if (config.verbose) {
+        if (config.commonOptions.verbose) {
             console.log('Uploading artifacts...');
         }
 
