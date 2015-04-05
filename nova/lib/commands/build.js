@@ -76,7 +76,7 @@ Command.prototype.execute = function() {
         var s3config = config.get('s3');
         var bucketnamebase = s3config.bucket;
 
-        var s3 = new AWS.S3();
+        var s3 = new AWS.S3({ region: s3config.region, signatureVersion: 'v4' });
         var promises = _.map(regions, function(region) {
             var bucketname = util.format('%s-artifacts-%s', bucketnamebase, region);
 
@@ -179,7 +179,7 @@ Command.prototype.execute = function() {
                 Body: readStream,
             };
 
-            var s3 = new AWS.S3({ region : artifact.region });
+            var s3 = new AWS.S3({ region : artifact.region, signatureVersion: 'v4' });
             var s3upload = q.nbind(s3.upload, s3);
             return s3upload(params).then(function(result) {
                 return {
