@@ -228,7 +228,7 @@ module.exports.deployArchive = function(sourcePath, options, callback) {
     return deferred ? deferred.promise : undefined;
 };
 
-module.exports.findArtifacts = function(options, callback) {
+module.exports.getLatestArtifact = function(options, callback) {
     //TODO: options is ignored for now
     if (typeof options === 'function') {
         options = null;
