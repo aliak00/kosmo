@@ -269,48 +269,19 @@ module.exports.findArtifacts = function(options, callback) {
             if (data.IsTruncated) {
                 throw new Error('Internal error: truncated list object requests are not implemented');
             }
-            var key = _.last(data.Contents).Key;
-            key = key.substr(params.Prefix.length);
-            var timestamp = key.split('/')[0];
-            return _.extend(state, {
-                timestamp: timestamp,
-                bucket: bucketname,
-            });
-        }).then(function(state) {
-            var params = {
-                Bucket: bucketname,
-                Prefix: util.format('%s%s/%s/artifacts/',
-                    s3config.keyPrefix,
-                    config.currentDeployment.ref.project,
-                    state.timestamp),
-            };
 
-            return s3listObjects(params).then(function(data) {
-                if (data.IsTruncated) {
-                    throw new Error('Internal error: truncated list object requests are not implemented');
-                }
-                var keys = _.map(data.Contents, function(elem) {
-                    return elem.Key;
-                });
-                return _.extend(state, {
-                    keys: keys,
-                });
+            var artifacts = _.filter(data.Contents, function(object) {
+                return object.Key.indexOf('.zip', object.Key.length - 4) !== -1;
             });
-        }).then(function(state) {
-            var artifacts = _.map(state.keys, function(key) {
-                return {
-                    timestamp: state.timestamp,
-                    bucket: state.bucket,
-                    key: key,
-                };
+
+            var artifactKey = _.last(artifacts).Key;
+            var timestamp = artifactKey.substr(params.Prefix.length).split('/')[0];
+
+            resolve({
+                timestamp: timestamp,
+                key: artifactKey,
+                bucket: bucketname
             });
-            if (config.commonOptions.verbose) {
-                var names = _.map(state.keys, function(key) {
-                    return path.basename(key);
-                });
-                console.log(util.format('Found artifact(s) %s: %s', state.timestamp, names.join(', ')));
-            }
-            resolve(artifacts);
         });
     }).catch(function(err) {
         reject(err);
