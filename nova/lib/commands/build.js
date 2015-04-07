@@ -17,7 +17,10 @@ var getopt = require('node-getopt')
     , assert = require('assert');
 
 var cmdopts = module.exports.opts = getopt.create([
-    ['h', 'help', 'Display help']
+    ['', 'artifact=ARG', 'Will upload and use specified artifact'],
+    ['', 'name=ARG', 'The name to use for the artifact'],
+    ['', 'region=ARG', 'The region the artifact belongs to'],
+    ['h', 'help', 'Display help'],
 ]);
 
 cmdopts.setHelp('[[OPTIONS]]\n');
@@ -49,6 +52,21 @@ function Command(args, helpCallback) {
     this.project = Project.load(projectName, config.paramsObject, function(e) {
         helpCallback(util.format('Failed to load project "%s": %s', projectName, e.message));
     });
+
+    var self = this;
+    if (this.commandOptions.artifact && this.commandOptions.region && this.commandOptions.name) {
+        this.project.config.artifacts = [{
+            name: this.commandOptions.name,
+            region: this.commandOptions.region,
+            build: function() {
+                return self.commandOptions.artifact;
+            }
+        }];
+
+        this.willSkipBuildStep = true;
+    } else if (this.commandOptions.artifact || this.commandOptions.region || this.commandOptions.name) {
+        helpCallback(util.format('If you specify any of --artifact, --name or --region, you must specify them all'));
+    }
 }
 
 Command.prototype.execute = function() {
@@ -119,7 +137,11 @@ Command.prototype.execute = function() {
         });
     }).then(function(buildConfig) {
         if (config.commonOptions.verbose) {
-            console.log('Building artifacts...');
+            if (!that.willSkipBuildStep) {
+                console.log('Building artifacts...');
+            } else {
+                console.log('Artifact explicity specified. Skipping build artifact step');
+            }
         }
 
         var promises = _.map(that.project.config.artifacts, function(artifact) {
