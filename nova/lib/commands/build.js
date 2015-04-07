@@ -232,7 +232,7 @@ Command.prototype.execute = function() {
                 artifacts: results,
             });
         }).catch(function(e) {
-            throw new Error(util.format('Failed to upload to S3: %s', JSON.stringify(e)));
+            throw new Error(util.format('Failed to upload to S3: %s', e.stack));
         });
     }).then(function(buildConfig) {
         _.each(buildConfig.artifacts, function(artifact) {
