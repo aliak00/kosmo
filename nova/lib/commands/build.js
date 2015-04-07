@@ -106,7 +106,7 @@ Command.prototype.execute = function() {
             if (failures.length) {
                 var errmsg = _.map(failures, function(result) {
                     if (result.actual) {
-                        return util.format('%s: %s != %s', result.bucketName, result.expected, result.actual);
+                        return util.format('%s: Expected %s, Actual %s', result.bucketName, result.expected, result.actual);
                     } else {
                         return util.format('%s does not exist', result.bucketName);
                     }
