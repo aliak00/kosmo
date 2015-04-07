@@ -190,7 +190,6 @@ Command.prototype.execute = function() {
             dateString);
 
         var promises = _.map(buildConfig.artifacts, function(artifact) {
-            var deferredUpload = q.defer();
             var baseName = path.basename(artifact.path);
             var keyPath = keyPathBase + '/' + baseName;
             var readStream = fs.createReadStream(artifact.path);
@@ -205,31 +204,27 @@ Command.prototype.execute = function() {
             var s3 = new AWS.S3({ region : artifact.region, signatureVersion: 'v4' });
 
             var lastProgress = 0;
-            s3.upload(params).on('httpUploadProgress', function(event) {
-                if (config.commonOptions.verbose) {
+            var s3ManagedUploader = s3.upload(params);
+            if (config.commonOptions.verbose) {
+                s3ManagedUploader.on('httpUploadProgress', function(event) {
                     var thisProgress = event.loaded / event.total * 100;
                     if (thisProgress === 100 || thisProgress > lastProgress + 7) {
                         console.log('Progress', thisProgress.toFixed(1), '% - ', event.loaded, 'of', event.total);
                         lastProgress = thisProgress;
                     }
-                }
-            })
-            .send(function(err, data) {
-                if (err) {
-                    deferredUpload.reject(err);
-                    return;
-                }
+                });
+            }
 
-                deferredUpload.resolve({
+            var s3ManagedUploaderSend = q.nbind(s3ManagedUploader.send, s3ManagedUploader);
+            return s3ManagedUploaderSend().then(function(data) {
+                return {
                     Bucket: bucketName,
                     Key: keyPath,
                     region: artifact.region,
                     url: data.Location,
                     name: artifact.name,
-                });
+                };
             });
-
-            return deferredUpload.promise;
         });
 
         return q.all(promises).then(function(results) {
