@@ -195,7 +195,7 @@ module.exports.deployArchive = function(sourcePath, options, callback) {
 
         var deploymentDateString = config.currentDeployment.date.format();
         var deploymentId = config.currentDeployment.id;
-        var keypath = util.format('%s%s/%s/%s/artifacts/%s',
+        var keyPath = util.format('%s%s/%s/%s/artifacts/%s',
             s3config.keyPrefix,
             config.currentDeployment.ref.project,
             config.currentDeployment.ref.component,
@@ -204,7 +204,7 @@ module.exports.deployArchive = function(sourcePath, options, callback) {
 
         var params = {
             Bucket: artifactsBucket,
-            Key: keypath,
+            Key: keyPath,
             Body: sourceStream,
         };
         var upload = q.nbind(s3.upload, s3);
@@ -258,10 +258,10 @@ module.exports.getLatestArtifact = function(options, callback) {
         var s3listObjects = q.nbind(s3.listObjects, s3);
 
         var s3config = config.get('s3', config.commonOptions.profile);
-        var bucketname = util.format('%s-artifacts-%s', s3config.bucket, region);
+        var bucketName = util.format('%s-artifacts-%s', s3config.bucket, region);
 
         var params = {
-            Bucket: bucketname,
+            Bucket: bucketName,
             Prefix: util.format('%s%s/', s3config.keyPrefix, config.currentDeployment.ref.project),
         };
 
@@ -280,7 +280,7 @@ module.exports.getLatestArtifact = function(options, callback) {
             resolve({
                 timestamp: timestamp,
                 key: artifactKey,
-                bucket: bucketname
+                bucket: bucketName
             });
         });
     }).catch(function(err) {

@@ -74,23 +74,23 @@ Command.prototype.execute = function() {
 
         // ensure there are buckets in right regions
         var s3config = config.get('s3');
-        var bucketnamebase = s3config.bucket;
+        var bucketNameBase = s3config.bucket;
 
         var s3 = new AWS.S3({ region: s3config.region, signatureVersion: 'v4' });
         var promises = _.map(regions, function(region) {
-            var bucketname = util.format('%s-artifacts-%s', bucketnamebase, region);
+            var bucketName = util.format('%s-artifacts-%s', bucketNameBase, region);
 
             var getBucketLocation = q.nbind(s3.getBucketLocation, s3);
-            return getBucketLocation({ Bucket : bucketname }).then(function(data) {
+            return getBucketLocation({ Bucket : bucketName }).then(function(data) {
                 return {
-                    bucketname: bucketname,
+                    bucketName: bucketName,
                     expected: region,
                     actual: data.LocationConstraint,
                 };
             }).catch(function(err) {
                 if (err.code === 'NoSuchBucket') {
                     return {
-                        bucketname: bucketname,
+                        bucketName: bucketName,
                         expected: region,
                         actual: null,
                     };
@@ -106,9 +106,9 @@ Command.prototype.execute = function() {
             if (failures.length) {
                 var errmsg = _.map(failures, function(result) {
                     if (result.actual) {
-                        return util.format('%s: %s != %s', result.bucketname, result.expected, result.actual);
+                        return util.format('%s: %s != %s', result.bucketName, result.expected, result.actual);
                     } else {
-                        return util.format('%s does not exist', result.bucketname);
+                        return util.format('%s does not exist', result.bucketName);
                     }
                 }).join('\n');
                 var msg = 'Internal error: some buckets are not configured to correct regions:\n' + errmsg;
@@ -160,22 +160,22 @@ Command.prototype.execute = function() {
         }
 
         var s3config = config.get('s3');
-        var datestring = buildConfig.buildDate.format('YYYYMMDDTHHmmss');
+        var dateString = buildConfig.buildDate.format('YYYYMMDDTHHmmss');
 
-        var keypathbase = util.format('%s%s/%s/artifacts',
+        var keyPathBase = util.format('%s%s/%s/artifacts',
             s3config.keyPrefix,
             buildConfig.projectName,
-            datestring);
+            dateString);
 
         var promises = _.map(buildConfig.artifacts, function(artifact) {
-            var basename = path.basename(artifact.path);
-            var keypath = keypathbase + '/' + basename;
+            var baseName = path.basename(artifact.path);
+            var keyPath = keyPathBase + '/' + baseName;
             var readStream = fs.createReadStream(artifact.path);
-            var bucketname = util.format('%s-artifacts-%s', s3config.bucket, artifact.region);
+            var bucketName = util.format('%s-artifacts-%s', s3config.bucket, artifact.region);
 
             var params = {
-                Bucket: bucketname,
-                Key: keypath,
+                Bucket: bucketName,
+                Key: keyPath,
                 Body: readStream,
             };
 
@@ -183,8 +183,8 @@ Command.prototype.execute = function() {
             var s3upload = q.nbind(s3.upload, s3);
             return s3upload(params).then(function(result) {
                 return {
-                    Bucket: bucketname,
-                    Key: keypath,
+                    Bucket: bucketName,
+                    Key: keyPath,
                     region: artifact.region,
                     url: result.Location,
                     name: artifact.name,

@@ -275,18 +275,18 @@ Command.prototype.execute = function() {
         }
 
         var s3config = config.get('s3');
-        var bucketname = s3config.bucket;
+        var bucketName = s3config.bucket;
         var region = s3config.region;
-        var datestring = deploymentConfig.deploymentDate.format();
-        var keypath = util.format('%s%s/%s/%s/templates/%s-%s.json',
+        var dateString = deploymentConfig.deploymentDate.format();
+        var keyPath = util.format('%s%s/%s/%s/templates/%s-%s.json',
             s3config.keyPrefix,
             that.ref.project, that.ref.component,
             deploymentConfig.deploymentId,
-            deploymentConfig.stackName, datestring);
+            deploymentConfig.stackName, dateString);
 
         var params = {
-            Bucket: bucketname,
-            Key: keypath,
+            Bucket: bucketName,
+            Key: keyPath,
             Body: deploymentConfig.templateBody,
         };
 
