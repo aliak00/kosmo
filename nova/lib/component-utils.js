@@ -277,19 +277,23 @@ module.exports.findArtifacts = function(options, callback) {
                 bucket: bucketName,
             });
         }).then(function(state) {
+            var keyPrefix = util.format('%s%s/%s/artifacts/',
+                s3config.keyPrefix,
+                config.currentDeployment.ref.project,
+                state.timestamp);
+
             var params = {
                 Bucket: bucketName,
-                Prefix: util.format('%s%s/%s/artifacts/',
-                    s3config.keyPrefix,
-                    config.currentDeployment.ref.project,
-                    state.timestamp),
+                Prefix: keyPrefix,
             };
 
             return s3listObjects(params).then(function(data) {
                 if (data.IsTruncated) {
                     throw new Error('Internal error: truncated list object requests are not implemented');
                 }
-                var keys = _.map(data.Contents, function(elem) {
+                var keys = _.map(_.filter(data.Contents, function(elem) {
+                    return elem.Key.length > keyPrefix.length;
+                }), function(elem) {
                     return elem.Key;
                 });
                 return _.extend(state, {
