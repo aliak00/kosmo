@@ -228,7 +228,7 @@ module.exports.deployArchive = function(sourcePath, options, callback) {
     return deferred ? deferred.promise : undefined;
 };
 
-module.exports.getLatestArtifact = function(options, callback) {
+module.exports.findArtifacts = function(options, callback) {
     //TODO: options is ignored for now
     if (typeof options === 'function') {
         options = null;
@@ -269,19 +269,48 @@ module.exports.getLatestArtifact = function(options, callback) {
             if (data.IsTruncated) {
                 throw new Error('Internal error: truncated list object requests are not implemented');
             }
-
-            var artifacts = _.filter(data.Contents, function(object) {
-                return object.Key.indexOf('.zip', object.Key.length - 4) !== -1;
-            });
-
-            var artifactKey = _.last(artifacts).Key;
-            var timestamp = artifactKey.substr(params.Prefix.length).split('/')[0];
-
-            resolve({
+            var key = _.last(data.Contents).Key;
+            key = key.substr(params.Prefix.length);
+            var timestamp = key.split('/')[0];
+            return _.extend(state, {
                 timestamp: timestamp,
-                key: artifactKey,
-                bucket: bucketName
+                bucket: bucketName,
             });
+        }).then(function(state) {
+            var params = {
+                Bucket: bucketName,
+                Prefix: util.format('%s%s/%s/artifacts/',
+                    s3config.keyPrefix,
+                    config.currentDeployment.ref.project,
+                    state.timestamp),
+            };
+
+            return s3listObjects(params).then(function(data) {
+                if (data.IsTruncated) {
+                    throw new Error('Internal error: truncated list object requests are not implemented');
+                }
+                var keys = _.map(data.Contents, function(elem) {
+                    return elem.Key;
+                });
+                return _.extend(state, {
+                    keys: keys,
+                });
+            });
+        }).then(function(state) {
+            var artifacts = _.map(state.keys, function(key) {
+                return {
+                    timestamp: state.timestamp,
+                    bucket: state.bucket,
+                    key: key,
+                };
+            });
+            if (config.commonOptions.verbose) {
+                var names = _.map(state.keys, function(key) {
+                    return path.basename(key);
+                });
+                console.log(util.format('Found artifact(s) %s: %s', state.timestamp, names.join(', ')));
+            }
+            resolve(artifacts);
         });
     }).catch(function(err) {
         reject(err);
