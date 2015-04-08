@@ -176,9 +176,6 @@ Command.prototype.execute = function() {
             dependentComponents: deplist,
         });
     }).then(function(deploymentConfig) {
-        // fetch output for each dependent component
-
-        var getStackInfo = q.nbind(Stack.getStackInfo, Stack);
         if (config.commonOptions.verbose) {
             console.log('Fetching outputs of dependent stacks...');
         }
@@ -189,6 +186,7 @@ Command.prototype.execute = function() {
         var stackInfoPromises = componentNames.map(function(depname) {
             return Ref(that.ref.project, depname).makeStackName();
         }).map(function(stackName) {
+            var getStackInfo = q.nbind(Stack.getStackInfo, Stack);
             return getStackInfo(cfn, stackName);
         });
 
@@ -213,7 +211,6 @@ Command.prototype.execute = function() {
             throw e;
         });
     }).then(function(deploymentConfig) {
-        // build the component
         if (config.commonOptions.verbose) {
             console.log('Building component...');
         }
@@ -238,7 +235,6 @@ Command.prototype.execute = function() {
             return returnResult(result);
         }
     }).then(function(deploymentConfig) {
-        // build cloudformation resources
         if (config.commonOptions.verbose) {
             console.log('Generating cloudformation template...');
         }
@@ -246,6 +242,19 @@ Command.prototype.execute = function() {
         var stack = novaform.Stack(deploymentConfig.stackName);
         stack.add(deploymentConfig.buildResult.resources || []);
         stack.add(deploymentConfig.buildResult.outputs || []);
+
+        var parameters = deploymentConfig.buildResult.parameters || [];
+        deploymentConfig.stackParams = [];
+        parameters.forEach(function(paramObject) {
+            if (paramObject.value === null || typeof paramObject.value === 'undefined') {
+                throw new Error('Parameter values cannot be null')
+            }
+            stack.add(paramObject.param);
+            deploymentConfig.stackParams.push({
+                ParameterKey: paramObject.param.name,
+                ParameterValue: paramObject.value
+            });
+        });
 
         if (stack.isEmpty()) {
             throw new Error('Nothing to deploy. Lets call it a success!');
@@ -305,16 +314,18 @@ Command.prototype.execute = function() {
             return deploymentConfig;
         }
 
-        // initiate cloudformation deployment
-        var cfn = that.cfn;
-        var getStackStatus = q.nbind(Stack.getStackStatus, Stack);
         if (config.commonOptions.verbose) {
             console.log('Checking cloudformation stack status...');
         }
+
+        var cfn = that.cfn;
+        var getStackStatus = q.nbind(Stack.getStackStatus, Stack);
         return getStackStatus(cfn, deploymentConfig.stackName).then(function(status) {
             if (status !== Stack.Status.ROLLBACK_COMPLETE) {
                 // all good, nothing to do here.
-                return status;
+                return _.assign(deploymentConfig, {
+                    stackStatus: status
+                });
             }
 
             if (config.commonOptions.verbose) {
@@ -332,7 +343,9 @@ Command.prototype.execute = function() {
                     stackName: deploymentConfig.stackName,
                 }, function(status) {
                     if (status === Stack.Status.DOES_NOT_EXIST) {
-                        return status;
+                        return _.assign(deploymentConfig, {
+                            stackStatus: status
+                        });
                     }
                     console.log('Still waiting...');
                     return null;
@@ -340,49 +353,57 @@ Command.prototype.execute = function() {
             }).catch(function(err) {
                 throw new Error(util.format('Failed to delete stack "%s": %j', deploymentConfig.stackName, err));
             });
-        }).then(function(status) {
-            if (config.commonOptions.verbose) {
-                console.log('Deploying cloudformation stack...');
-            }
-            if (status === Stack.Status.DOES_NOT_EXIST) {
-                // create a new stack
-                var createStack = q.nbind(cfn.createStack, cfn);
-                return createStack({
-                    Capabilities: [ 'CAPABILITY_IAM' ], // TODO: this is only needed for some stacks that create iam roles, hm.
-                    StackName: deploymentConfig.stackName,
-                    TemplateURL: deploymentConfig.templateUrl,
-                    Tags: [
-                        { Key: 'nova-project', Value: deploymentConfig.projectName },
-                        { Key: 'nova-component', Value: deploymentConfig.componentName },
-                    ],
-                }).then(function(data) {
-                    return _.extend(deploymentConfig, {
-                        stackId: data.StackId,
-                    });
-                }).catch(function(err) {
-                    throw new Error(util.format('Failed to initiate stack creation:\n%j', err));
-                });
-            } else {
-                if (!Stack.isStatusComplete(status)) {
-                    // already in progress?
-                    throw new Error(util.format('Stack is not in a valid state for deployment (%s)', status));
-                }
-
-                // update an existing stack
-                var updateStack = q.nbind(cfn.updateStack, cfn);
-                return updateStack({
-                    Capabilities: [ 'CAPABILITY_IAM' ], // TODO: this is only needed for some stacks that create iam roles, hm.
-                    StackName: deploymentConfig.stackName,
-                    TemplateURL: deploymentConfig.templateUrl,
-                }).then(function(data) {
-                    return _.extend(deploymentConfig, {
-                        stackId: data.StackId,
-                    });
-                }).catch(function(err) {
-                    throw new Error(util.format('Failed to initiate stack creation:\n%j', err));
-                });
-            }
         });
+    }).then(function(deploymentConfig) {
+        if (that.commandOptions.noop) {
+            return deploymentConfig;
+        }
+
+        if (config.commonOptions.verbose) {
+            console.log('Deploying cloudformation stack...');
+        }
+
+        var cfn = that.cfn;
+        if (deploymentConfig.stackStatus === Stack.Status.DOES_NOT_EXIST) {
+            // create a new stack
+            var createStack = q.nbind(cfn.createStack, cfn);
+            return createStack({
+                Capabilities: [ 'CAPABILITY_IAM' ], // TODO: this is only needed for some stacks that create iam roles, hm.
+                StackName: deploymentConfig.stackName,
+                TemplateURL: deploymentConfig.templateUrl,
+                Tags: [
+                    { Key: 'nova-project', Value: deploymentConfig.projectName },
+                    { Key: 'nova-component', Value: deploymentConfig.componentName },
+                ],
+                Parameters: deploymentConfig.stackParams
+            }).then(function(data) {
+                return _.extend(deploymentConfig, {
+                    stackId: data.StackId,
+                });
+            }).catch(function(err) {
+                throw new Error(util.format('Failed to initiate stack creation:\n%j', err));
+            });
+        } else {
+            if (!Stack.isStatusComplete(deploymentConfig.stackStatus)) {
+                // already in progress?
+                throw new Error(util.format('Stack is not in a valid state for deployment (%s)', deploymentConfig.stackStatus));
+            }
+
+            // update an existing stack
+            var updateStack = q.nbind(cfn.updateStack, cfn);
+            return updateStack({
+                Capabilities: [ 'CAPABILITY_IAM' ], // TODO: this is only needed for some stacks that create iam roles, hm.
+                StackName: deploymentConfig.stackName,
+                TemplateURL: deploymentConfig.templateUrl,
+                Parameters: deploymentConfig.stackParams,
+            }).then(function(data) {
+                return _.extend(deploymentConfig, {
+                    stackId: data.StackId,
+                });
+            }).catch(function(err) {
+                throw new Error(util.format('Failed to initiate stack creation:\n%j', err));
+            });
+        }
     }).then(function(deploymentConfig) {
         if (that.commandOptions.noop) {
             return deploymentConfig;
