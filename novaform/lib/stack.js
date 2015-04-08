@@ -2,6 +2,7 @@ var Resource = require('./resource')
     , AWSResource = require('./awsresource')
     , Template = require('./template')
     , Output = require('./output')
+    , Parameter = require('./parameter')
     , utils = require('./utils')
     , _ = require('underscore');
 
@@ -14,6 +15,7 @@ function Stack(name, description) {
     this.description = description;
     this.resources = [];
     this.outputs = {};
+    this.parameters = {};
 }
 
 Stack.prototype.add = function(stackItems) {
@@ -31,8 +33,13 @@ Stack.prototype.add = function(stackItems) {
                 throw new Error('Cannot add duplicate output: ' + stackItem.name);
             }
             that.outputs[stackItem.name] = stackItem;
+        } else if (stackItem instanceof Parameter) {
+            if (that.parameters[stackItem.name]) {
+                throw new Error('Cannot add duplicate parameter: ' + stackItem.name);
+            }
+            that.parameters[stackItem.name] = stackItem;
         } else {
-            throw new Error('stackItem must be instanceof Resource, Template or Output');
+            throw new Error('stackItem must be instanceof Resource, Template, Output or Parameter');
         }
     });
 }
@@ -54,12 +61,16 @@ Stack.prototype.toObject = function() {
     var outputs = _.reduce(this.outputs, function(memo, resource) {
         return _.extend(memo, _.object([resource.name], [resource.toObject()]));
     }, {});
+    var parameters = _.reduce(this.parameters, function(memo, parameter) {
+        return _.extend(memo, _.object([parameter.name], [parameter.toObject()]));
+    }, {});
 
     return {
         AWSTemplateFormatVersion: '2010-09-09',
         Description: description,
         Resources: resources,
         Outputs: outputs,
+        Parameters: parameters,
     };
 }
 

@@ -45,6 +45,20 @@ module.exports = {
         },
     },
 
+    regex: {
+        name: 'regex',
+        validate: function(x) {
+            if (x instanceof RegExp) {
+                return true;
+            }
+
+            return false;
+        },
+        toCloudFormationValue: function(x) {
+            return x.toString();
+        },
+    },
+
     boolean: {
         name: 'boolean',
         validate: function(x) {
