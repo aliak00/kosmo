@@ -29,6 +29,7 @@ function Bastion(options) {
     var allowedSshCidr = options.allowedSshCidr || '0.0.0.0/0'
     var instanceType = options.instanceType || 't2.micro';
     var name = options.name || 'Bastion';
+    var users = options.users;
 
     name = name.charAt(0).toUpperCase() + name.slice(1);
 
@@ -155,17 +156,6 @@ function Bastion(options) {
         })),
     }, {
         DependsOn: role.name,
-        Metadata: {
-            'AWS::CloudFormation::Init': {
-                'config': {
-                    'packages': {
-                        'yum': {
-                            'aws-cli': []
-                        }
-                    }
-                }
-            }
-        },
     }));
 
     var publicAvailabilityZones = _.map(vpc.publicSubnets, function(subnet) {
