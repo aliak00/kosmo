@@ -58,8 +58,8 @@ Stack.prototype.toObject = function() {
     var resources = _.reduce(this.resources, function(memo, resource) {
         return _.extend(memo, _.object([resource.name], [resource.toObject()]));
     }, {});
-    var outputs = _.reduce(this.outputs, function(memo, resource) {
-        return _.extend(memo, _.object([resource.name], [resource.toObject()]));
+    var outputs = _.reduce(this.outputs, function(memo, output) {
+        return _.extend(memo, _.object([output.name], [output.toObject()]));
     }, {});
     var parameters = _.reduce(this.parameters, function(memo, parameter) {
         return _.extend(memo, _.object([parameter.name], [parameter.toObject()]));
