@@ -38,7 +38,8 @@ function parseArguments(commands) {
         ['v', 'verbose', 'Print more stuff'],
         ['d', 'debug', 'Print insane amounts of logs'],
         ['f', 'output-format=ARG', 'Output format (json or text) - defaults to json'],
-        ['h', 'help', 'Display help']
+        ['', 'version', 'Display current version'],
+        ['h', 'help', 'Display help'],
     ]);
 
     var commandDescriptions = _.map(commands, function(command, name) {
@@ -162,6 +163,11 @@ config.commonOptions = opts.commonOptions;
 
 if (opts.commonOptions.help) {
     opts.showHelp();
+    process.exit(0);
+}
+
+if (opts.commonOptions.version) {
+    console.log(nova.version);
     process.exit(0);
 }
 
