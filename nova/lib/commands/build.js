@@ -209,7 +209,7 @@ Command.prototype.execute = function() {
                 s3ManagedUploader.on('httpUploadProgress', function(event) {
                     var thisProgress = event.loaded / event.total * 100;
                     if (thisProgress === 100 || thisProgress > lastProgress + 7) {
-                        console.log('Progress', thisProgress.toFixed(1), '% - ', event.loaded, 'of', event.total);
+                        console.log('Progress', thisProgress.toFixed(1), '% -', event.loaded, 'of', event.total);
                         lastProgress = thisProgress;
                     }
                 });

@@ -10,6 +10,42 @@ var _ = require('underscore')
     , minimatch = require('minimatch')
     , assert = require('assert');
 
+function walkFiles(directoryPath, callback, filter) {
+    var readdir = q.nbind(fs.readdir, fs);
+    var stat = q.nbind(fs.stat, fs);
+    return readdir(directoryPath).then(function(files) {
+        var info = _.reduce(files, function(memo, file) {
+            file = path.join(directoryPath, file);
+            return {
+                files: memo.files.concat([file]),
+                statPromises: memo.statPromises.concat([stat(file)])
+            }
+        }, { files: [], statPromises: [] });
+        return q.all(info.statPromises).then(function(stats) {
+            return _.object(info.files, stats);
+        }).then(function(entries) {
+            if (filter) {
+                entries = _.omit(entries, function(stats, file) {
+                    return !filter(file, stats)
+                });
+            }
+            var result = _.reduce(entries, function(memo, stats, file) {
+                return {
+                    files: memo.files.concat( stats.isFile() ? [ { path: file, stats: stats } ] : [] ),
+                    directories: memo.directories.concat( stats.isDirectory() ? [ { path: file, stats: stats } ] : [] ),
+                };
+            }, { files: [], directories: [] });
+            _.each(result.files, function(fi) {
+                callback(fi.path, fi.stats);
+            });
+            var promises = _.map(result.directories, function(fi) {
+                return walkFiles(fi.path, callback, filter);
+            });
+            return q.all(promises);
+        });
+    });
+};
+
 module.exports.createArchive = function(destinationName, sourcePath, options, callback) {
     var deferred;
 
@@ -23,12 +59,12 @@ module.exports.createArchive = function(destinationName, sourcePath, options, ca
         deferred = q.defer();
     }
 
-    if (!path.extname(destinationName)) {
-        destinationName += '.zip';
+    if (config.commonOptions.verbose) {
+        console.log('Creating archive', destinationName);
     }
 
-    if (config.commonOptions.verbose) {
-        console.log('Creating artifact archive...');
+    if (!path.extname(destinationName)) {
+        destinationName += '.zip';
     }
 
     var tempdir = '/tmp/';
@@ -65,60 +101,38 @@ module.exports.createArchive = function(destinationName, sourcePath, options, ca
 
     archive.pipe(output);
 
-    if (options.filter) {
-        readdir = q.nbind(fs.readdir, fs);
-        stat = q.nbind(fs.stat, fs);
-
-        var walk = function(directoryPath) {
-            return readdir(directoryPath).then(function(files) {
-                files = _.map(files, function(file) {
-                    return path.join(directoryPath, file);
-                });
-                var statPromises = _.map(files, function(file) {
-                    return stat(file);
-                });
-                return q.all(statPromises).then(function(stats) {
-                    return _.zip(files, stats);
-                }).then(function(data) {
-                    var entries = _.filter(data, function(e) {
-                        var file = e[0];
-                        var stats = e[1];
-                        return options.filter(file, stats);
-                    });
-
-                    var result = _.reduce(entries, function(memo, e) {
-                        var filepath = e[0];
-                        var stats = e[1];
-                        return {
-                            files: memo.files.concat( stats.isFile() ? [ { path: filepath, stats: stats } ] : [] ),
-                            directories: memo.directories.concat( stats.isDirectory() ? [ { path: filepath, stats: stats } ] : [] ),
-                        };
-                    }, { files: [], directories: [] });
-
-                    _.each(result.files, function(fi) {
-                        assert(fi.path.indexOf(sourcePath) === 0);
-                        var storedPath = fi.path.slice(sourcePath.length);
-                        archive.file(fi.path, {
-                            name: storedPath,
-                            stats: fi.stats,
-                        });
-                    });
-
-                    var promises = _.map(result.directories, function(fi) {
-                        return walk(fi.path);
-                    });
-                    return q.all(promises);
-                });
+    var allTheFiles = [];
+    walkFiles(sourcePath, function(file, stats) {
+        assert(sourcePath === '.' || file.indexOf(sourcePath) === 0);
+        allTheFiles.push({
+            file: file,
+            stats: stats
+        });
+    }, options.filter).then(function() {
+        if (config.commonOptions.verbose) {
+            var entriesAdded = 0;
+            var lastProgress = 0;
+            archive.on('entry', function(entry) {
+                entriesAdded++;
+                var thisProgress = entriesAdded / allTheFiles.length * 100;
+                if (thisProgress === 100 || thisProgress > lastProgress + 7) {
+                    console.log('Progress', thisProgress.toFixed(1), '% -', entriesAdded, 'of', allTheFiles.length, 'files added');
+                    lastProgress = thisProgress;
+                }
             });
-        };
-        walk(sourcePath).then(function() {
-            archive.finalize();
-        }).done();
-    } else {
-        archive
-            .directory(sourcePath, false)
-            .finalize();
-    }
+        }
+
+        allTheFiles.forEach(function(fi) {
+            var storedPath = fi.file.slice(sourcePath.length);
+            archive.file(fi.file, {
+                name: storedPath,
+                stats: fi.stats,
+            });
+        })
+
+        archive.finalize();
+    }).done();
+
     return deferred ? deferred.promise : undefined;
 };
 
