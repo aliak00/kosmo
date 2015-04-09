@@ -239,6 +239,18 @@ Command.prototype.execute = function() {
             console.log('Generating cloudformation template...');
         }
 
+        if (deploymentConfig.buildResult.resources && !(deploymentConfig.buildResult.resources instanceof Array)) {
+            throw new Error('component resources must be array');
+        }
+
+        if (deploymentConfig.buildResult.outputs && !(deploymentConfig.buildResult.outputs instanceof Array)) {
+            throw new Error('component outputs must be array');
+        }
+
+        if (deploymentConfig.buildResult.parameters && !(deploymentConfig.buildResult.parameters instanceof Array)) {
+            throw new Error('component parameters must be array');
+        }
+
         var stack = novaform.Stack(deploymentConfig.stackName);
         stack.add(deploymentConfig.buildResult.resources || []);
         stack.add(deploymentConfig.buildResult.outputs || []);
