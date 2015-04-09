@@ -27,9 +27,8 @@ trap 'error ${LINENO}' ERR
 function log { logger -t "bastion" -- $1; echo $1; }
 
 log "Beginning configuration..."
-apt-get update -y
-apt-get upgrade -y
-apt-get install -y awscli
+apt-get install -y python-pip
+pip install awscli
 
 log "Installing cloudformation tools..."
 curl -o /tmp/aws-cfn-bootstrap-latest.tar.gz https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
