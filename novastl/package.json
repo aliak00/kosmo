@@ -12,6 +12,8 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "js-yaml": "^3.2.7",
+    "mime-multipart": "0.0.2",
     "novaform": "*",
     "underscore": "^1.8.0"
   }

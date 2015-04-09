@@ -1,5 +1,7 @@
 var novaform = require('novaform')
-    , _ = require('underscore');
+    , _ = require('underscore')
+    , yaml = require('js-yaml')
+    , multipart = require('mime-multipart');
 
 /**
     Refs include:
@@ -142,6 +144,33 @@ function Bastion(options) {
         Roles: [ role ]
     }));
 
+    var shellscript = novaform.loadUserDataFromFile(__dirname + '/bastion-user-data.sh', {
+        ASGName: name,
+        LaunchConfigName: mkname('LaunchConfig'),
+        EIPAllocId: novaform.getAtt(elasticIp.name, 'AllocationId')
+    });
+    var users = {
+        users: _.flatten(['default', users || []], true),
+    };
+
+    var placeholder = '###PLACEHOLDER###';
+    var userdata = multipart.generate([
+        {
+            content: placeholder,
+            mime: 'text/x-shellscript',
+            encoding: 'utf8',
+            filename: 'bastion-user-data.sh',
+        },
+        {
+            content: yaml.safeDump(users),
+            mime: 'text/cloud-config',
+            encoding: 'utf8',
+            filename: 'users',
+        },
+    ]);
+    var parts = userdata.split(placeholder);
+    userdata = novaform.join('', [_.first(parts), shellscript, _.last(parts)]);
+
     var launchConfiguration = this._addResource(novaform.asg.LaunchConfiguration(mkname('LaunchConfig'), {
         KeyName: keyName,
         ImageId: imageId,
@@ -149,11 +178,7 @@ function Bastion(options) {
         InstanceType: instanceType,
         AssociatePublicIpAddress: true,
         IamInstanceProfile: instanceProfile,
-        UserData: novaform.base64(novaform.loadUserDataFromFile(__dirname + '/bastion-user-data.sh', {
-            ASGName: name,
-            LaunchConfigName: mkname('LaunchConfig'),
-            EIPAllocId: novaform.getAtt(elasticIp.name, 'AllocationId')
-        })),
+        UserData: novaform.base64(userdata),
     }, {
         DependsOn: role.name,
     }));
