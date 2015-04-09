@@ -27,6 +27,8 @@ trap 'error ${LINENO}' ERR
 function log { logger -t "bastion" -- $1; echo $1; }
 
 log "Beginning configuration..."
+apt-get update -y
+apt-get upgrade -y
 apt-get install -y python-pip
 pip install awscli
 
