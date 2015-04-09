@@ -254,19 +254,7 @@ Command.prototype.execute = function() {
         var stack = novaform.Stack(deploymentConfig.stackName);
         stack.add(deploymentConfig.buildResult.resources || []);
         stack.add(deploymentConfig.buildResult.outputs || []);
-
-        var parameters = deploymentConfig.buildResult.parameters || [];
-        deploymentConfig.stackParams = [];
-        parameters.forEach(function(paramObject) {
-            if (paramObject.value === null || typeof paramObject.value === 'undefined') {
-                throw new Error('Parameter values cannot be null')
-            }
-            stack.add(paramObject.param);
-            deploymentConfig.stackParams.push({
-                ParameterKey: paramObject.param.name,
-                ParameterValue: paramObject.value
-            });
-        });
+        stack.add(_.pluck(deploymentConfig.buildResult.parameters, 'param'));
 
         if (stack.isEmpty()) {
             throw new Error('Nothing to deploy. Lets call it a success!');
@@ -375,6 +363,16 @@ Command.prototype.execute = function() {
             console.log('Deploying cloudformation stack...');
         }
 
+        var parameters = _.map(deploymentConfig.buildResult.parameters, function(paramObject){
+            if (paramObject.value === null || typeof paramObject.value === 'undefined') {
+                throw new Error('Parameter values cannot be null')
+            }
+            return {
+                ParameterKey: paramObject.param.name,
+                ParameterValue: paramObject.value
+            }
+        });
+
         var cfn = that.cfn;
         if (deploymentConfig.stackStatus === Stack.Status.DOES_NOT_EXIST) {
             // create a new stack
@@ -387,7 +385,7 @@ Command.prototype.execute = function() {
                     { Key: 'nova-project', Value: deploymentConfig.projectName },
                     { Key: 'nova-component', Value: deploymentConfig.componentName },
                 ],
-                Parameters: deploymentConfig.stackParams
+                Parameters: parameters
             }).then(function(data) {
                 return _.extend(deploymentConfig, {
                     stackId: data.StackId,
@@ -407,7 +405,7 @@ Command.prototype.execute = function() {
                 Capabilities: [ 'CAPABILITY_IAM' ], // TODO: this is only needed for some stacks that create iam roles, hm.
                 StackName: deploymentConfig.stackName,
                 TemplateURL: deploymentConfig.templateUrl,
-                Parameters: deploymentConfig.stackParams,
+                Parameters: parameters,
             }).then(function(data) {
                 return _.extend(deploymentConfig, {
                     stackId: data.StackId,
