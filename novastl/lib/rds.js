@@ -30,10 +30,11 @@ function Rds(options) {
         throw new Error(util.format('"%s" name is reserved', name));
     }
 
-    if (typeof password !== 'string') {
-        throw new Error('RDS password was not specified');
+    if (typeof password !== 'string' && !(password instanceof novaform.ref)) {
+        throw new Error('password must be either string or novaform.ref');
     }
-    if (password.length < 8) {
+
+    if (typeof password === 'string' && password.length < 8) {
         throw new Error('RDS password has to be at least 8 characters');
     }
 
