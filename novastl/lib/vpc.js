@@ -320,6 +320,15 @@ Vpc.prototype.createPublicSubnets = function(subnets) {
             }
         }));
 
+        push(novaform.ec2.NetworkAclEntry(mknameAz('PublicOutboundAnything', az), {
+            NetworkAclId: nacl,
+            RuleNumber: 150,
+            Protocol: -1,
+            RuleAction: 'allow',
+            Egress: true,
+            CidrBlock: '0.0.0.0/0',
+        }));
+
         push(novaform.ec2.SubnetNetworkAclAssociation(mknameAz('PublicSubnetNaclAssociation', az), {
             SubnetId: subnet,
             NetworkAclId: nacl
