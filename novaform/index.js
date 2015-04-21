@@ -31,10 +31,7 @@ function loadUserDataFromFile(filename, params) {
             obj[left] = right;
             return obj;
         } else {
-            if (!params || !params[ref]) {
-                throw new Error('Expected value for ' + ref + ' in params');
-            }
-            return params[ref];
+            return params[ref] || '';
         }
     }
 
