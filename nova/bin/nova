@@ -190,7 +190,7 @@ initAws(opts.commonOptions.profile, opts.commonOptions.debug).then(function() {
         process.exit(0);
     });
 
-    command.execute();
+    return command.execute();
 }).catch(function(err) {
     if (opts.commonOptions.debug) {
         console.log(err.stack)
