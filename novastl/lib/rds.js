@@ -25,6 +25,8 @@ function Rds(options) {
     var username = options.username || 'root';
     var password = options.password;
     var backupRetentionPeriod = options.backupRetentionPeriod;
+    var preferredBackupWindow = options.preferredBackupWindow;
+    var preferredMaintenanceWindow = options.preferredMaintenanceWindow;
 
     if (name.toLowerCase() === 'db' || name.toLowerCase() === 'database') {
         throw new Error(util.format('"%s" name is reserved', name));
@@ -75,6 +77,8 @@ function Rds(options) {
         MasterUsername: username,
         MasterUserPassword: password,
         BackupRetentionPeriod: backupRetentionPeriod,
+        PreferredBackupWindow: preferredBackupWindow,
+        PreferredMaintenanceWindow: preferredMaintenanceWindow,
         PubliclyAccessible: false,
         VPCSecurityGroups: [securityGroup],
         MultiAZ: multiAz,
