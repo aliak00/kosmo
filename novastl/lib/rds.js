@@ -27,6 +27,7 @@ function Rds(options) {
     var backupRetentionPeriod = options.backupRetentionPeriod;
     var preferredBackupWindow = options.preferredBackupWindow;
     var preferredMaintenanceWindow = options.preferredMaintenanceWindow;
+    var deletionPolicy = options.deletionPolicy || 'Delete';
 
     if (name.toLowerCase() === 'db' || name.toLowerCase() === 'database') {
         throw new Error(util.format('"%s" name is reserved', name));
@@ -86,7 +87,9 @@ function Rds(options) {
             Application: novaform.refs.StackId,
             Name: novaform.join('-', [novaform.refs.StackName, mkname('Instance')])
         }
-    })); // TODO "DeletionPolicy" : "Snapshot"
+    }, {
+        DeletionPolicy: deletionPolicy,
+    }));
 
     this.subnetGroup = subnetGroup;
     this.dbinstance = dbinstance;
