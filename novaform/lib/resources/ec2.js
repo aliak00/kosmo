@@ -158,6 +158,17 @@ Instance.prototype.validate = function() {
     // TODO:
 };
 
+var Volume = AWSResource.define('AWS::EC2::Volume', {
+    AvailabilityZone: { type: types.string, required: true },
+    Encrypted: { type: types.boolean, required: 'conditional' },
+    Iops: { type: types.number, required: 'conditional' },
+    KmsKeyId: { type: types.string },
+    Size: { type: types.string, required: 'conditional' },
+    SnapshotId: { type: types.string, required: 'conditional' },
+    Tags : { type: types.tags },
+    VolumeType: { type: types.string },
+});
+
 module.exports = {
     VPC: VPC,
     InternetGateway: InternetGateway,
@@ -174,4 +185,5 @@ module.exports = {
     SecurityGroupEgress: SecurityGroupEgress,
     EIP: EIP,
     Instance: Instance,
+    Volume: Volume,
 };
