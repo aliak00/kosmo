@@ -57,7 +57,18 @@ var AutoScalingGroup = AWSResource.define('AWS::AutoScaling::AutoScalingGroup', 
     VPCZoneIdentifier : { type: types.array },
 });
 
+var ScheduledAction = AWSResource.define('AWS::AutoScaling::ScheduledAction', {
+    AutoScalingGroupName : { type: types.string, required: true },
+    DesiredCapacity : { type: types.number },
+    EndTime : { type: types.string },
+    MaxSize : { type: types.number },
+    MinSize : { type: types.number },
+    Recurrence : { type: types.string },
+    StartTime : { type: types.string },
+});
+
 module.exports = {
     LaunchConfiguration: LaunchConfiguration,
-    AutoScalingGroup: AutoScalingGroup
+    AutoScalingGroup: AutoScalingGroup,
+    ScheduledAction: ScheduledAction,
 };
