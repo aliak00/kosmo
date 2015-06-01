@@ -65,6 +65,7 @@ module.exports = {
     r53: require('./lib/resources/route53'),
     eb: require('./lib/resources/elastic-beanstalk'),
     s3: require('./lib/resources/s3'),
+    ec: require('./lib/resources/ec'),
 
     ref: fn.ref,
     join: fn.join,
