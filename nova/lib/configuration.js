@@ -10,6 +10,7 @@ function loadConfiguration() {
                 keyPrefix: '',
             },
         },
+        profiles: {},
 
         get: function(domain, profile) {
             var cfg = this.default[domain];
