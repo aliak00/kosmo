@@ -20,7 +20,6 @@ function Rds(options) {
     var name = options.name || 'mydb';
     var allocatedStorage = options.allocatedStorage || 5;
     var multiAz = typeof options.multiAz === 'boolean' ? options.multiAz : true;
-    var availabilityZone = options.availabilityZone = 'None';
     var instanceType = options.instanceType || 'db.t1.micro';
     var username = options.username || 'root';
     var password = options.password;
