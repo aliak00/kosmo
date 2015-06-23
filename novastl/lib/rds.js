@@ -27,8 +27,12 @@ function Rds(options) {
     var preferredBackupWindow = options.preferredBackupWindow;
     var preferredMaintenanceWindow = options.preferredMaintenanceWindow;
     var deletionPolicy = options.deletionPolicy || 'Delete';
+    var publiclyAccessible = options.publiclyAccessible || false;
+    var snapshotIdentifier = options.snapshotIdentifier;
 
-    if (name.toLowerCase() === 'db' || name.toLowerCase() === 'database') {
+    var dbname = options.name;
+
+    if (dbname && (dbname.toLowerCase() === 'db' || dbname.toLowerCase() === 'database')) {
         throw new Error(util.format('"%s" name is reserved', name));
     }
 
@@ -41,7 +45,7 @@ function Rds(options) {
     }
 
     function mkname(str) {
-        var camelCaseName = name.charAt(0).toUpperCase() + name.slice(1)
+        var camelCaseName = name.charAt(0).toUpperCase() + name.slice(1);
         return camelCaseName + str;
     }
 
@@ -70,7 +74,7 @@ function Rds(options) {
     var dbinstance = this._addResource(novaform.rds.DBInstance(mkname('Instance'), {
         AllocatedStorage: allocatedStorage,
         DBInstanceClass: instanceType,
-        DBName: name,
+        DBName: dbname,
         DBSubnetGroupName: subnetGroup,
         Engine: 'postgres',
         EngineVersion: '9.3.5',
@@ -79,7 +83,8 @@ function Rds(options) {
         BackupRetentionPeriod: backupRetentionPeriod,
         PreferredBackupWindow: preferredBackupWindow,
         PreferredMaintenanceWindow: preferredMaintenanceWindow,
-        PubliclyAccessible: false,
+        PubliclyAccessible: publiclyAccessible,
+        DBSnapshotIdentifier: snapshotIdentifier,
         VPCSecurityGroups: [securityGroup],
         MultiAZ: multiAz,
         Tags: {
