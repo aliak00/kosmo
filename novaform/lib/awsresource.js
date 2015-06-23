@@ -53,6 +53,9 @@ AWSResource.prototype.validate = function() {
         if (typeof type === 'undefined') {
             throw new AWSResource.ValidationError(util.format('Internal error, missing type for property "%s"', propname));
         }
+        if (typeof propvalue === 'undefined' && !def.required) {
+            return;
+        }
         if (!type.validate(propvalue)) {
             var value = propvalue;
             if (typeof propvalue === 'object') {
