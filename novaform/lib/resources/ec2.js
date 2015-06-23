@@ -83,10 +83,28 @@ var SubnetNetworkAclAssociation = AWSResource.define('AWS::EC2::SubnetNetworkAcl
     NetworkAclId: { type: types.string, required: true },
 });
 
+var EC2SecurityGroupIngressRule = types.object('ec2-security-group-ingress-rule', {
+    CidrIp: types.cidr, // conditional
+    FromPort: types.number, // required
+    IpProtocol: types.protocol, // required
+    SourceSecurityGroupId: types.string, // conditional
+    SourceSecurityGroupName: types.string, // conditional
+    SourceSecurityGroupOwnerId: types.string, // conditional
+    ToPort: types.number, // required
+});
+
+var EC2SecurityGroupEgressRule = types.object('ec2-security-group-egress-rule', {
+    CidrIp: types.cidr, // conditional
+    FromPort: types.number, // required
+    IpProtocol: types.protocol, // required
+    DestinationSecurityGroupId: types.string, // conditional
+    ToPort: types.number, // required
+});
+
 var SecurityGroup = AWSResource.define('AWS::EC2::SecurityGroup', {
     GroupDescription: { type: types.string, required: true },
-    SecurityGroupEgress: { type: types.array },
-    SecurityGroupIngress: { type: types.array },
+    SecurityGroupEgress: { type: types.array },  // array of EC2SecurityGroupEgressRule
+    SecurityGroupIngress: { type: types.array },  // array of EC2SecurityGroupIngressRule
     Tags : { type: types.tags },
     VpcId: { type: types.string },
 });
