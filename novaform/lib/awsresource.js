@@ -63,6 +63,14 @@ AWSResource.prototype.validate = function() {
             }
             throw new AWSResource.ValidationError(util.format('Resource "%s": Invalid value for "%s" should be of type "%s" got "%s"', self.name, propname, type.name, value));
         }
+        if (def.validators instanceof Array) {
+            _.forEach(def.validators, function(validator) {
+                var result = validator(self);
+                if (typeof result !== 'undefined') {
+                    throw new AWSResource.ValidationError(util.format('Resource "%s": Value for "%s" failed validation: "%s"', self.name, propname, result));
+                }
+            });
+        }
     });
 };
 

@@ -7,6 +7,12 @@ var DBSubnetGroup = AWSResource.define('AWS::RDS::DBSubnetGroup', {
     Tags : { type: types.tags },
 });
 
+function DBSnapshotIdentifierValidator(self) {
+    if (self.properties.DBName) {
+        return 'DBName must be null if DBSnapshotIdentifier is specified';
+    };
+}
+
 var DBInstance = AWSResource.define('AWS::RDS::DBInstance', {
     AllocatedStorage : { type: types.number, required: true },
     AllowMajorVersionUpgrade : { type: types.boolean },
@@ -19,7 +25,7 @@ var DBInstance = AWSResource.define('AWS::RDS::DBInstance', {
     DBName : { type: types.string },
     DBParameterGroupName : { type: types.string },
     DBSecurityGroups : { type: types.array },
-    DBSnapshotIdentifier : { type: types.string },
+    DBSnapshotIdentifier : { type: types.string, validators: [DBSnapshotIdentifierValidator] },
     DBSubnetGroupName : { type: types.string },
     Engine : { type: types.string, required: 'conditional' },
     EngineVersion : { type: types.string },
