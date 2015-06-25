@@ -1,6 +1,6 @@
 var AWSResource = require('../awsresource')
     , types = require('../types');
-	
+
 var Cluster = AWSResource.define('AWS::Redshift::Cluster', {
     AllowVersionUpgrade : { type: types.boolean },
     AutomatedSnapshotRetentionPeriod : { type: types.number },
