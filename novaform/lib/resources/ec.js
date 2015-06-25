@@ -1,21 +1,43 @@
 var AWSResource = require('../awsresource')
     , types = require('../types');
 
+function PreferredAvailabilityZonesValidator(self) {
+    if (!self.AZMode) {
+        return 'AZMode must be set if PreferredAvailabilityZones is set (notice the \'s\' at the end)';
+    }
+}
+
+function EngineValidator(self) {
+    if (self.Engine === 'redis') {
+        if (self.PreferredAvailabilityZones) {
+            return 'PreferredAvailabilityZones only supported for memcached';
+        }
+    }
+}
+
+function AZModeValidator(self) {
+    if (self.Engine === 'redis') {
+        if (self.AZMode) {
+            return 'AZMode only supported for memcached';
+        }
+    }
+}
+
 var CacheCluster = AWSResource.define('AWS::ElastiCache::CacheCluster', {
     AutoMinorVersionUpgrade : { type: types.boolean },
-    AZMode : { type: types.string, required: 'conditional' },
+    AZMode : { type: types.enum('single-az', 'cross-az'), required: 'conditional', validators: [AZModeValidator] },
     CacheNodeType : { type: types.string, required: true },
     CacheParameterGroupName : { type: types.string },
     CacheSecurityGroupNames : { type: types.array, required: 'conditional' },
     CacheSubnetGroupName : { type: types.string },
     ClusterName : { type: types.string },
-    Engine : { type: types.enum('memcached', 'redis'), required: true },
+    Engine : { type: types.enum('memcached', 'redis'), required: true, validators: [EngineValidator] },
     EngineVersion : { type: types.string },
     NotificationTopicArn : { type: types.string },
     NumCacheNodes : { type: types.number, required: true },
     Port : { type: types.number },
     PreferredAvailabilityZone : { type: types.string },
-    PreferredAvailabilityZones : { type: types.array },
+    PreferredAvailabilityZones : { type: types.array, validators: [PreferredAvailabilityZonesValidator] },
     PreferredMaintenanceWindow : { type: types.string },
     SnapshotArns : { type: types.array },
     SnapshotRetentionLimit : { type: types.number },
