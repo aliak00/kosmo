@@ -18,7 +18,7 @@ var Cluster = AWSResource.define('AWS::Redshift::Cluster', {
     MasterUsername : { type: types.string, required: true },
     MasterUserPassword : { type: types.string, required: true },
     NodeType : { type: types.string, required: true },
-    NumberOfNodes : { type: types.number, required: 'conditonal' },
+    NumberOfNodes : { type: types.number, required: 'conditional' },
     OwnerAccount : { type: types.string },
     Port : { type: types.number },
     PreferredMaintenanceWindow : { type: types.string },
