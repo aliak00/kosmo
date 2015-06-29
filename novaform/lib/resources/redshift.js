@@ -34,7 +34,7 @@ var ClusterParameterGroup = AWSResource.define('AWS::Redshift::ClusterParameterG
     Parameters : { type: types.string },
 });
 
-var ClusterParameterGroup = AWSResource.define('AWS::Redshift::ClusterSecurityGroup', {
+var ClusterSecurityGroup = AWSResource.define('AWS::Redshift::ClusterSecurityGroup', {
     Description : { type: types.string, required: true },
 });
 
@@ -49,3 +49,11 @@ var ClusterSubnetGroup = AWSResource.define('AWS::Redshift::ClusterSubnetGroup',
     Description : { type: types.string, required: true },
     SubnetIds : { type: types.array, required: true },
 });
+
+module.exports = {
+    Cluster: Cluster,
+    ClusterParameterGroup: ClusterParameterGroup,
+    ClusterSecurityGroup: ClusterSecurityGroup,
+    ClusterSecurityGroupIngress: ClusterSecurityGroupIngress,
+    ClusterSubnetGroup: ClusterSubnetGroup,
+};
