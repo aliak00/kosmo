@@ -41,7 +41,12 @@ AWSResource.prototype.validate = function() {
     mandatoryPropertyNames.forEach(function(propname) {
         var propvalue = self.properties[propname];
         if (typeof propvalue === 'undefined') {
-            throw new AWSResource.ValidationError(util.format('Mandatory property "%s" is not set', propname));
+            throw new AWSResource.ValidationError(
+                util.format(
+                    'Resource "%s": Mandatory property "%s" is not set',
+                    self.name,
+                    propname)
+            );
         }
     });
 
@@ -51,7 +56,12 @@ AWSResource.prototype.validate = function() {
         var def = propdefinitions[propname] || {};
         var type = def.type;
         if (typeof type === 'undefined') {
-            throw new AWSResource.ValidationError(util.format('Internal error, missing type for property "%s"', propname));
+            throw new AWSResource.ValidationError(
+                util.format(
+                    'Resource "%s": Internal error, missing type for property "%s"',
+                    self.name,
+                    propname)
+            );
         }
         if (typeof propvalue === 'undefined' && !def.required) {
             return;
@@ -61,13 +71,26 @@ AWSResource.prototype.validate = function() {
             if (typeof propvalue === 'object') {
                 value = JSON.stringify(propvalue);
             }
-            throw new AWSResource.ValidationError(util.format('Resource "%s": Invalid value for "%s" should be of type "%s" got "%s"', self.name, propname, type.name, value));
+            throw new AWSResource.ValidationError(
+                util.format(
+                    'Resource "%s": Invalid value for "%s" should be of type "%s" got "%s"',
+                    self.name,
+                    propname,
+                    type.name,
+                    value)
+            );
         }
         if (def.validators instanceof Array) {
             _.forEach(def.validators, function(validator) {
                 var result = validator(self);
                 if (typeof result !== 'undefined') {
-                    throw new AWSResource.ValidationError(util.format('Resource "%s": Value for "%s" failed validation: "%s"', self.name, propname, result));
+                    throw new AWSResource.ValidationError(
+                        util.format(
+                            'Resource "%s": Value for "%s" failed validation: "%s"',
+                            self.name,
+                            propname,
+                            result)
+                    );
                 }
             });
         }

@@ -58,14 +58,15 @@ module.exports = {
 
     TagValue: TagValue,
 
-    ec2: require('./lib/resources/ec2'),
-    iam: require('./lib/resources/iam'),
     asg: require('./lib/resources/asg'),
-    rds: require('./lib/resources/rds'),
-    r53: require('./lib/resources/route53'),
     eb: require('./lib/resources/elastic-beanstalk'),
-    s3: require('./lib/resources/s3'),
+    ec2: require('./lib/resources/ec2'),
     ec: require('./lib/resources/ec'),
+    iam: require('./lib/resources/iam'),
+    r53: require('./lib/resources/route53'),
+    redshift: require('./lib/resources/redshift'),
+    rds: require('./lib/resources/rds'),
+    s3: require('./lib/resources/s3'),
 
     ref: fn.ref,
     join: fn.join,

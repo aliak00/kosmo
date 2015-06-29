@@ -1,6 +1,12 @@
 var AWSResource = require('../awsresource')
     , types = require('../types');
 
+var NumberOfNodesValidator = function(self) {
+    if (self.properties.ClusterType === 'single-node') {
+        return 'NumberOfNodes must be unset if NodeType is single-node';
+    };
+}
+
 var Cluster = AWSResource.define('AWS::Redshift::Cluster', {
     AllowVersionUpgrade : { type: types.boolean },
     AutomatedSnapshotRetentionPeriod : { type: types.number },
@@ -18,7 +24,7 @@ var Cluster = AWSResource.define('AWS::Redshift::Cluster', {
     MasterUsername : { type: types.string, required: true },
     MasterUserPassword : { type: types.string, required: true },
     NodeType : { type: types.string, required: true },
-    NumberOfNodes : { type: types.number, required: 'conditonal' },
+    NumberOfNodes : { type: types.number, required: 'conditional', validators: [NumberOfNodesValidator] },
     OwnerAccount : { type: types.string },
     Port : { type: types.number },
     PreferredMaintenanceWindow : { type: types.string },
@@ -34,7 +40,7 @@ var ClusterParameterGroup = AWSResource.define('AWS::Redshift::ClusterParameterG
     Parameters : { type: types.string },
 });
 
-var ClusterParameterGroup = AWSResource.define('AWS::Redshift::ClusterSecurityGroup', {
+var ClusterSecurityGroup = AWSResource.define('AWS::Redshift::ClusterSecurityGroup', {
     Description : { type: types.string, required: true },
 });
 
@@ -49,3 +55,11 @@ var ClusterSubnetGroup = AWSResource.define('AWS::Redshift::ClusterSubnetGroup',
     Description : { type: types.string, required: true },
     SubnetIds : { type: types.array, required: true },
 });
+
+module.exports = {
+    Cluster: Cluster,
+    ClusterParameterGroup: ClusterParameterGroup,
+    ClusterSecurityGroup: ClusterSecurityGroup,
+    ClusterSecurityGroupIngress: ClusterSecurityGroupIngress,
+    ClusterSubnetGroup: ClusterSubnetGroup,
+};
