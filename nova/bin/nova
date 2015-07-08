@@ -34,7 +34,7 @@ function parseArguments(commands) {
 
     var commonOpts = getopt.create([
         ['', 'profile=ARG', 'Set which aws profile to use for credentials'],
-        ['', 'params=ARG', 'Yml configuration file passed in to your nova deployment definition'],
+        ['', 'params=ARG+', 'Yml configuration file passed in to your nova deployment definition'],
         ['v', 'verbose', 'Print more stuff'],
         ['d', 'debug', 'Print insane amounts of logs'],
         ['f', 'output-format=ARG', 'Output format (json or text) - defaults to json'],
@@ -145,16 +145,30 @@ function initAws(profile, debug) {
     });
 }
 
-function readParams(paramsFile) {
+function readParams(paramsFiles) {
     return q().then(function() {
-        if (!paramsFile) {
-            return '';
+        if (!paramsFiles || paramsFiles.length === 0) {
+            return [];
         }
 
-        var readFile = q.nbind(fs.readFile, fs);
-        return readFile(paramsFile, { encoding: 'utf-8', flag: 'r' });
-    }).then(function(data) {
-        return yaml.safeLoad(data) || {};
+        var promises = _.map(paramsFiles, function(paramsFile) {
+            var readFile = q.nbind(fs.readFile, fs);
+            return readFile(paramsFile, { encoding: 'utf-8', flag: 'r' });
+        });
+
+        return q.all(promises);
+    }).then(function(datas) {
+        return _.reduce(datas, function(memo, data) {
+            var object = yaml.safeLoad(data) || {};
+
+            var commonKeys = _.intersection(_.keys(memo), _.keys(object));
+            if (commonKeys.length) {
+                var keys = commonKeys.join(',');
+                console.log('Warning: params file contain duplicate keys (%s), last one wins...', keys);
+            }
+
+            return _.extend(memo, object);
+        }, {});
     });
 }
 
