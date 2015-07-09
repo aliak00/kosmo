@@ -36,7 +36,7 @@ var DBInstance = AWSResource.define('AWS::RDS::DBInstance', {
     PubliclyAccessible : { type: types.boolean },
     SourceDBInstanceIdentifier : { type: types.string },
     StorageEncrypted : { type: types.boolean, required: 'conditional' },
-    StorageType : { type: types.string },
+    StorageType : { type: types.enum('standard', 'gp2', 'io1') },
     Tags : { type: types.tags },
     VPCSecurityGroups : { type: types.array },
 });

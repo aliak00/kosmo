@@ -24,6 +24,7 @@ function Rds(options) {
     var instanceType = options.instanceType || 'db.t1.micro';
     var username = options.username || 'root';
     var password = options.password;
+    var storageType = options.storageType || 'standard';
     var backupRetentionPeriod = options.backupRetentionPeriod;
     var preferredBackupWindow = options.preferredBackupWindow;
     var preferredMaintenanceWindow = options.preferredMaintenanceWindow;
@@ -75,6 +76,7 @@ function Rds(options) {
         DBSubnetGroupName: subnetGroup,
         Engine: 'postgres',
         EngineVersion: '9.3.5',
+        StorageType: storageType,
         MasterUsername: username,
         MasterUserPassword: password,
         BackupRetentionPeriod: backupRetentionPeriod,
