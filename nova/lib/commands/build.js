@@ -86,9 +86,9 @@ Command.prototype.execute = function() {
         if (config.commonOptions.verbose) {
             console.log('Ensuring buckets are full...');
         }
-        var regions = _.uniq(_.map(that.project.config.artifacts, function(artifact) {
+        var regions = _.compact(_.uniq(_.map(that.project.config.artifacts, function(artifact) {
             return artifact.region;
-        }));
+        })));
 
         // ensure there are buckets in right regions
         var s3config = config.get('s3');
@@ -190,6 +190,10 @@ Command.prototype.execute = function() {
             dateString);
 
         var promises = _.map(buildConfig.artifacts, function(artifact) {
+            if (!artifact.path) {
+                return;
+            }
+
             var baseName = path.basename(artifact.path);
             var keyPath = keyPathBase + '/' + baseName;
             var readStream = fs.createReadStream(artifact.path);
@@ -227,7 +231,7 @@ Command.prototype.execute = function() {
             });
         });
 
-        return q.all(promises).then(function(results) {
+        return q.all(_.compact(promises)).then(function(results) {
             return _.extend(buildConfig, {
                 artifacts: results,
             });
