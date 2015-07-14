@@ -62,6 +62,7 @@ module.exports = {
     eb: require('./lib/resources/elastic-beanstalk'),
     ec2: require('./lib/resources/ec2'),
     ec: require('./lib/resources/ec'),
+    ecs: require('./lib/resources/ecs'),
     iam: require('./lib/resources/iam'),
     r53: require('./lib/resources/route53'),
     redshift: require('./lib/resources/redshift'),
