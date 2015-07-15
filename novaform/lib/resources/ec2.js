@@ -66,7 +66,7 @@ var NetworkAclEntry = AWSResource.define('AWS::EC2::NetworkAclEntry', {
     PortRange: { type: types.portrange, required: 'conditional' },
     Protocol: { type: types.protocol, required: true },
     RuleAction: { type: types.enum('allow', 'deny'), required: true },
-    RuleNumber: { type: types.number(1, 32766), required: true },
+    RuleNumber: { type: types.range(1, 32766), required: true },
 });
 NetworkAclEntry.prototype.validate = function() {
     AWSResource.prototype.validate.call(this);
