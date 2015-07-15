@@ -1,5 +1,5 @@
 var novaform = require('novaform')
-    , _ = require('underscore')
+    , _ = require('lodash')
     , yaml = require('js-yaml')
     , multipart = require('mime-multipart');
 

@@ -1,4 +1,4 @@
-var _ = require('underscore');
+var _ = require('lodash');
 
 var Status = {
     DOES_NOT_EXIST: '__DOES_NOT_EXIST',

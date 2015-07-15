@@ -1,4 +1,4 @@
-var _ = require('underscore')
+var _ = require('lodash')
     , util = require('util');
 
 function AWSResource(type, propdefinitions, name, properties, attributes) {
@@ -114,7 +114,7 @@ AWSResource.prototype.toObject = function() {
     this.validate();
 
     var propdefinitions = this.propdefinitions;
-    var properties = _.mapObject(this.properties, function(value, key) {
+    var properties = _.mapValues(this.properties, function(value, key) {
         var def = propdefinitions[key] || {};
         if (def.type && def.type.toCloudFormationValue) {
             return def.type.toCloudFormationValue(value);

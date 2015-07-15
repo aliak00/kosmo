@@ -1,7 +1,7 @@
 var config = require('./config')('eu-central-1')
     , novastl = require('novastl')
     , novaform = require('novaform')
-    , _ = require('underscore');
+    , _ = require('lodash');
 
 var vpc = novastl.Vpc({
     cidr: config.vpcCidrBlock,

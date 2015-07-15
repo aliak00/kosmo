@@ -1,4 +1,4 @@
-var _ = require('underscore')
+var _ = require('lodash')
     , util = require('util')
     , fn = require('./fn')
     , AWSResource = require('./awsresource');
@@ -268,7 +268,7 @@ module.exports = {
                 if (!properties) {
                     return x;
                 }
-                return _.mapObject(x, function(value, key) {
+                return _.mapValues(x, function(value, key) {
                     var type = properties[key];
                     if (type && type.toCloudFormationValue) {
                         return type.toCloudFormationValue(value);

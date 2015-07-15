@@ -3,7 +3,7 @@ var AWSResource = require('./awsresource')
     , Output = require('./output')
     , Parameter = require('./parameter')
     , utils = require('./utils')
-    , _ = require('underscore');
+    , _ = require('lodash');
 
 function Stack(name, description) {
     if (!(this instanceof Stack)) {

@@ -1,6 +1,6 @@
 var novaform = require('novaform')
     , util = require('util')
-    , _ = require('underscore');
+    , _ = require('lodash');
 
 /**
     Refs include:

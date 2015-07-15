@@ -2,8 +2,8 @@
   "name": "nova-examples",
   "version": "0.0.0",
   "dependencies": {
+    "lodash": "^3.10.0",
     "novaform": "*",
-    "novastl": "*",
-    "underscore": "^1.7.0"
+    "novastl": "*"
   }
 }

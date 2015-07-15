@@ -1,6 +1,6 @@
 var AWSResource = require('./awsresource')
     , util = require('util')
-    , _ = require('underscore');
+    , _ = require('lodash');
 
 function Template() {
     if (!(this instanceof Template)) {
