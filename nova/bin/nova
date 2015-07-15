@@ -145,6 +145,53 @@ function initAws(profile, debug) {
     });
 }
 
+function mergeDeep(value1, value2, resolver) {
+    function _mergeDeep(value1, value2, path1, path2) {
+        if (typeof value1 !== typeof value2) {
+            return resolver(value1, value2, path1, path2) || value2;
+        }
+
+        if (_.isArray(value1) && _.isArray(value2)) {
+            return resolver(value1, value2, path1, path2) || value1.concat(value2);
+        } else if (_.isArray(value1) || _.isArray(value2)) {
+            return resolver(value1, value2, path1, path2) || value2;
+        }
+
+        if (_.isObject(value1) && _.isObject(value2)) {
+            var keys1 = _.keys(value1);
+            var keys2 = _.keys(value2);
+
+            var result = {};
+
+            // add distinct keys
+            var distinctKeys = _.difference(keys1, keys2).concat(_.difference(keys2, keys1));
+            result = _.extend(result,
+              _.pick(value1, distinctKeys),
+              _.pick(value2, distinctKeys));
+
+            // recursively merge common keys
+            var commonKeys = _.intersection(keys1, keys2);
+            var common = _.reduce(commonKeys, function(memo, key) {
+                var value = _mergeDeep(value1[key], value2[key], path1+'.'+key, path2+'.'+key);
+                memo[key] = value;
+                return memo;
+            }, {});
+
+            result = _.extend(result, common);
+            return result;
+        }
+
+        return resolver(value1, value2, path1, path2) || value2;
+    }
+
+    if (!_.isObject(value1) || !_.isObject(value2)) {
+        resolver(null, null, '<root>', '<root>');
+        return value2;
+    }
+
+    return _mergeDeep(value1, value2, '', '');
+}
+
 function readParams(paramsFiles) {
     return q().then(function() {
         if (!paramsFiles || paramsFiles.length === 0) {
@@ -161,13 +208,9 @@ function readParams(paramsFiles) {
         return _.reduce(datas, function(memo, data) {
             var object = yaml.safeLoad(data) || {};
 
-            var commonKeys = _.intersection(_.keys(memo), _.keys(object));
-            if (commonKeys.length) {
-                var keys = commonKeys.join(',');
-                console.log('Warning: params file contain duplicate keys (%s), last one wins...', keys);
-            }
-
-            return _.extend(memo, object);
+            return mergeDeep(memo, object, function(value1, value2, path1, path2) {
+                console.log('Warning: cannot cleanly merge params files ("%s" and "%s")...', path1, path2);
+            });
         }, {});
     });
 }
