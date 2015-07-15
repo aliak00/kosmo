@@ -37,7 +37,8 @@ var ConfigurationTemplate = AWSResource.define('AWS::ElasticBeanstalk::Configura
     SourceConfiguration: { type: ConfigurationTemplateSourceConfigurationType, required: 'conditional' },
 });
 ConfigurationTemplate.prototype.validator = function() {
-    if (!this.EnvironmentId && !this.SolutionStackName && !this.SourceConfiguration) {
+    var props = this.properties;
+    if (!props.EnvironmentId && !props.SolutionStackName && !props.SourceConfiguration) {
         return 'Must specify either EnvironmentId, SolutionStackName, or SourceConfiguration';
     }
 };
@@ -60,7 +61,7 @@ var Environment = AWSResource.define('AWS::ElasticBeanstalk::Environment', {
     VersionLabel: {type: types.string },
 });
 Environment.prototype.validator = function() {
-    if (this.EnvironmentName) {
+    if (this.properties.EnvironmentName) {
         console.log('Warning: specifying', this.name, 'EnvironmentName will disallow updates that require replacement.')
     }
 }

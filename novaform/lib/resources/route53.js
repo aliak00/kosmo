@@ -84,7 +84,8 @@ var RecordSet = AWSResource.define('AWS::Route53::RecordSet', {
     Weight: { type: types.number, required: 'conditional' },
 });
 RecordSet.prototype.validate = function() {
-    if (!this.HostedZoneId && !this.HostedZoneName) {
+    var props = this.properties;
+    if (!props.HostedZoneId && !props.HostedZoneName) {
         return 'either HostedZoneName or HostedZoneId must be specified';
     }
 };
