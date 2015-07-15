@@ -18,6 +18,8 @@ function Rds(options) {
     var subnets = options.subnets;
     var allowedCidr = options.allowedCidr;
     var name = options.name || 'mydb';
+    var engine = options.engine || 'postgres';
+    var engineVersion = options.engineVersion || '9.3.5';
     var allocatedStorage = options.allocatedStorage || 5;
     var multiAz = typeof options.multiAz === 'boolean' ? options.multiAz : true;
     var instanceType = options.instanceType || 'db.t1.micro';
@@ -77,8 +79,8 @@ function Rds(options) {
         DBInstanceClass: instanceType,
         DBName: dbname,
         DBSubnetGroupName: subnetGroup,
-        Engine: 'postgres',
-        EngineVersion: '9.3.5',
+        Engine: engine,
+        EngineVersion: engineVersion,
         StorageType: storageType,
         MasterUsername: username,
         MasterUserPassword: password,
