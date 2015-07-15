@@ -152,7 +152,7 @@ function mergeDeep(value1, value2, resolver) {
         }
 
         if (_.isArray(value1) && _.isArray(value2)) {
-            return value1.concat(value2);
+            return resolver(value1, value2, path1, path2) || value1.concat(value2);
         } else if (_.isArray(value1) || _.isArray(value2)) {
             return resolver(value1, value2, path1, path2) || value2;
         }
