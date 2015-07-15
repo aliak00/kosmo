@@ -1,5 +1,4 @@
-var Resource = require('./resource')
-    , AWSResource = require('./awsresource')
+var AWSResource = require('./awsresource')
     , Template = require('./template')
     , Output = require('./output')
     , Parameter = require('./parameter')
@@ -24,7 +23,7 @@ Stack.prototype.add = function(stackItems) {
     }
     var that = this;
     stackItems.forEach(function(stackItem) {
-        if (stackItem instanceof Resource || stackItem instanceof AWSResource) {
+        if (stackItem instanceof AWSResource) {
             that.resources.push(stackItem);
         } else if (stackItem instanceof Template) {
             that.resources.push.apply(that.resources, stackItem.resources());

@@ -1,5 +1,4 @@
-var Resource = require('./lib/resource')
-    , Template = require('./lib/template')
+var Template = require('./lib/template')
     , Output = require('./lib/output')
     , TagValue = require('./lib/tag-value')
     , fn = require('./lib/fn')
@@ -50,7 +49,6 @@ function loadUserDataFromFile(filename, params) {
 
 module.exports = {
     Stack: Stack,
-    Resource: Resource,
     Template: Template,
 
     Output: Output,

@@ -1,5 +1,4 @@
-var Resource = require('./resource')
-    , AWSResource = require('./awsresource')
+var AWSResource = require('./awsresource')
     , util = require('util')
     , _ = require('underscore');
 
@@ -12,7 +11,7 @@ function Template() {
 }
 
 Template.prototype._addResource = function(resource) {
-    if (!(resource instanceof Resource || resource instanceof AWSResource)) {
+    if (!resource instanceof AWSResource) {
         throw new Error('Not a Resource: ' + resource);
     }
 
