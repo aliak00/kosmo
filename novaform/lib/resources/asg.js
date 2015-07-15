@@ -39,7 +39,7 @@ var AutoScalingGroupNotificationConfigurationType = types.object('asg-notificati
 });
 
 var AutoScalingGroup = AWSResource.define('AWS::AutoScaling::AutoScalingGroup', {
-    AvailabilityZones : { type: types.array, required: true },
+    AvailabilityZones : { type: types.array, required: 'conditional' },
     Cooldown : { type: types.string },
     DesiredCapacity : { type: types.number },
     HealthCheckGracePeriod : { type: types.number },
