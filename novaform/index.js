@@ -63,6 +63,7 @@ module.exports = {
     ec2: require('./lib/resources/ec2'),
     ec: require('./lib/resources/ec'),
     ecs: require('./lib/resources/ecs'),
+    elb: require('./lib/resources/elb'),
     iam: require('./lib/resources/iam'),
     r53: require('./lib/resources/route53'),
     redshift: require('./lib/resources/redshift'),
