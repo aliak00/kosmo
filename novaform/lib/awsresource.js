@@ -50,6 +50,18 @@ AWSResource.prototype.validate = function() {
         }
     });
 
+    if (typeof this.validator === 'function') {
+        var result = this.validator();
+        if (typeof result !== 'undefined') {
+            throw new AWSResource.ValidationError(
+                util.format(
+                    'Resource "%s" failed validation: "%s"',
+                    self.name,
+                    result)
+            );
+        }
+    }
+
     var propertyNames = Object.keys(this.properties);
     propertyNames.forEach(function(propname) {
         var propvalue = self.properties[propname];
