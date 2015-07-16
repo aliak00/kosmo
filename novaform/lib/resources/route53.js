@@ -83,7 +83,7 @@ var RecordSet = AWSResource.define('AWS::Route53::RecordSet', {
     Type: { type: types.enum('A', 'AAAA', 'CNAME', 'MX', 'NS', 'PTR', 'SOA', 'SPF', 'SRV', 'TXT'), required: true },
     Weight: { type: types.number, required: 'conditional' },
 });
-RecordSet.prototype.validate = function() {
+RecordSet.prototype.validator = function() {
     var props = this.properties;
     if (!props.HostedZoneId && !props.HostedZoneName) {
         return 'either HostedZoneName or HostedZoneId must be specified';

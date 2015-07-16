@@ -39,12 +39,10 @@ var Route = AWSResource.define('AWS::EC2::Route', {
     RouteTableId: { type: types.string, required: true },
     VpcPeeringConnectionId: { type: types.string, required: 'conditional' },
 });
-Route.prototype.validate = function() {
-    AWSResource.prototype.validate.call(this);
-
+Route.prototype.validator = function() {
     if (!(this.properties.GatewayId || this.properties.InstanceId ||
         this.properties.NetworkInterfaceId || this.properties.VpcPeeringConnectionId)) {
-        throw new AWSResource.ValidationError('One of GatewayId, InstanceId, NetworkInterfaceId, or VpcPeeringConnectionId should be set');
+        return 'One of GatewayId, InstanceId, NetworkInterfaceId, or VpcPeeringConnectionId should be set';
     }
 };
 
@@ -68,12 +66,10 @@ var NetworkAclEntry = AWSResource.define('AWS::EC2::NetworkAclEntry', {
     RuleAction: { type: types.enum('allow', 'deny'), required: true },
     RuleNumber: { type: types.range(1, 32766), required: true },
 });
-NetworkAclEntry.prototype.validate = function() {
-    AWSResource.prototype.validate.call(this);
-
+NetworkAclEntry.prototype.validator = function() {
     if (types.protocol.valueAsName(this.properties.Protocol) === 'icmp') {
         if (!this.properties.Icmp) {
-            throw new AWSResource.ValidationError('Icmp property is not set');
+            return 'Icmp property is not set';
         }
     }
 };
@@ -120,9 +116,7 @@ var SecurityGroupIngress = AWSResource.define('AWS::EC2::SecurityGroupIngress', 
     SourceSecurityGroupName: { type: types.string, required: 'conditional' },
     SourceSecurityGroupOwnerId: { type: types.string, required: 'conditional' },
 });
-SecurityGroupIngress.prototype.validate = function() {
-    AWSResource.prototype.validate.call(this);
-
+SecurityGroupIngress.prototype.validator = function() {
     // TODO:
 };
 
@@ -134,9 +128,7 @@ var SecurityGroupEgress = AWSResource.define('AWS::EC2::SecurityGroupEgress', {
     IpProtocol: { type: types.protocol, required: true },
     ToPort: { type: types.number, required: 'conditional' },
 });
-SecurityGroupEgress.prototype.validate = function() {
-    AWSResource.prototype.validate.call(this);
-
+SecurityGroupEgress.prototype.validator = function() {
     // TODO:
 };
 
@@ -170,9 +162,7 @@ var Instance = AWSResource.define('AWS::EC2::Instance', {
     UserData: { type: types.string },
     Volumes: { type: types.array },
 });
-Instance.prototype.validate = function() {
-    AWSResource.prototype.validate.call(this);
-
+Instance.prototype.validator = function() {
     // TODO:
 };
 
