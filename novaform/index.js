@@ -1,4 +1,4 @@
-var Template = require('./lib/template')
+var AWSResource = require('./lib/awsresource')
     , Output = require('./lib/output')
     , TagValue = require('./lib/tag-value')
     , fn = require('./lib/fn')
@@ -49,7 +49,7 @@ function loadUserDataFromFile(filename, params) {
 
 module.exports = {
     Stack: Stack,
-    Template: Template,
+    AWSResource: AWSResource,
 
     Output: Output,
     Parameter: Parameter,

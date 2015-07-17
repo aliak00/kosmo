@@ -1,4 +1,4 @@
-var AWSResource = require('./awsresource')
+var novaform = require('novaform')
     , util = require('util')
     , _ = require('lodash');
 
@@ -11,7 +11,7 @@ function Template() {
 }
 
 Template.prototype._addResource = function(resource) {
-    if (!resource instanceof AWSResource) {
+    if (!resource instanceof novaform.AWSResource) {
         throw new Error('Not a Resource: ' + resource);
     }
 

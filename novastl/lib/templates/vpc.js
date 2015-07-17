@@ -1,4 +1,5 @@
-var novaform = require('novaform')
+var Template = require('../template')
+    , novaform = require('novaform')
     , util = require('util')
     , _ = require('lodash');
 
@@ -57,7 +58,7 @@ function Vpc(options) {
         return new Vpc(options);
     }
 
-    novaform.Template.call(this);
+    Template.call(this);
 
     var vpcCidr = options.cidr;
     var publicSubnetsPerAz = options.publicSubnetsPerAz;
@@ -115,7 +116,7 @@ function Vpc(options) {
     this.vpcCidrBlock = vpcCidr;
 }
 
-Vpc.prototype = Object.create(novaform.Template.prototype);
+Vpc.prototype = Object.create(Template.prototype);
 
 function mknameAz(str, az) {
     return util.format('%sAZ%s', str, az);

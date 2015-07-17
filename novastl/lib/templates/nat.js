@@ -1,4 +1,5 @@
-var novaform = require('novaform')
+var Template = require('../template')
+    , novaform = require('novaform')
     , util = require('util')
     , _ = require('lodash');
 
@@ -27,7 +28,7 @@ function Nat(options) {
         return new Nat(options);
     }
 
-    novaform.Template.call(this);
+    Template.call(this);
 
     var keyName = options.keyName;
     var imageId = options.imageId;
@@ -215,6 +216,6 @@ function Nat(options) {
     this.securityGroup = securityGroup;
     this.autoScalingGroup = autoScalingGroup;
 }
-Nat.prototype = Object.create(novaform.Template.prototype);
+Nat.prototype = Object.create(Template.prototype);
 
 module.exports = Nat;

@@ -1,4 +1,5 @@
-var novaform = require('novaform')
+var Template = require('../template')
+    , novaform = require('novaform')
     , _ = require('lodash')
     , yaml = require('js-yaml')
     , multipart = require('mime-multipart');
@@ -23,7 +24,7 @@ function Bastion(options) {
         return new Bastion(options);
     }
 
-    novaform.Template.call(this);
+    Template.call(this);
 
     var vpc = options.vpc;
     var keyName = options.keyName;
@@ -217,6 +218,6 @@ function Bastion(options) {
     this.asg = asg;
 }
 
-Bastion.prototype = Object.create(novaform.Template.prototype);
+Bastion.prototype = Object.create(Template.prototype);
 
 module.exports = Bastion;

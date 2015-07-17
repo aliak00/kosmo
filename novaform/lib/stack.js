@@ -1,5 +1,4 @@
 var AWSResource = require('./awsresource')
-    , Template = require('./template')
     , Output = require('./output')
     , Parameter = require('./parameter')
     , utils = require('./utils')
@@ -25,8 +24,6 @@ Stack.prototype.add = function(stackItems) {
     stackItems.forEach(function(stackItem) {
         if (stackItem instanceof AWSResource) {
             that.resources.push(stackItem);
-        } else if (stackItem instanceof Template) {
-            that.resources.push.apply(that.resources, stackItem.resources());
         } else if (stackItem instanceof Output) {
             if (that.outputs[stackItem.name]) {
                 throw new Error('Cannot add duplicate output: ' + stackItem.name);
@@ -38,7 +35,7 @@ Stack.prototype.add = function(stackItems) {
             }
             that.parameters[stackItem.name] = stackItem;
         } else {
-            throw new Error('stackItem must be instanceof Resource, Template, Output or Parameter');
+            throw new Error('stackItem must be instanceof Resource, Output or Parameter');
         }
     });
 }
