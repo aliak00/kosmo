@@ -38,13 +38,11 @@ var Route = AWSResource.define('AWS::EC2::Route', {
     NetworkInterfaceId: { type: types.string, required: 'conditional' },
     RouteTableId: { type: types.string, required: true },
     VpcPeeringConnectionId: { type: types.string, required: 'conditional' },
-});
-Route.prototype.validator = function() {
-    if (!(this.properties.GatewayId || this.properties.InstanceId ||
-        this.properties.NetworkInterfaceId || this.properties.VpcPeeringConnectionId)) {
+}).setValidator(function(props) {
+    if (!(props.GatewayId || props.InstanceId || props.NetworkInterfaceId || props.VpcPeeringConnectionId)) {
         return 'One of GatewayId, InstanceId, NetworkInterfaceId, or VpcPeeringConnectionId should be set';
     }
-};
+});
 
 var SubnetRouteTableAssociation = AWSResource.define('AWS::EC2::SubnetRouteTableAssociation', {
     RouteTableId: { type: types.string, required: true },
@@ -65,14 +63,11 @@ var NetworkAclEntry = AWSResource.define('AWS::EC2::NetworkAclEntry', {
     Protocol: { type: types.protocol, required: true },
     RuleAction: { type: types.enum('allow', 'deny'), required: true },
     RuleNumber: { type: types.range(1, 32766), required: true },
-});
-NetworkAclEntry.prototype.validator = function() {
-    if (types.protocol.valueAsName(this.properties.Protocol) === 'icmp') {
-        if (!this.properties.Icmp) {
-            return 'Icmp property is not set';
-        }
+}).setValidator(function(props) {
+    if (types.protocol.valueAsName(props.Protocol) === 'icmp' && !props.Icmp) {
+        return 'Icmp property is not set';
     }
-};
+});
 
 var SubnetNetworkAclAssociation = AWSResource.define('AWS::EC2::SubnetNetworkAclAssociation', {
     SubnetId: { type: types.string, required: true },
@@ -115,10 +110,9 @@ var SecurityGroupIngress = AWSResource.define('AWS::EC2::SecurityGroupIngress', 
     SourceSecurityGroupId: { type: types.string, required: 'conditional' },
     SourceSecurityGroupName: { type: types.string, required: 'conditional' },
     SourceSecurityGroupOwnerId: { type: types.string, required: 'conditional' },
+}).setValidator(function(props) {
+    // TODO
 });
-SecurityGroupIngress.prototype.validator = function() {
-    // TODO:
-};
 
 var SecurityGroupEgress = AWSResource.define('AWS::EC2::SecurityGroupEgress', {
     CidrIp: { type: types.string, required: 'conditional' },
@@ -127,10 +121,9 @@ var SecurityGroupEgress = AWSResource.define('AWS::EC2::SecurityGroupEgress', {
     GroupId: { type: types.string, required: 'conditional' },
     IpProtocol: { type: types.protocol, required: true },
     ToPort: { type: types.number, required: 'conditional' },
+}).setValidator(function(props) {
+    // TODO
 });
-SecurityGroupEgress.prototype.validator = function() {
-    // TODO:
-};
 
 var EIP = AWSResource.define('AWS::EC2::EIP', {
     InstanceId: { type: types.string },
@@ -161,10 +154,9 @@ var Instance = AWSResource.define('AWS::EC2::Instance', {
     Tenancy: { type: types.enum('default', 'dedicated') },
     UserData: { type: types.string },
     Volumes: { type: types.array },
+}).setValidator(function(props) {
+    // TODO
 });
-Instance.prototype.validator = function() {
-    // TODO:
-};
 
 var Volume = AWSResource.define('AWS::EC2::Volume', {
     AvailabilityZone: { type: types.string, required: true },

@@ -82,13 +82,11 @@ var RecordSet = AWSResource.define('AWS::Route53::RecordSet', {
     TTL: { type: types.string },
     Type: { type: types.enum('A', 'AAAA', 'CNAME', 'MX', 'NS', 'PTR', 'SOA', 'SPF', 'SRV', 'TXT'), required: true },
     Weight: { type: types.number, required: 'conditional' },
-});
-RecordSet.prototype.validator = function() {
-    var props = this.properties;
+}).setValidator(function(props) {
     if (!props.HostedZoneId && !props.HostedZoneName) {
         return 'either HostedZoneName or HostedZoneId must be specified';
     }
-};
+});
 
 var RecordSetGroup = AWSResource.define('AWS::Route53::RecordSetGroup', {
     HostedZoneId: { type: types.string, required: 'conditional' },

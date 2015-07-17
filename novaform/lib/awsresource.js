@@ -11,6 +11,7 @@ function AWSResource(type, propdefinitions, name, properties, attributes) {
     this.properties = properties;
     this.propdefinitions = propdefinitions;
     this.attributes = attributes;
+    this.validator = null;
 }
 
 function ValidationError() {
@@ -25,6 +26,13 @@ IntermediateInheritor.prototype = Error.prototype;
 ValidationError.prototype = new IntermediateInheritor();
 
 AWSResource.ValidationError = ValidationError;
+
+AWSResource.prototype.setValidator = function(callback) {
+    if (typeof callback !=='function') {
+        throw new Error('Callback must be a function');
+    }
+    this.validator = callback;
+}
 
 AWSResource.prototype.validate = function() {
     var propdefinitions = this.propdefinitions;
@@ -51,7 +59,7 @@ AWSResource.prototype.validate = function() {
     });
 
     if (typeof this.validator === 'function') {
-        var result = this.validator();
+        var result = this.validator(this.properties);
         if (typeof result !== 'undefined') {
             throw new AWSResource.ValidationError(
                 util.format(
