@@ -1,9 +1,9 @@
 var _ = require('lodash')
     , util = require('util');
 
-function AWSResource(type, propdefinitions, name, properties, attributes) {
+function AWSResource(type, propdefinitions, name, properties, attributes, validator) {
     if (!(this instanceof AWSResource)) {
-        return new AWSResource(type, propdefinitions, name, properties, attributes);
+        return new AWSResource(type, propdefinitions, name, properties, attributes, validator);
     }
 
     this.type = type;
@@ -11,7 +11,7 @@ function AWSResource(type, propdefinitions, name, properties, attributes) {
     this.properties = properties;
     this.propdefinitions = propdefinitions;
     this.attributes = attributes;
-    this.validator = null;
+    this.validator = validator;
 }
 
 function ValidationError() {
@@ -26,13 +26,6 @@ IntermediateInheritor.prototype = Error.prototype;
 ValidationError.prototype = new IntermediateInheritor();
 
 AWSResource.ValidationError = ValidationError;
-
-AWSResource.prototype.setValidator = function(callback) {
-    if (typeof callback !=='function') {
-        throw new Error('Callback must be a function');
-    }
-    this.validator = callback;
-}
 
 AWSResource.prototype.validate = function() {
     var propdefinitions = this.propdefinitions;
@@ -126,13 +119,14 @@ AWSResource.prototype.toObject = function() {
     return object;
 };
 
-AWSResource.define = function(type, propdefinitions) {
+AWSResource.define = function(type, propdefinitions, options) {
     function Resource(name, properties, attributes) {
         if (!(this instanceof Resource)) {
             return new Resource(name, properties, attributes);
         }
-
-        AWSResource.call(this, type, propdefinitions, name, properties, attributes);
+        options = options || {};
+        var validator = typeof options.validator === 'function' ? options.validator : null;
+        AWSResource.call(this, type, propdefinitions, name, properties, attributes, validator);
     }
     Resource.prototype = Object.create(AWSResource.prototype);
     Resource.prototype.constructor = Resource;

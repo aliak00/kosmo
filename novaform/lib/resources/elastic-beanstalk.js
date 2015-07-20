@@ -35,10 +35,12 @@ var ConfigurationTemplate = AWSResource.define('AWS::ElasticBeanstalk::Configura
     OptionSettings: { type: types.array },
     SolutionStackName: { type: types.string, required: 'conditional' },
     SourceConfiguration: { type: ConfigurationTemplateSourceConfigurationType, required: 'conditional' },
-}).setValidator(function(props) {
-    if (!props.EnvironmentId && !props.SolutionStackName && !props.SourceConfiguration) {
-        return 'Must specify either EnvironmentId, SolutionStackName, or SourceConfiguration';
-    }
+}, {
+    validator: function(props) {
+        if (!props.EnvironmentId && !props.SolutionStackName && !props.SourceConfiguration) {
+            return 'Must specify either EnvironmentId, SolutionStackName, or SourceConfiguration';
+        }
+    },
 });
 
 var EnvironmentTierType = types.object('elasticbeanstalk-environment-tier', {
@@ -57,10 +59,12 @@ var Environment = AWSResource.define('AWS::ElasticBeanstalk::Environment', {
     TemplateName: { type: types.string },
     Tier: { type: EnvironmentTierType },
     VersionLabel: {type: types.string },
-}).setValidator(function(props) {
-    if (props.EnvironmentName) {
-        console.log('Warning: specifying EnvironmentName (' + props.EnvironmentName + ') will disallow updates that require replacement.')
-    }
+}, {
+    validator: function(props) {
+        if (props.EnvironmentName) {
+            console.log('Warning: specifying EnvironmentName (' + props.EnvironmentName + ') will disallow updates that require replacement.')
+        }
+    },
 });
 
 module.exports = {
