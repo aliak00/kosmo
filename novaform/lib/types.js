@@ -1,20 +1,7 @@
-var _ = require('underscore')
+var _ = require('lodash')
     , util = require('util')
     , fn = require('./fn')
     , AWSResource = require('./awsresource');
-
-var numberValidator = function(from, to) {
-    return {
-        name: 'number',
-        validate: function(x) { return typeof x === 'number' && x >= from && x <= to; },
-        toCloudFormationValue: function(x) {
-            return x.toString();
-        },
-    };
-};
-numberValidator.name = 'number';
-numberValidator.validate = function(x) { return typeof x === 'number'; };
-numberValidator.toCloudFormationValue = function(x) { return x.toString(); };
 
 module.exports = {
     string: {
@@ -77,7 +64,20 @@ module.exports = {
         };
     },
 
-    number: numberValidator,
+    range: function(from, to) {
+        return {
+            name: 'range',
+            validate: function(x) { return typeof x === 'number' && x >= from && x <= to; },
+            toCloudFormationValue: function(x) {
+                return x.toString();
+            },
+        };
+    },
+
+    number: {
+        name: 'number',
+        validate: function(x) { return typeof x === 'number'; }
+    },
 
     cidr: {
         name: 'CIDR',
@@ -268,7 +268,7 @@ module.exports = {
                 if (!properties) {
                     return x;
                 }
-                return _.mapObject(x, function(value, key) {
+                return _.mapValues(x, function(value, key) {
                     var type = properties[key];
                     if (type && type.toCloudFormationValue) {
                         return type.toCloudFormationValue(value);

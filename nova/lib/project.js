@@ -2,7 +2,7 @@ var fs = require('fs')
     , novautils = require('./component-utils')
     , novaform = require('novaform')
     , novastl = require('novastl')
-    , _ = require('underscore');
+    , _ = require('lodash');
 
 function Project(config) {
     this.config = config;

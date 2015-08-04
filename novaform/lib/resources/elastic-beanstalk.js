@@ -1,41 +1,71 @@
-var Resource = require('../resource');
+var AWSResource = require('../awsresource')
+    , types = require('../types');
 
-function Application(name, properties) {
-    if (!(this instanceof Application)) {
-        return new Application(name, properties);
-    }
+var Application = AWSResource.define('AWS::ElasticBeanstalk::Application', {
+    ApplicationName: { type: types.string },
+    Description: { type: types.string },
+});
 
-    Resource.call(this, 'AWS::ElasticBeanstalk::Application', name, properties);
+var ApplicationVersionSourceBundleType = types.object('elasticbeanstalk-applicationversion-sourcebundle', {
+    S3Bucket: types.string, // required
+    S3Key: types.string, // required
+});
 
-}
-Application.prototype = Object.create(Resource.prototype);
+var ApplicationVersion = AWSResource.define('AWS::ElasticBeanstalk::ApplicationVersion', {
+    ApplicationName: { type: types.string, required: true },
+    Description: { type: types.string },
+    SourceBundle: { type: ApplicationVersionSourceBundleType },
+});
 
-function ApplicationVersion(name, properties) {
-    if (!(this instanceof ApplicationVersion)) {
-        return new ApplicationVersion(name, properties);
-    }
+var ConfigurationTemplateSourceConfigurationType = types.object('elasticbeanstalk-configurationtemplate-sourceconfiguration', {
+    ApplicationName: types.string, // required
+    TemplateName: types.string, // required
+});
 
-    Resource.call(this, 'AWS::ElasticBeanstalk::ApplicationVersion', name, properties);
-}
-ApplicationVersion.prototype = Object.create(Resource.prototype);
+var ConfigurationTemplateOptionSettingsType = types.object('elasticbeanstalk-configurationtemplate-optionsettings', {
+    Name: types.string, // required
+    OptionName: types.string, // required
+    Value: types.string, // required
+});
 
-function ConfigurationTemplate(name, properties) {
-    if (!(this instanceof ConfigurationTemplate)) {
-        return new ConfigurationTemplate(name, properties);
-    }
+var ConfigurationTemplate = AWSResource.define('AWS::ElasticBeanstalk::ConfigurationTemplate', {
+    ApplicationName: { type: types.string, required: true },
+    Description: { type: types.string },
+    EnvironmentId: { type: types.string, required: 'conditional' },
+    OptionSettings: { type: types.array },
+    SolutionStackName: { type: types.string, required: 'conditional' },
+    SourceConfiguration: { type: ConfigurationTemplateSourceConfigurationType, required: 'conditional' },
+}, {
+    validator: function(props) {
+        if (!props.EnvironmentId && !props.SolutionStackName && !props.SourceConfiguration) {
+            return 'Must specify either EnvironmentId, SolutionStackName, or SourceConfiguration';
+        }
+    },
+});
 
-    Resource.call(this, 'AWS::ElasticBeanstalk::ConfigurationTemplate', name, properties);
-}
-ConfigurationTemplate.prototype = Object.create(Resource.prototype);
+var EnvironmentTierType = types.object('elasticbeanstalk-environment-tier', {
+    Name: types.string,
+    Type: types.string, // 'Standard' or 'SQS/HTTP'
+    Version: types.string,
+});
 
-function Environment(name, properties) {
-    if (!(this instanceof Environment)) {
-        return new Environment(name, properties);
-    }
-
-    Resource.call(this, 'AWS::ElasticBeanstalk::Environment', name, properties);
-}
-Environment.prototype = Object.create(Resource.prototype);
+var Environment = AWSResource.define('AWS::ElasticBeanstalk::Environment', {
+    ApplicationName: { type: types.string, required: true },
+    CNAMEPrefix: { type: types.string },
+    Description: { type: types.string },
+    EnvironmentName: { type: types.string },
+    OptionSettings: { type: types.array },
+    SolutionStackName: { type: types.string },
+    TemplateName: { type: types.string },
+    Tier: { type: EnvironmentTierType },
+    VersionLabel: {type: types.string },
+}, {
+    validator: function(props) {
+        if (props.EnvironmentName) {
+            console.log('Warning: specifying EnvironmentName (' + props.EnvironmentName + ') will disallow updates that require replacement.')
+        }
+    },
+});
 
 module.exports = {
     Application: Application,

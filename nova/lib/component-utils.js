@@ -1,4 +1,4 @@
-var _ = require('underscore')
+var _ = require('lodash')
     , q = require('q')
     , AWS = require('aws-sdk')
     , archiver = require('archiver')

@@ -1,6 +1,6 @@
 var getopt = require('node-getopt')
     , q = require('q')
-    , _ = require('underscore')
+    , _ = require('lodash')
     , util = require('util')
     , fs = require('fs')
     , novautils = require('../component-utils')
@@ -252,7 +252,16 @@ Command.prototype.execute = function() {
         }
 
         var stack = novaform.Stack(deploymentConfig.stackName);
-        stack.add(deploymentConfig.buildResult.resources || []);
+
+        var resources = _.reduce(deploymentConfig.buildResult.resources, function(memo, res) {
+            // console.log(res instanceof novastl.Template);
+            if (res instanceof novastl.Template) {
+                return memo.concat(res.resources());
+            }
+            return memo.concat(res);
+        }, []);
+
+        stack.add(resources);
         stack.add(deploymentConfig.buildResult.outputs || []);
         stack.add(_.pluck(deploymentConfig.buildResult.parameters, 'param'));
 

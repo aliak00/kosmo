@@ -1,6 +1,6 @@
 var getopt = require('node-getopt')
     , q = require('q')
-    , _ = require('underscore')
+    , _ = require('lodash')
     , util = require('util')
     , fs = require('fs')
     , path = require('path')

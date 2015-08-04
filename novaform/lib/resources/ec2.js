@@ -38,15 +38,13 @@ var Route = AWSResource.define('AWS::EC2::Route', {
     NetworkInterfaceId: { type: types.string, required: 'conditional' },
     RouteTableId: { type: types.string, required: true },
     VpcPeeringConnectionId: { type: types.string, required: 'conditional' },
+}, {
+    validator: function(props) {
+        if (!(props.GatewayId || props.InstanceId || props.NetworkInterfaceId || props.VpcPeeringConnectionId)) {
+            return 'One of GatewayId, InstanceId, NetworkInterfaceId, or VpcPeeringConnectionId should be set';
+        }
+    },
 });
-Route.prototype.validate = function() {
-    AWSResource.prototype.validate.call(this);
-
-    if (!(this.properties.GatewayId || this.properties.InstanceId ||
-        this.properties.NetworkInterfaceId || this.properties.VpcPeeringConnectionId)) {
-        throw new AWSResource.ValidationError('One of GatewayId, InstanceId, NetworkInterfaceId, or VpcPeeringConnectionId should be set');
-    }
-};
 
 var SubnetRouteTableAssociation = AWSResource.define('AWS::EC2::SubnetRouteTableAssociation', {
     RouteTableId: { type: types.string, required: true },
@@ -66,17 +64,14 @@ var NetworkAclEntry = AWSResource.define('AWS::EC2::NetworkAclEntry', {
     PortRange: { type: types.portrange, required: 'conditional' },
     Protocol: { type: types.protocol, required: true },
     RuleAction: { type: types.enum('allow', 'deny'), required: true },
-    RuleNumber: { type: types.number(1, 32766), required: true },
-});
-NetworkAclEntry.prototype.validate = function() {
-    AWSResource.prototype.validate.call(this);
-
-    if (types.protocol.valueAsName(this.properties.Protocol) === 'icmp') {
-        if (!this.properties.Icmp) {
-            throw new AWSResource.ValidationError('Icmp property is not set');
+    RuleNumber: { type: types.range(1, 32766), required: true },
+}, {
+    validator: function(props) {
+        if (types.protocol.valueAsName(props.Protocol) === 'icmp' && !props.Icmp) {
+            return 'Icmp property is not set';
         }
-    }
-};
+    },
+});
 
 var SubnetNetworkAclAssociation = AWSResource.define('AWS::EC2::SubnetNetworkAclAssociation', {
     SubnetId: { type: types.string, required: true },
@@ -120,11 +115,6 @@ var SecurityGroupIngress = AWSResource.define('AWS::EC2::SecurityGroupIngress', 
     SourceSecurityGroupName: { type: types.string, required: 'conditional' },
     SourceSecurityGroupOwnerId: { type: types.string, required: 'conditional' },
 });
-SecurityGroupIngress.prototype.validate = function() {
-    AWSResource.prototype.validate.call(this);
-
-    // TODO:
-};
 
 var SecurityGroupEgress = AWSResource.define('AWS::EC2::SecurityGroupEgress', {
     CidrIp: { type: types.string, required: 'conditional' },
@@ -134,11 +124,6 @@ var SecurityGroupEgress = AWSResource.define('AWS::EC2::SecurityGroupEgress', {
     IpProtocol: { type: types.protocol, required: true },
     ToPort: { type: types.number, required: 'conditional' },
 });
-SecurityGroupEgress.prototype.validate = function() {
-    AWSResource.prototype.validate.call(this);
-
-    // TODO:
-};
 
 var EIP = AWSResource.define('AWS::EC2::EIP', {
     InstanceId: { type: types.string },
@@ -170,11 +155,6 @@ var Instance = AWSResource.define('AWS::EC2::Instance', {
     UserData: { type: types.string },
     Volumes: { type: types.array },
 });
-Instance.prototype.validate = function() {
-    AWSResource.prototype.validate.call(this);
-
-    // TODO:
-};
 
 var Volume = AWSResource.define('AWS::EC2::Volume', {
     AvailabilityZone: { type: types.string, required: true },

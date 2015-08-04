@@ -4,7 +4,7 @@
 var nova = require('../lib')
     , getopt = require('node-getopt')
     , AWS = require('aws-sdk')
-    , _ = require('underscore')
+    , _ = require('lodash')
     , fs = require('fs')
     , util = require('util')
     , q = require('q')

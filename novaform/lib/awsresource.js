@@ -1,9 +1,9 @@
-var _ = require('underscore')
+var _ = require('lodash')
     , util = require('util');
 
-function AWSResource(type, propdefinitions, name, properties, attributes) {
+function AWSResource(type, propdefinitions, name, properties, attributes, validator) {
     if (!(this instanceof AWSResource)) {
-        return new AWSResource(type, propdefinitions, name, properties, attributes);
+        return new AWSResource(type, propdefinitions, name, properties, attributes, validator);
     }
 
     this.type = type;
@@ -11,6 +11,7 @@ function AWSResource(type, propdefinitions, name, properties, attributes) {
     this.properties = properties;
     this.propdefinitions = propdefinitions;
     this.attributes = attributes;
+    this.validator = validator;
 }
 
 function ValidationError() {
@@ -35,20 +36,23 @@ AWSResource.prototype.validate = function() {
         return memo;
     }, []);
 
+    var errors = [];
     var self = this;
 
     // check if mandatory properties are set
     mandatoryPropertyNames.forEach(function(propname) {
         var propvalue = self.properties[propname];
         if (typeof propvalue === 'undefined') {
-            throw new AWSResource.ValidationError(
-                util.format(
-                    'Resource "%s": Mandatory property "%s" is not set',
-                    self.name,
-                    propname)
-            );
+            errors.push(util.format('Mandatory property "%s" is not set', propname));
         }
     });
+
+    if (typeof this.validator === 'function') {
+        var result = this.validator(this.properties);
+        if (typeof result !== 'undefined') {
+            errors.push(util.format('Failed validation: "%s"', result));
+        }
+    }
 
     var propertyNames = Object.keys(this.properties);
     propertyNames.forEach(function(propname) {
@@ -56,12 +60,7 @@ AWSResource.prototype.validate = function() {
         var def = propdefinitions[propname] || {};
         var type = def.type;
         if (typeof type === 'undefined') {
-            throw new AWSResource.ValidationError(
-                util.format(
-                    'Resource "%s": Internal error, missing type for property "%s"',
-                    self.name,
-                    propname)
-            );
+            errors.push(util.format('Internal error, missing type for property "%s"', propname));
         }
         if (typeof propvalue === 'undefined' && !def.required) {
             return;
@@ -71,38 +70,38 @@ AWSResource.prototype.validate = function() {
             if (typeof propvalue === 'object') {
                 value = JSON.stringify(propvalue);
             }
-            throw new AWSResource.ValidationError(
-                util.format(
-                    'Resource "%s": Invalid value for "%s" should be of type "%s" got "%s"',
-                    self.name,
+            errors.push(util.format(
+                'Invalid value for "%s" should be of type "%s" got "%s"',
                     propname,
                     type.name,
-                    value)
-            );
+                    value));
         }
         if (def.validators instanceof Array) {
             _.forEach(def.validators, function(validator) {
                 var result = validator(self);
                 if (typeof result !== 'undefined') {
-                    throw new AWSResource.ValidationError(
-                        util.format(
-                            'Resource "%s": Value for "%s" failed validation: "%s"',
-                            self.name,
-                            propname,
-                            result)
-                    );
+                    errors.push(util.format('Value for "%s" failed validation: "%s"', propname, result));
                 }
             });
         }
     });
+
+    return errors;
 };
 
 // TODO: rename to "toCloudFormationTemplate"
 AWSResource.prototype.toObject = function() {
-    this.validate();
+    var errors = this.validate();
+    if (errors.length) {
+        console.log('Resource (%s) errors:', this.name);
+        _.forEach(errors, function(error) {
+            console.log('  \n' + error);
+        })
+        throw new AWSResource.ValidationError();
+    }
 
     var propdefinitions = this.propdefinitions;
-    var properties = _.mapObject(this.properties, function(value, key) {
+    var properties = _.mapValues(this.properties, function(value, key) {
         var def = propdefinitions[key] || {};
         if (def.type && def.type.toCloudFormationValue) {
             return def.type.toCloudFormationValue(value);
@@ -120,13 +119,14 @@ AWSResource.prototype.toObject = function() {
     return object;
 };
 
-AWSResource.define = function(type, propdefinitions) {
+AWSResource.define = function(type, propdefinitions, options) {
     function Resource(name, properties, attributes) {
         if (!(this instanceof Resource)) {
             return new Resource(name, properties, attributes);
         }
-
-        AWSResource.call(this, type, propdefinitions, name, properties, attributes);
+        options = options || {};
+        var validator = typeof options.validator === 'function' ? options.validator : null;
+        AWSResource.call(this, type, propdefinitions, name, properties, attributes, validator);
     }
     Resource.prototype = Object.create(AWSResource.prototype);
     Resource.prototype.constructor = Resource;

@@ -1,5 +1,7 @@
-var novaform = require('novaform')
-    , _ = require('underscore')
+var Vpc = require('../templates/vpc')
+    , Template = require('../template')
+    , novaform = require('novaform')
+    , _ = require('lodash')
     , yaml = require('js-yaml')
     , multipart = require('mime-multipart');
 
@@ -23,7 +25,7 @@ function Bastion(options) {
         return new Bastion(options);
     }
 
-    novaform.Template.call(this);
+    Template.call(this);
 
     var vpc = options.vpc;
     var keyName = options.keyName;
@@ -33,20 +35,36 @@ function Bastion(options) {
     var name = options.name || 'Bastion';
     var users = options.users;
 
+    var vpcIsTemplate = vpc instanceof Vpc;
+    var vpcResource = vpcIsTemplate
+        ? vpc.vpc
+        : vpc;
+    var vpcCidrBlock = vpcIsTemplate
+        ? vpc.vpc.properties.CidrBlock
+        : options.vpcCidrBlock || '0.0.0.0/0';
+    var vpcPublicSubnets = vpcIsTemplate
+        ? vpc.publicSubnets
+        : options.vpcPublicSubnets;
+    var vpcPublicAvailabilityZones = vpcIsTemplate
+        ? _.pluck(vpcPublicSubnets, 'properties.AvailabilityZone')
+        : options.vpcPublicAvailabilityZones;
+
     name = name.charAt(0).toUpperCase() + name.slice(1);
 
     function mkname(str) {
         return name + str;
     }
 
+    var eipAttributes = vpcIsTemplate
+        ? { DependsOn: vpc.internetGatewayAttachment.name }
+        : undefined;
+
     var elasticIp = this._addResource(novaform.ec2.EIP(mkname('Eip'), {
         Domain: 'vpc',
-    }, {
-        DependsOn: vpc.internetGatewayAttachment.name,
-    }));
+    }, eipAttributes));
 
     var securityGroup = this._addResource(novaform.ec2.SecurityGroup(mkname('Sg'), {
-        VpcId: vpc.vpc,
+        VpcId: vpcResource,
         GroupDescription: 'Bastion host security group',
         Tags: {
             Application: novaform.refs.StackId,
@@ -59,7 +77,7 @@ function Bastion(options) {
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1,
-        CidrIp: vpc.vpc.properties.CidrBlock
+        CidrIp: vpcCidrBlock,
     }));
 
     this._addResource(novaform.ec2.SecurityGroupIngress(mkname('SgiSsh'), {
@@ -67,7 +85,7 @@ function Bastion(options) {
         IpProtocol: 'tcp',
         FromPort: 22,
         ToPort: 22,
-        CidrIp: allowedSshCidr
+        CidrIp: allowedSshCidr,
     }));
 
     this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeHttp'), {
@@ -75,7 +93,7 @@ function Bastion(options) {
         IpProtocol: 'tcp',
         FromPort: 80,
         ToPort: 80,
-        CidrIp: '0.0.0.0/0'
+        CidrIp: '0.0.0.0/0',
     }));
 
     this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeHttps'), {
@@ -83,7 +101,7 @@ function Bastion(options) {
         IpProtocol: 'tcp',
         FromPort: 443,
         ToPort: 443,
-        CidrIp: '0.0.0.0/0'
+        CidrIp: '0.0.0.0/0',
     }));
 
     this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgePostgres'), {
@@ -91,7 +109,7 @@ function Bastion(options) {
         IpProtocol: 'tcp',
         FromPort: 5432,
         ToPort: 5432,
-        CidrIp: vpc.vpc.properties.CidrBlock
+        CidrIp: vpcCidrBlock,
     }));
 
     this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeIcmp'), {
@@ -99,7 +117,7 @@ function Bastion(options) {
         IpProtocol: 'icmp',
         FromPort: -1,
         ToPort: -1,
-        CidrIp: '0.0.0.0/0'
+        CidrIp: '0.0.0.0/0',
     }));
 
     this._addResource(novaform.ec2.SecurityGroupEgress(mkname('SgeSsh'), {
@@ -107,7 +125,7 @@ function Bastion(options) {
         IpProtocol: 'tcp',
         FromPort: 22,
         ToPort: 22,
-        CidrIp: vpc.vpc.properties.CidrBlock
+        CidrIp: vpcCidrBlock,
     }));
 
     var role = this._addResource(novaform.iam.Role(mkname('IAmRole'), {
@@ -183,16 +201,10 @@ function Bastion(options) {
         DependsOn: role.name,
     }));
 
-    var publicAvailabilityZones = _.map(vpc.publicSubnets, function(subnet) {
-        return subnet.properties.AvailabilityZone;
-    });
-
-    var publicSubnets = vpc.publicSubnets;
-
     var asg = this._addResource(novaform.asg.AutoScalingGroup(name, {
-        AvailabilityZones: publicAvailabilityZones,
+        AvailabilityZones: vpcPublicAvailabilityZones,
         LaunchConfigurationName: launchConfiguration,
-        VPCZoneIdentifier: publicSubnets,
+        VPCZoneIdentifier: vpcPublicSubnets,
         MinSize: 1,
         MaxSize: 2, // one extra reserved for rolling update,
         DesiredCapacity: 1,
@@ -206,7 +218,7 @@ function Bastion(options) {
             AutoScalingRollingUpdate: {
                 MaxBatchSize: 1,
                 MinInstancesInService: 1,
-                PauseTime: "PT15M",
+                PauseTime: 'PT15M',
                 WaitOnResourceSignals: true
             }
         },
@@ -217,6 +229,6 @@ function Bastion(options) {
     this.asg = asg;
 }
 
-Bastion.prototype = Object.create(novaform.Template.prototype);
+Bastion.prototype = Object.create(Template.prototype);
 
 module.exports = Bastion;
