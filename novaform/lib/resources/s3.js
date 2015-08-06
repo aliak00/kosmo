@@ -10,15 +10,15 @@ var CorsConfigurationRule = types.object('s3-cors-configuration', {
     MaxAge: types.number,
 });
 
-var CorsConfiguration = types.object('s3-cors-configuration', {
+var CorsConfigurationType = types.object('s3-cors-configuration', {
     CorsRules: types.array, // TODO: array of CorsRules
 });
 
-var LifecycleConfiguration = types.object('s3-lifecycle-configuration', {
+var LifecycleConfigurationType = types.object('s3-lifecycle-configuration', {
     Rules: types.array, // TODO: array of LifecycleRules
 });
 
-var LoggingConfiguration = types.object('s3-logging-configuration', {
+var LoggingConfigurationType = types.object('s3-logging-configuration', {
     DestinationBucketName: types.string,
     LogFilePrefix: types.string,
 });
@@ -27,11 +27,11 @@ var NotificationTopicConfiguration = types.object('s3-notification-topic-configu
     // TODO:
 });
 
-var NotificationConfiguration = types.object('s3-notification-configuration', {
+var NotificationConfigurationType = types.object('s3-notification-configuration', {
     TopicConfigurations: types.array, // TODO: array of NotificationTopicConfiguration // required
 });
 
-var VersioningConfiguration = types.object('s3-versioning-configuration', {
+var VersioningConfigurationType = types.object('s3-versioning-configuration', {
     Status: types.string, // required
 });
 
@@ -43,7 +43,7 @@ var WebsiteConfigurationRoutingRules = types.object('s3-website-configuration-ro
     // TODO:
 });
 
-var WebsiteConfiguration = types.object('s3-website-configuration', {
+var WebsiteConfigurationType = types.object('s3-website-configuration', {
     ErrorDocument: types.string,
     IndexDocument: types.string,
     RedirectAllRequestsTo: WebsiteConfigurationRedirectAllRequestsTo,
@@ -54,13 +54,13 @@ var Bucket = AWSResource.define('AWS::S3::Bucket', {
     AccessControl : { type: types.enum('Private', 'PublicRead', 'PublicReadWrite', 'AuthenticatedRead',
                                        'LogDeliveryWrite', 'BucketOwnerRead', 'BucketOwnerFullControl') },
     BucketName : { type: types.string },
-    CorsConfiguration : { type: CorsConfiguration },
-    LifecycleConfiguration : { type: LifecycleConfiguration },
-    LoggingConfiguration : { type: LoggingConfiguration },
-    NotificationConfiguration : { type: NotificationConfiguration },
+    CorsConfiguration : { type: CorsConfigurationType },
+    LifecycleConfiguration : { type: LifecycleConfigurationType },
+    LoggingConfiguration : { type: LoggingConfigurationType },
+    NotificationConfiguration : { type: NotificationConfigurationType },
     Tags : { type: types.tags },
-    VersioningConfiguration : { type: VersioningConfiguration },
-    WebsiteConfiguration : { type: WebsiteConfiguration },
+    VersioningConfiguration : { type: VersioningConfigurationType },
+    WebsiteConfiguration : { type: WebsiteConfigurationType },
 });
 
 var BucketPolicy = AWSResource.define('AWS::S3::BucketPolicy', {
