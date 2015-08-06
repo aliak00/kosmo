@@ -67,6 +67,7 @@ module.exports = {
     redshift: require('./lib/resources/redshift'),
     rds: require('./lib/resources/rds'),
     s3: require('./lib/resources/s3'),
+    sqs: require('./lib/resources/sqs'),
 
     ref: fn.ref,
     join: fn.join,
