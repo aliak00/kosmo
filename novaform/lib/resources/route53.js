@@ -68,7 +68,7 @@ function ResourceRecordsValidator(self) {
 }
 
 var RecordSet = AWSResource.define('AWS::Route53::RecordSet', {
-    AliasTarget: { type: types.string, required: 'conditional', validators: [AliasTargetValidator] },
+    AliasTarget: { type: RecordSetAliasTargetType, required: 'conditional', validators: [AliasTargetValidator] },
     Comment: { type: types.string },
     Failover: { type: types.enum('PRIMARY', 'SECONDARY') },
     GeoLocation: { type: RecordSetGeoLocationType },
