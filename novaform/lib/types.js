@@ -286,9 +286,14 @@ module.exports = {
                 return false;
             }
 
+            if (typeof x !== 'string') {
+                return true;
+            }
+
             try {
                 JSON.parse(x);
             } catch (e) {
+                console.log('JSON.parse error:', e);
                 return false;
             }
 
