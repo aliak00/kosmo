@@ -23,12 +23,13 @@ var LoggingConfigurationType = types.object('s3-logging-configuration', {
     LogFilePrefix: types.string,
 });
 
-var NotificationTopicConfiguration = types.object('s3-notification-topic-configuration', {
-    // TODO:
+var NotificationConfigurationTopicConfigurationType = types.object('s3-notification-configuration-topic-configuration', {
+    Event: types.string, // required
+    Topic: types.string, // required
 });
 
 var NotificationConfigurationType = types.object('s3-notification-configuration', {
-    TopicConfigurations: types.array, // TODO: array of NotificationTopicConfiguration // required
+    TopicConfigurations: types.array, // array of NotificationTopicConfiguration // required
 });
 
 var VersioningConfigurationType = types.object('s3-versioning-configuration', {
