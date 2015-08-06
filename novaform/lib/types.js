@@ -282,12 +282,12 @@ module.exports = {
     jsonobject: {
         name: 'jsonobject',
         validate: function(x) {
-            if (typeof x !== 'object') {
-                return false;
+            if (typeof x === 'object') {
+                return true;
             }
 
             if (typeof x !== 'string') {
-                return true;
+                return false;
             }
 
             try {
