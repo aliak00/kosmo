@@ -64,8 +64,8 @@ var Bucket = AWSResource.define('AWS::S3::Bucket', {
 });
 
 var BucketPolicy = AWSResource.define('AWS::S3::BucketPolicy', {
-    Bucket : { type: types.string, require: true },
-    PolicyDocument : { type: types.object('s3-bucket-policy-document'), require: true },
+    Bucket : { type: types.string, required: true },
+    PolicyDocument : { type: types.object('s3-bucket-policy-document'), required: true },
 });
 
 module.exports = {
