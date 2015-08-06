@@ -29,6 +29,12 @@ AWSResource.ValidationError = ValidationError;
 
 AWSResource.prototype.validate = function() {
     var propdefinitions = this.propdefinitions;
+
+    var diffKeys = _.difference(this.properties, _.keys(propdefinitions));
+    if (diffKeys.length > 0) {
+        errors.push('Found unknown properties: ' + diffKeys.join(', '));
+    }
+
     var mandatoryPropertyNames = _.reduce(propdefinitions, function(memo, value, key) {
         if (value.required === true) {
             memo.push(key);
