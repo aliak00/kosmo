@@ -124,6 +124,9 @@ AWSResource.define = function(type, propdefinitions, options) {
         if (!(this instanceof Resource)) {
             return new Resource(name, properties, attributes);
         }
+        if (!name) {
+            throw new Error('You can\'t leave out the resource name ya ninny');
+        }
         options = options || {};
         var validator = typeof options.validator === 'function' ? options.validator : null;
         AWSResource.call(this, type, propdefinitions, name, properties, attributes, validator);
