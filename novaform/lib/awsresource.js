@@ -54,7 +54,7 @@ AWSResource.prototype.validate = function() {
         }
     }
 
-    var propertyNames = Object.keys(this.properties);
+    var propertyNames = _.keys(this.properties);
     propertyNames.forEach(function(propname) {
         var propvalue = self.properties[propname];
         var def = propdefinitions[propname] || {};
