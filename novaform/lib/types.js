@@ -279,6 +279,23 @@ module.exports = {
         };
     },
 
+    jsonobject: {
+        name: 'jsonobject',
+        validate: function(x) {
+            if (typeof x !== 'object') {
+                return false;
+            }
+
+            try {
+                JSON.parse(x);
+            } catch (e) {
+                return false;
+            }
+
+            return true;
+        },
+    },
+
     // TODO: make typed arrays
     array: {
         name: 'array',
