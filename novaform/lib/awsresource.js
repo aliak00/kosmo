@@ -28,9 +28,14 @@ ValidationError.prototype = new IntermediateInheritor();
 AWSResource.ValidationError = ValidationError;
 
 AWSResource.prototype.validate = function() {
+    var errors = [];
     var propdefinitions = this.propdefinitions;
 
-    var diffKeys = _.difference(this.properties, _.keys(propdefinitions));
+    if (!this.name) {
+        errors.push('You can\'t leave out the resource name ya ninny');
+    }
+
+    var diffKeys = _.difference(_.keys(this.properties), _.keys(propdefinitions));
     if (diffKeys.length > 0) {
         errors.push('Found unknown properties: ' + diffKeys.join(', '));
     }
@@ -41,8 +46,6 @@ AWSResource.prototype.validate = function() {
         }
         return memo;
     }, []);
-
-    var errors = [];
     var self = this;
 
     // check if mandatory properties are set
@@ -67,6 +70,7 @@ AWSResource.prototype.validate = function() {
         var type = def.type;
         if (typeof type === 'undefined') {
             errors.push(util.format('Internal error, missing type for property "%s"', propname));
+            return;
         }
         if (typeof propvalue === 'undefined' && !def.required) {
             return;
@@ -99,9 +103,9 @@ AWSResource.prototype.validate = function() {
 AWSResource.prototype.toObject = function() {
     var errors = this.validate();
     if (errors.length) {
-        console.log('Resource (%s) errors:', this.name);
-        _.forEach(errors, function(error) {
-            console.log('  \n' + error);
+        console.log('Errors: resource (%s):', this.name);
+        _.forEach(errors, function(error, index) {
+            console.log('  ' + index + ') ' + error);
         })
         throw new AWSResource.ValidationError();
     }
@@ -129,9 +133,6 @@ AWSResource.define = function(type, propdefinitions, options) {
     function Resource(name, properties, attributes) {
         if (!(this instanceof Resource)) {
             return new Resource(name, properties, attributes);
-        }
-        if (!name) {
-            throw new Error('You can\'t leave out the resource name ya ninny');
         }
         options = options || {};
         var validator = typeof options.validator === 'function' ? options.validator : null;
