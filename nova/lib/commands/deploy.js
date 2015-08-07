@@ -149,7 +149,7 @@ Command.prototype.execute = function() {
             if (!component) {
                 throw new Error(util.format('Could not find dependent component "%s"', componentName));
             }
-            var deps = component.dependencies.map(function(depname) {
+            var deps = _.map(component.dependencies, (function(depname) {
                 var w = walked ? walked.slice() : [];
                 return walkDeps([depname], depname, w);
             });
