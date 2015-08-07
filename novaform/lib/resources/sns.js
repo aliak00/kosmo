@@ -3,7 +3,7 @@ var AWSResource = require('../awsresource')
 
 var SubscriptionType = types.object('sns-subscription', {
     Endpoint: types.string, // required
-    Protocol: types.string, // required
+    Protocol: types.enum('http', 'https', 'email', 'email-json', 'sms', 'sqs', 'application', 'lambda'), // required
 });
 
 var Topic = AWSResource.define('AWS::SNS::Topic', {
@@ -14,7 +14,7 @@ var Topic = AWSResource.define('AWS::SNS::Topic', {
 
 var TopicPolicy = AWSResource.define('AWS::SNS::TopicPolicy', {
     PolicyDocument: { type: types.jsonobject, required: true },
-    Queues: { type: types.array, required: true },
+    Topics: { type: types.array, required: true },
 });
 
 module.exports = {
