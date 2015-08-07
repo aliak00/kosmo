@@ -68,6 +68,7 @@ module.exports = {
     rds: require('./lib/resources/rds'),
     s3: require('./lib/resources/s3'),
     sqs: require('./lib/resources/sqs'),
+    sns: require('./lib/resources/sns'),
 
     ref: fn.ref,
     join: fn.join,
