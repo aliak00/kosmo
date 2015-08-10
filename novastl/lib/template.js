@@ -10,7 +10,7 @@ function Template() {
     this._resources = {};
 }
 
-Template.prototype._addResource = function(resource) {
+Template.prototype._addResource = function(resource, as) {
     if (!resource instanceof novaform.AWSResource) {
         throw new Error('Not a Resource: ' + resource);
     }
@@ -18,7 +18,7 @@ Template.prototype._addResource = function(resource) {
     if (resource.name in this._resources) {
         throw new Error(util.format('Internal error: duplicate resource name detected: "%s"', resource.name));
     }
-    this._resources[resource.name] = resource;
+    this._resources[as || resource.name] = resource;
     return resource;
 };
 
