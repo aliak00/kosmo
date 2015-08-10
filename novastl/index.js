@@ -6,6 +6,7 @@ module.exports = {
     Bastion: require('./lib/templates/bastion'),
     Rds: require('./lib/templates/rds'),
     EBApp: require('./lib/templates/ebapp'),
+    EBWorker: require('./lib/templates/ebworker'),
 
     EBOptionSettings: require('./lib/utils/eb-option-settings'),
 };
