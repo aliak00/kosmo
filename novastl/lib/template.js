@@ -26,4 +26,11 @@ Template.prototype.resources = function() {
     return _.values(this._resources);
 };
 
+Template.prototype.getResource = function(name) {
+    if (!name in this._resources) {
+        throw new Error('Could not find resource ' + name + ' in template');
+    }
+    return this._resources[name];
+};
+
 module.exports = Template;
