@@ -33,7 +33,7 @@ var NotificationConfigurationType = types.object('s3-notification-configuration'
 });
 
 var VersioningConfigurationType = types.object('s3-versioning-configuration', {
-    Status: types.string, // required
+    Status: types.enum('Enabled', 'Suspended'), // required
 });
 
 var WebsiteConfigurationRedirectAllRequestsTo = types.object('s3-website-configuration-redirect-all-requests-to', {
