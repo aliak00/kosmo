@@ -1,6 +1,5 @@
 var AWSResource = require('./lib/awsresource')
     , Output = require('./lib/output')
-    , TagValue = require('./lib/tag-value')
     , fn = require('./lib/fn')
     , fs = require('fs')
     , Stack = require('./lib/stack')
@@ -53,8 +52,6 @@ module.exports = {
 
     Output: Output,
     Parameter: Parameter,
-
-    TagValue: TagValue,
 
     asg: require('./lib/resources/asg'),
     eb: require('./lib/resources/elastic-beanstalk'),
