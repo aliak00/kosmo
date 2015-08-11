@@ -74,6 +74,8 @@ module.exports = {
     base64: fn.base64,
     getAtt: fn.getAtt,
 
+    fn: fn,
+
     loadUserDataFromFile: loadUserDataFromFile,
 
     refs: {
