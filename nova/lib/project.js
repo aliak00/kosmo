@@ -20,7 +20,9 @@ Project.load = function(name, params, callback) {
                     utils: novautils,
                     resources: novaform,
                     templates: novastl,
-                    params: params
+                    params: params,
+                    form: novaform,
+                    stl: novastl,
                 });
                 return new Project(config);
             } catch (e) {
