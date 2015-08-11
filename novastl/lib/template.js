@@ -19,6 +19,9 @@ Template.prototype._addResource = function(resource, as) {
         throw new Error(util.format('Internal error: duplicate resource name detected: "%s"', resource.name));
     }
     this._resources[as || resource.name] = resource;
+    if (typeof as === 'string') {
+        this[as] = resource;
+    }
     return resource;
 };
 
