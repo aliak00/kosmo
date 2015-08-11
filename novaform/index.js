@@ -48,10 +48,12 @@ function loadUserDataFromFile(filename, params) {
 
 module.exports = {
     Stack: Stack,
-    AWSResource: AWSResource,
-
+    Resource: AWSResource,
     Output: Output,
     Parameter: Parameter,
+
+    // TODO: Deprecated, remove.
+    AWSResource: AWSResource,
 
     asg: require('./lib/resources/asg'),
     eb: require('./lib/resources/elastic-beanstalk'),
