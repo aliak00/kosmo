@@ -16,7 +16,7 @@ function EBWorker(options) {
 
     EBApp.call(this, options);
 
-    this.getResource('environment').properties.Tier = {
+    this.environment.properties.Tier = {
         Name: 'Worker',
         Type: 'SQS/HTTP',
         Version: '1.0',

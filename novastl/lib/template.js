@@ -10,7 +10,7 @@ function Template() {
     this._resources = {};
 }
 
-Template.prototype._addResource = function(resource, as) {
+Template.prototype._addResource = function(resource) {
     if (!resource instanceof novaform.AWSResource) {
         throw new Error('Not a Resource: ' + resource);
     }
@@ -18,22 +18,14 @@ Template.prototype._addResource = function(resource, as) {
     if (resource.name in this._resources) {
         throw new Error(util.format('Internal error: duplicate resource name detected: "%s"', resource.name));
     }
-    this._resources[as || resource.name] = resource;
-    if (typeof as === 'string') {
-        this[as] = resource;
-    }
+
+    this._resources[resource.name] = resource;
+
     return resource;
 };
 
 Template.prototype.resources = function() {
     return _.values(this._resources);
-};
-
-Template.prototype.getResource = function(name) {
-    if (!name in this._resources) {
-        throw new Error('Could not find resource ' + name + ' in template');
-    }
-    return this._resources[name];
 };
 
 module.exports = Template;

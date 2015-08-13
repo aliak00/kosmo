@@ -45,10 +45,10 @@ function EBApp(options) {
         VersionLabel: version,
     });
 
-    this._addResource(app, 'app');
-    this._addResource(configTemplate, 'configTemplate');
-    this._addResource(version, 'version');
-    this._addResource(environment, 'environment');
+    this.app = this._addResource(app);
+    this.configTemplate = this._addResource(configTemplate);
+    this.version = this._addResource(version);
+    this.environment = this._addResource(environment);
 }
 EBApp.prototype = Object.create(Template.prototype);
 
