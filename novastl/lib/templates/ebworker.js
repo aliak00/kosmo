@@ -16,19 +16,11 @@ function EBWorker(options) {
 
     EBApp.call(this, options);
 
-    var oldEnv = this.getResource('environment');
-    var oldEnvProps = oldEnv.properties;
-    this._resources.environment = novaform.eb.Environment(oldEnv.name, {
-        Description: oldEnvProps.Description,
-        ApplicationName: oldEnvProps.ApplicationName,
-        TemplateName: oldEnvProps.TemplateName,
-        VersionLabel: oldEnvProps.VersionLabel,
-        Tier: {
-            Name: 'Worker',
-            Type: 'SQS/HTTP',
-            Version: '1.0',
-        },
-    });
+    this.getResource('environment').properties.Tier = {
+        Name: 'Worker',
+        Type: 'SQS/HTTP',
+        Version: '1.0',
+    };
 }
 EBWorker.prototype = Object.create(EBApp.prototype);
 
