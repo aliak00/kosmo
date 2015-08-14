@@ -19,7 +19,6 @@ function EBWorker(options) {
     this.environment.properties.Tier = {
         Name: 'Worker',
         Type: 'SQS/HTTP',
-        Version: '1.0',
     };
 }
 EBWorker.prototype = Object.create(EBApp.prototype);
