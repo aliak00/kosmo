@@ -13,14 +13,14 @@ var Alarm = AWSResource.define('AWS::CloudWatch::Alarm', {
     AlarmName: { type: types.string },
     ComparisonOperator: { type: types.enum('GreaterThanOrEqualToThreshold', 'GreaterThanThreshold', 'LessThanThreshold', 'LessThanOrEqualToThreshold'), required: true },
     Dimensions : { type: types.array }, // array of MetricDimensionType
-    EvaluationPeriods: { type: types.string, required: true },
+    EvaluationPeriods: { type: types.number, required: true },
     InsufficientDataActions: { type: types.array },
     MetricName: { type: types.string, required: true },
     Namespace: { type: types.string, required: true },
     OKActions: { type: types.array },
-    Period: { type: types.string, required: true },
+    Period: { type: types.number, required: true },
     Statistic: { type: types.enum('SampleCount', 'Average', 'Sum', 'Minimum', 'Maximum'), required: true },
-    Threshold: { type: types.string, required: true },
+    Threshold: { type: types.number, required: true },
     Unit: {
         type: types.enum(
             'Seconds', 'Microseconds', 'Milliseconds',
@@ -31,7 +31,7 @@ var Alarm = AWSResource.define('AWS::CloudWatch::Alarm', {
             'Bytes/Second', 'Kilobytes/Second', 'Megabytes/Second', 'Gigabytes/Second', 'Terabytes/Second',
             'Bits/Second', 'Kilobits/Second',' Megabits/Second', 'Gigabits/Second', 'Terabits/Second',
             'Count/Second',
-            'None',)
+            'None')
     },
 }, {
     validator: function(props) {
