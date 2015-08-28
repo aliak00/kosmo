@@ -1,7 +1,7 @@
 var AWSResource = require('../awsresource')
     , types = require('../types');
 
-var RedrivePolicyType = types.object('s3-notification-configuration', {
+var RedrivePolicyType = types.object('sqs-redrive-policy', {
     deadLetterTargetArn: types.string,
     maxReceiveCount: types.number,
 });
