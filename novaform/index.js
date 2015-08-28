@@ -56,6 +56,7 @@ module.exports = {
     AWSResource: AWSResource,
 
     asg: require('./lib/resources/asg'),
+    cloudwatch: require('./lib/resources/cloudwatch'),
     eb: require('./lib/resources/elastic-beanstalk'),
     ec2: require('./lib/resources/ec2'),
     ec: require('./lib/resources/ec'),
