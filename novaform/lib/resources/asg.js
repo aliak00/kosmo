@@ -18,7 +18,7 @@ var BlockDeviceMappingsType = types.object('asg-block-device-mappings', {
 
 var LaunchConfiguration = AWSResource.define('AWS::AutoScaling::LaunchConfiguration', {
     AssociatePublicIpAddress : { type: types.boolean },
-    BlockDeviceMappings : { type: BlockDeviceMappingsType },
+    BlockDeviceMappings : { type: types.array }, // array of BlockDeviceMappingsType
     EbsOptimized : { type: types.boolean },
     IamInstanceProfile : { type: types.string },
     ImageId : { type: types.string, required: true },
