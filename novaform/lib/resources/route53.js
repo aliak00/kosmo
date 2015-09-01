@@ -37,7 +37,7 @@ var HostedZoneVPCsType = types.object('route53-hostezone-vpcs', {
 });
 
 var HostedZone = AWSResource.define('AWS::Route53::HostedZone', {
-    HostedZoneConfig: { type: HostedZoneConfigType, required: true },
+    HostedZoneConfig: { type: HostedZoneConfigType },
     HostedZoneTags: { type: types.array },
     Name: { type: types.string, required: true },
     VPCs: { type: types.array },
