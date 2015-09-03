@@ -54,6 +54,15 @@ sysctl -q -w net.ipv4.ip_forward=1 net.ipv4.conf.eth0.send_redirects=0 && (
 sysctl net.ipv4.ip_forward net.ipv4.conf.eth0.send_redirects | log
 iptables -n -t nat -L POSTROUTING | log
 
+sysctl -w net.ipv4.netfilter.ip_conntrack_tcp_timeout_established=54000 | log
+sysctl -w net.netfilter.nf_conntrack_generic_timeout=120 | log
+sysctl -w net.ipv4.netfilter.ip_conntrack_max=512000 | log
+
+# Disabling Scatter / Gatherer to improve network performance. This stop
+# offloading some work on the network card and somewhat increases CPU usage
+# but supposed provide better network throughput on NAT instance.
+#ethtool -K eth0 sg off | log
+
 yum update -y aws-cfn-bootstrap aws-cli
 # Set AWS CLI default Region
 region="{{ "Ref" : "AWS::Region" }}"
@@ -63,7 +72,8 @@ export AWS_DEFAULT_OUTPUT="text"
 instance_id=`curl --retry 3 --retry-delay 0 --silent --fail http://169.254.169.254/latest/meta-data/instance-id`
 availability_zone=`curl --retry 3 --retry-delay 0 --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone`
 log "HA NAT configuration parameters: Instance ID=$instance_id, Region=$region, Availability Zone=$availability_zone, VPC=$VPC_ID"
-subnets="`aws ec2 describe-subnets --query 'Subnets[*].SubnetId' --filters Name=vpc-id,Values=$VPC_ID Name=tag:Network,Values=private`"
+
+subnets=`aws ec2 describe-subnets --query 'Subnets[*].SubnetId' --filters Name=vpc-id,Values=$VPC_ID Name=tag:Network,Values=private Name=availability-zone,Values=$availability_zone`
 if [ -z "$subnets" ]; then
   log "Error: No subnets found"
 else
@@ -80,10 +90,13 @@ else
     fi
   done
 fi
+
 # Turn off source / destination check
 aws ec2 modify-instance-attribute --instance-id $instance_id --source-dest-check "{\"Value\": false}" &&
   log "Source Destination check disabled for $instance_id."
+
 log "Configuration of HA NAT complete."
+
 /opt/aws/bin/cfn-init -v \
          --stack {{ "Ref" : "AWS::StackName" }} \
          --resource {{ LaunchConfigName }} \
