@@ -28,9 +28,6 @@ function log { logger -t "bastion" -- $1; echo $1; }
 
 log "Beginning configuration..."
 apt-get update -y
-apt-get upgrade -y
-apt-get install -y python-pip
-pip install awscli
 
 log "Installing cloudformation tools..."
 curl -o /tmp/aws-cfn-bootstrap-latest.tar.gz https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
@@ -38,12 +35,19 @@ mkdir /tmp/aws-cfn-bootstrap
 tar --strip-components=1 -C /tmp/aws-cfn-bootstrap -xzvf /tmp/aws-cfn-bootstrap-latest.tar.gz
 cd /tmp/aws-cfn-bootstrap && python ./setup.py install
 
+log "Upgrading the system"
+DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+
+log "Installing AWS cli tools"
+apt-get install -y python-pip
+pip install awscli
+
 log "Initializing cloudformation..."
 $cfn_init -v \
     --stack {{ "Ref" : "AWS::StackName" }} \
     --resource {{ LaunchConfigName }} \
     --region {{ "Ref" : "AWS::Region" }} \
-  || true # yyyeaaaah, evil, but cfn-init return 1 when instance has not Metadata.
+  || true # yyyeaaaah, evil, but cfn-init return 1 when instance has no Metadata.
 
 # Set AWS CLI default Region
 region="{{ "Ref" : "AWS::Region" }}"
@@ -59,7 +63,7 @@ aws ec2 associate-address --allocation-id $allocation_id --instance-id $instance
 
 log "Configuration of Bastion host complete."
 
-$cfn_signal -e $? \
+$cfn_signal -e 0 \
     --stack {{ "Ref" : "AWS::StackName" }} \
     --resource {{ ASGName }} \
     --region {{ "Ref" : "AWS::Region" }}
