@@ -185,7 +185,10 @@ function Bastion(options) {
             encoding: 'utf8',
             filename: 'users',
         },
-    ]);
+    ], {
+        from: 'nobody XX XXX XX XX:XX:XX XXXX XXXX',
+        boundary: '3f4aec2c-5233-11e5-9d64-e745058d08ed',
+    });
     var parts = userdata.split(placeholder);
     userdata = novaform.join('', [_.first(parts), shellscript, _.last(parts)]);
 
