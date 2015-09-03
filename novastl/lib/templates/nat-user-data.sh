@@ -54,6 +54,15 @@ sysctl -q -w net.ipv4.ip_forward=1 net.ipv4.conf.eth0.send_redirects=0 && (
 sysctl net.ipv4.ip_forward net.ipv4.conf.eth0.send_redirects | log
 iptables -n -t nat -L POSTROUTING | log
 
+sysctl -w net.ipv4.netfilter.ip_conntrack_tcp_timeout_established=54000 | log
+sysctl -w net.netfilter.nf_conntrack_generic_timeout=120 | log
+sysctl -w net.ipv4.netfilter.ip_conntrack_max=512000 | log
+
+# Disabling Scatter / Gatherer to improve network performance. This stop
+# offloading some work on the network card and somewhat increases CPU usage
+# but supposed provide better network throughput on NAT instance.
+#ethtool -K eth0 sg off | log
+
 yum update -y aws-cfn-bootstrap aws-cli
 # Set AWS CLI default Region
 region="{{ "Ref" : "AWS::Region" }}"
