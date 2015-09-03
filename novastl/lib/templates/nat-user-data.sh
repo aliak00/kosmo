@@ -72,7 +72,8 @@ export AWS_DEFAULT_OUTPUT="text"
 instance_id=`curl --retry 3 --retry-delay 0 --silent --fail http://169.254.169.254/latest/meta-data/instance-id`
 availability_zone=`curl --retry 3 --retry-delay 0 --silent --fail http://169.254.169.254/latest/meta-data/placement/availability-zone`
 log "HA NAT configuration parameters: Instance ID=$instance_id, Region=$region, Availability Zone=$availability_zone, VPC=$VPC_ID"
-subnets="`aws ec2 describe-subnets --query 'Subnets[*].SubnetId' --filters Name=vpc-id,Values=$VPC_ID Name=tag:Network,Values=private`"
+
+subnets=`aws ec2 describe-subnets --query 'Subnets[*].SubnetId' --filters Name=vpc-id,Values=$VPC_ID Name=tag:Network,Values=private Name=availability-zone,Values=$availability_zone`
 if [ -z "$subnets" ]; then
   log "Error: No subnets found"
 else
