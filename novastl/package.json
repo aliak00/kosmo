@@ -14,7 +14,7 @@
   "dependencies": {
     "js-yaml": "^3.2.7",
     "lodash": "^3.10.0",
-    "mime-multipart": "0.0.2",
+    "mime-multipart": "git://github.com/sergi/mime-multipart.git#master",
     "novaform": "*"
   }
 }
