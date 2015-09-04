@@ -172,18 +172,6 @@ function Nat(options) {
             ASGName: name,
             LaunchConfigName: mkname('LaunchConfig'),
         }))
-    }, {
-        Metadata: {
-            'AWS::CloudFormation::Init': {
-                'config': {
-                    'packages': {
-                        'yum': {
-                            'aws-cli': []
-                        }
-                    }
-                }
-            }
-        },
     }));
 
     var publicAvailabilityZones = _.map(publicSubnets, function(subnet) {
