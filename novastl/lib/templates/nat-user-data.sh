@@ -1,6 +1,31 @@
 #!/bin/bash
+
 # enable for debugging
 # set -x
+
+DISTRO=`(. /etc/os-release; echo $NAME)`
+function is_ubuntu { test "$DISTRO" == "Ubuntu"; }
+function is_amazon { test "$DISTRO" == "Amazon Linux AMI"; }
+
+if is_ubuntu; then
+  cfn_tools_prefix=/usr/local/bin
+else
+  cfn_tools_prefix=/opt/aws/bin
+fi
+
+cfn_init=$cfn_tools_prefix/cfn-init
+cfn_signal=$cfn_tools_prefix/cfn-signal
+
+if [ ! -x "$cfn_init" ]; then
+  curl -O https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+  mkdir /tmp/aws-cfn-bootstrap
+  tar --strip-components=1 -C /tmp/aws-cfn-bootstrap -xzvf /tmp/aws-cfn-bootstrap-latest.tar.gz
+  cd /tmp/aws-cfn-bootstrap && python ./setup.py install
+fi
+
+is_amazon && yum install -y aws-cfn-bootstrap aws-cli
+is_ubuntu && apt-get install -y awscli
+
 error() {
   local parent_lineno="$1"
   local message="$2"
@@ -10,14 +35,14 @@ error() {
   else
     echo "Error on or near line ${parent_lineno}; exiting with status ${code}"
   fi
-  /opt/aws/bin/cfn-signal -e "${code}" \
+  $cfn_signal -e "${code}" \
            --stack {{ "Ref" : "AWS::StackName" }} \
            --resource {{ ASGName }} \
            --region {{ "Ref" : "AWS::Region" }}
   exit "${code}"
 }
 trap 'error ${LINENO}' ERR
-function log { logger -t "nat" -- $1; }
+function log { logger -t "nat" -- $1; echo $1; }
 
 log "Beginning Port Address Translator (PAT) configuration..."
 log "Determining the MAC address on eth0..."
@@ -63,7 +88,6 @@ sysctl -w net.ipv4.netfilter.ip_conntrack_max=512000 | log
 # but supposed provide better network throughput on NAT instance.
 #ethtool -K eth0 sg off | log
 
-yum update -y aws-cfn-bootstrap aws-cli
 # Set AWS CLI default Region
 region="{{ "Ref" : "AWS::Region" }}"
 export AWS_DEFAULT_REGION=$region
@@ -97,11 +121,12 @@ aws ec2 modify-instance-attribute --instance-id $instance_id --source-dest-check
 
 log "Configuration of HA NAT complete."
 
-/opt/aws/bin/cfn-init -v \
+$cfn_init -v \
          --stack {{ "Ref" : "AWS::StackName" }} \
          --resource {{ LaunchConfigName }} \
-         --region {{ "Ref" : "AWS::Region" }}
-/opt/aws/bin/cfn-signal -e $? \
+         --region {{ "Ref" : "AWS::Region" }} || true
+
+$cfn_signal -e 0 \
          --stack {{ "Ref" : "AWS::StackName" }} \
          --resource {{ ASGName }} \
              --region {{ "Ref" : "AWS::Region" }}
