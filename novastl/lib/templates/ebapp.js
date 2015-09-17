@@ -25,7 +25,7 @@ function EBApp(options) {
     var configTemplate = novaform.eb.ConfigurationTemplate(makeName('ConfigTemplate'), {
         ApplicationName: app,
         Description: name + ' configution template',
-        SolutionStackName: '64bit Amazon Linux 2015.03 v1.4.4 running Node.js',
+        SolutionStackName: '64bit Amazon Linux 2015.03 v2.0.0 running Node.js',
         OptionSettings: optionSettings,
     });
 
