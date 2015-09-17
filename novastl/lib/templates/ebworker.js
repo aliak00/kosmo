@@ -7,19 +7,21 @@ function EBWorker(options) {
         return new EBWorker(options);
     }
 
-    options.optionSettings = options.optionSettings.concat(EBOptionsSettings({
-        'aws:elasticbeanstalk:sqsd': {
-            WorkerQueueURL: options.sqsUrl,
-            HttpPath: options.httpPath,
-        },
-    }));
-
     EBApp.call(this, options);
 
     this.environment.properties.Tier = {
         Name: 'Worker',
         Type: 'SQS/HTTP',
     };
+
+    // Instead of setting it in the ConfigTemplate, we set this on the env
+    // directly, because aws bug.
+    this.environment.properties.OptionSettings = EBOptionsSettings({
+        'aws:elasticbeanstalk:sqsd': {
+            WorkerQueueURL: options.sqsUrl,
+            HttpPath: options.httpPath,
+        },
+    });
 }
 EBWorker.prototype = Object.create(EBApp.prototype);
 
