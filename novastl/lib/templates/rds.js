@@ -27,6 +27,7 @@ function Rds(options) {
     var username = options.username || 'root';
     var password = options.password;
     var storageType = options.storageType || 'standard';
+    var iops = options.iops;
     var backupRetentionPeriod = options.backupRetentionPeriod;
     var preferredBackupWindow = options.preferredBackupWindow;
     var preferredMaintenanceWindow = options.preferredMaintenanceWindow;
@@ -82,6 +83,7 @@ function Rds(options) {
         DBSubnetGroupName: subnetGroup,
         Engine: engine,
         EngineVersion: engineVersion,
+        Iops: iops,
         StorageType: storageType,
         MasterUsername: username,
         MasterUserPassword: password,
