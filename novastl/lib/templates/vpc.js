@@ -102,14 +102,20 @@ function Vpc(options) {
     _.extend(this._resources, publicSubnetResourcesPerName);
     _.extend(this._resources, privateSubnetResourcesPerName);
 
-    this._publicSubnetResourcesPerAz = publicSubnet.publicResourcesPerAz;
-    this._privateSubnetResourcesPerAz = privateSubnet.publicResourcesPerAz;
+    this._publicSubnetResourcesPerAz = publicSubnet.subnetsPerAz;
+    this._privateSubnetResourcesPerAz = privateSubnet.subnetsPerAz;
 
-    this.publicSubnetsPerAz = publicSubnet.publicResourcesPerAz;
-    this.privateSubnetsPerAz = privateSubnet.publicResourcesPerAz;
+    this.publicSubnetsPerAz = publicSubnet.subnetsPerAz;
+    this.privateSubnetsPerAz = privateSubnet.subnetsPerAz;
 
-    this.publicSubnets = _.flatten(_.values(publicSubnet.publicResourcesPerAz));
-    this.privateSubnets = _.flatten(_.values(privateSubnet.publicResourcesPerAz));
+    this.publicSubnets = _.flatten(_.values(publicSubnet.subnetsPerAz));
+    this.privateSubnets = _.flatten(_.values(privateSubnet.subnetsPerAz));
+
+    this.publicRouteTablesPerAz = publicSubnet.routeTablesPerAz;
+    this.privateRouteTablesPerAz = privateSubnet.routeTablesPerAz;
+
+    this.publicRouteTables = _.flatten(_.values(publicSubnet.routeTablesPerAz));
+    this.privateRouteTables = _.flatten(_.values(privateSubnet.routeTablesPerAz));
 
     this.vpcId = this.vpc;
 
@@ -135,6 +141,7 @@ Vpc.prototype.createPublicSubnets = function(subnets) {
     var internetGatewayAttachment = this.internetGatewayAttachment;
 
     var subnetsPerAz = {};
+    var routeTablesPerAz = {};
 
     var resourcesPerAz = _.object(_.map(subnets, function(cidr, azName) {
         var az = azName[azName.length - 1];
@@ -142,20 +149,23 @@ Vpc.prototype.createPublicSubnets = function(subnets) {
         var resources = [];
         var push = pusher(resources);
 
-        var publicResources = subnetsPerAz[azName] = [];
-        var pushPublic = pusher(publicResources);
+        var subnetResources = subnetsPerAz[azName] = [];
+        var pushSubnet = pusher(subnetResources);
 
-        var subnet = pushPublic(push(novaform.ec2.Subnet(mknameAz('PublicSubnet', az), {
+        var routeTableResources = routeTablesPerAz[azName] = [];
+        var pushRouteTable = pusher(routeTableResources);
+
+        var subnet = pushSubnet(push(novaform.ec2.Subnet(mknameAz('PublicSubnet', az), {
             VpcId: vpc,
             AvailabilityZone: azName,
             CidrBlock: cidr,
             Tags: mktags('Subnet', 'public', az)
         })));
 
-        var routeTable = push(novaform.ec2.RouteTable(mknameAz('PublicRouteTable', az), {
+        var routeTable = pushRouteTable(push(novaform.ec2.RouteTable(mknameAz('PublicRouteTable', az), {
             VpcId: vpc,
             Tags: mktags('RouteTable', 'public', az)
-        }));
+        })));
 
         push(novaform.ec2.Route(mknameAz('PublicRoute', az), {
             RouteTableId: routeTable,
@@ -339,7 +349,8 @@ Vpc.prototype.createPublicSubnets = function(subnets) {
     }));
 
     return {
-        publicResourcesPerAz: subnetsPerAz,
+        subnetsPerAz: subnetsPerAz,
+        routeTablesPerAz: routeTablesPerAz,
         allResourcesPerAz: resourcesPerAz,
     };
 }
@@ -348,6 +359,7 @@ Vpc.prototype.createPrivateSubnets = function(subnets) {
     var vpc = this.vpc;
 
     var subnetsPerAz = {};
+    var routeTablesPerAz = {};
 
     var resourcesPerAz = _.object(_.map(subnets, function(cidr, azName) {
         var az = azName[azName.length - 1];
@@ -355,20 +367,23 @@ Vpc.prototype.createPrivateSubnets = function(subnets) {
         var resources = [];
         var push = pusher(resources);
 
-        var publicResources = subnetsPerAz[azName] = [];
-        var pushPublic = pusher(publicResources);
+        var subnetResources = subnetsPerAz[azName] = [];
+        var pushSubnet = pusher(subnetResources);
 
-        var subnet = pushPublic(push(novaform.ec2.Subnet(mknameAz('PrivateSubnet', az), {
+        var routeTableResources = routeTablesPerAz[azName] = [];
+        var pushRouteTable = pusher(routeTableResources);
+
+        var subnet = pushSubnet(push(novaform.ec2.Subnet(mknameAz('PrivateSubnet', az), {
             VpcId: vpc,
             AvailabilityZone: azName,
             CidrBlock: cidr,
             Tags: mktags('Subnet', 'private', az)
         })));
 
-        var routeTable = push(novaform.ec2.RouteTable(mknameAz('PrivateRouteTable', az), {
+        var routeTable = pushRouteTable(push(novaform.ec2.RouteTable(mknameAz('PrivateRouteTable', az), {
             VpcId: vpc,
             Tags: mktags('RouteTable', 'private', az)
-        }));
+        })));
 
         push(novaform.ec2.SubnetRouteTableAssociation(mknameAz('PrivateSubnetRouteTableAssociation', az), {
             SubnetId: subnet,
@@ -527,7 +542,8 @@ Vpc.prototype.createPrivateSubnets = function(subnets) {
     }));
 
     return {
-        publicResourcesPerAz: subnetsPerAz,
+        subnetsPerAz: subnetsPerAz,
+        routeTablesPerAz: routeTablesPerAz,
         allResourcesPerAz: resourcesPerAz,
     };
 };

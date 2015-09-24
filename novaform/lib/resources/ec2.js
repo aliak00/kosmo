@@ -167,6 +167,13 @@ var Volume = AWSResource.define('AWS::EC2::Volume', {
     VolumeType: { type: types.string },
 });
 
+var VPCEndpoint = AWSResource.define('AWS::EC2::VPCEndpoint', {
+    PolicyDocument: { type: types.object('ec2-policy-document') },
+    RouteTableIds: { type: types.array },
+    ServiceName: { type: types.string, required: true },
+    VpcId: { type: types.string, required: true },
+});
+
 module.exports = {
     VPC: VPC,
     InternetGateway: InternetGateway,
@@ -184,4 +191,5 @@ module.exports = {
     EIP: EIP,
     Instance: Instance,
     Volume: Volume,
+    VPCEndpoint: VPCEndpoint,
 };
