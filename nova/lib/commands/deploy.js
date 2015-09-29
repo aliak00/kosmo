@@ -374,7 +374,8 @@ Command.prototype.execute = function() {
 
         var parameters = _.map(deploymentConfig.buildResult.parameters, function(paramObject){
             if (paramObject.value === null || typeof paramObject.value === 'undefined') {
-                throw new Error('Parameter values cannot be null')
+                throw new Error('Parameter values for \'' + paramObject.param.name
+                    + '\' cannot be null');
             }
             return {
                 ParameterKey: paramObject.param.name,
