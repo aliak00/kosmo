@@ -11,6 +11,7 @@ function EBApp(options) {
     var name = options.name;
     var optionSettings = options.optionSettings;
     var artifact = options.artifact;
+    var stackName = options.stackName || '64bit Amazon Linux 2015.03 v2.0.0 running Node.js';
 
     var cname = name.charAt(0).toUpperCase() + name.slice(1);
     function makeName(str) {
@@ -25,7 +26,7 @@ function EBApp(options) {
     var configTemplate = novaform.eb.ConfigurationTemplate(makeName('ConfigTemplate'), {
         ApplicationName: app,
         Description: name + ' configution template',
-        SolutionStackName: '64bit Amazon Linux 2015.03 v2.0.0 running Node.js',
+        SolutionStackName: stackName,
         OptionSettings: optionSettings,
     });
 
