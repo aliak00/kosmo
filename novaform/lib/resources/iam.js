@@ -15,8 +15,15 @@ var Policy = AWSResource.define('AWS::IAM::Policy', {
     Users : { type: types.array, required: 'conditional' },
 });
 
+function PathValidator(self) {
+    // TODO: Half assed solution. Path can be a fn.Join for eg.
+    if (typeof self.properties.Path === 'string' && !/\/[a-zA-Z0-9\/]*\//.test(self.properties.Path)) {
+        return 'Path can contain only alphanumeric characters and / and begin and end with /';
+    };
+}
+
 var InstanceProfile = AWSResource.define('AWS::IAM::InstanceProfile', {
-    Path : { type: types.string, required: true },
+    Path : { type: types.string, required: true, validators: [PathValidator] },
     Roles : { type: types.array, required: true },
 });
 
