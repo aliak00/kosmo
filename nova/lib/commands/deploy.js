@@ -180,12 +180,18 @@ Command.prototype.execute = function() {
             console.log('Fetching outputs of dependent stacks...');
         }
 
-        var cfn = deploymentConfig.cfn;
         var componentNames = deploymentConfig.dependentComponents;
 
         var stackInfoPromises = componentNames.map(function(depname) {
-            return Ref(that.ref.project, depname).makeStackName();
-        }).map(function(stackName) {
+            var component = that.project.findComponent(depname);
+            if (!component) {
+                throw new Error(util.format('Dependent component "%s" does not exist', depname));
+            }
+            var region = component.region;
+
+            var stackName = Ref(that.ref.project, depname).makeStackName();
+
+            var cfn = new AWS.CloudFormation({ region : region });
             var getStackInfo = q.nbind(Stack.getStackInfo, Stack);
             return getStackInfo(cfn, stackName);
         });
