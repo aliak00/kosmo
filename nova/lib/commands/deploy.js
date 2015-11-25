@@ -501,7 +501,11 @@ Command.prototype.execute = function() {
         }
     }).catch(function(e) {
         // TODO: differentiate between internal errors and valid exits like timeout or stack deployment failed
-        console.error(util.format('Internal error: %s', e.stack));
+        if (e instanceof Error) {
+            console.error(util.format('Internal error: %s', e.stack));
+        } else {
+            console.error(util.format('Internal error: %s', e));
+        }
     }).done();
 }
 
