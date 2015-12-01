@@ -74,6 +74,7 @@ module.exports = {
     join: fn.join,
     base64: fn.base64,
     getAtt: fn.getAtt,
+    getAZs: fn.getAZs,
 
     fn: fn,
 
