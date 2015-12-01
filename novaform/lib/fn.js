@@ -73,10 +73,22 @@ function GetAtt(id, attr) {
 }
 GetAtt.prototype = Object.create(Function.prototype);
 
+function GetAZs(region) {
+    if (!(this instanceof GetAZs)) {
+        return new GetAZs(region);
+    }
+
+    Function.call(this);
+
+    this['Fn::GetAZs'] = region || '';
+}
+GetAZs.prototype = Object.create(Function.prototype);
+
 module.exports = {
     Function: Function,
     ref: Ref,
     join: Join,
     base64: Base64,
-    getAtt: GetAtt
+    getAtt: GetAtt,
+    getAZs: GetAZs,
 };
