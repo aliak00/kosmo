@@ -17,7 +17,7 @@ var Policy = AWSResource.define('AWS::IAM::Policy', {
 
 function PathValidator(self) {
     // TODO: Half assed solution. Path can be a fn.Join for eg.
-    if (typeof self.properties.Path === 'string' && !/\/[a-zA-Z0-9\/]*\//.test(self.properties.Path)) {
+    if (typeof self.properties.Path === 'string' && !/^\/[a-zA-Z0-9+=,.@_\-\/]*\/$/.test(self.properties.Path)) {
         return 'Path can contain only alphanumeric characters and / and begin and end with /';
     };
 }
