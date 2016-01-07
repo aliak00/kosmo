@@ -87,29 +87,40 @@ Command.prototype.execute = function() {
             console.log('Ensuring buckets are full...');
         }
         var regions = _.compact(_.uniq(_.map(that.project.config.artifacts, function(artifact) {
+            if (typeof artifact.region === 'string') {
+                return [artifact.region];
+            }
             return artifact.region;
         })));
 
-        // ensure there are buckets in right regions
+        // ensure there are buckets in right regions to upload artifacts to
         var s3config = config.get('s3');
         var bucketNameBase = s3config.bucket;
 
-        var s3 = new AWS.S3({ region: s3config.region, signatureVersion: 'v4' });
-        var promises = _.map(regions, function(region) {
-            var bucketName = util.format('%s-artifacts-%s', bucketNameBase, region);
-
-            var getBucketLocation = q.nbind(s3.getBucketLocation, s3);
-            return getBucketLocation({ Bucket : bucketName }).then(function(data) {
+        var buckets = _.uniq(_.flatten(_.map(regions, function(regionArray) {
+            return _.map(regionArray, function(region) {
                 return {
-                    bucketName: bucketName,
-                    expected: region,
+                    name: util.format('%s-artifacts-%s', bucketNameBase, region),
+                    region: region,
+                };
+            });
+        })));
+
+        var s3 = new AWS.S3({ region: s3config.region, signatureVersion: 'v4' });
+
+        var promises = _.map(buckets, function(bucket) {
+            var getBucketLocation = q.nbind(s3.getBucketLocation, s3);
+            return getBucketLocation({ Bucket : bucket.name }).then(function(data) {
+                return {
+                    bucketName: bucket.name,
+                    expected: bucket.region,
                     actual: data.LocationConstraint,
                 };
             }).catch(function(err) {
                 if (err.code === 'NoSuchBucket') {
                     return {
-                        bucketName: bucketName,
-                        expected: region,
+                        bucketName: bucket.name,
+                        expected: bucket.region,
                         actual: null,
                     };
                 }
@@ -189,23 +200,32 @@ Command.prototype.execute = function() {
             buildConfig.projectName,
             dateString);
 
-        var promises = _.map(buildConfig.artifacts, function(artifact) {
+        var uploadInfo = _.reduce(buildConfig.artifacts, function(memo, artifact) {
             if (!artifact.path) {
-                return;
+                return memo;
             }
-
             var baseName = path.basename(artifact.path);
-            var keyPath = keyPathBase + '/' + baseName;
-            var readStream = fs.createReadStream(artifact.path);
-            var bucketName = util.format('%s-artifacts-%s', s3config.bucket, artifact.region);
+            var regions = typeof artifact.region === 'string' ? [artifact.region] : artifact.region;
+            memo = memo.concat(_.map(_.uniq(regions), function(region) {
+                return {
+                    bucketName: util.format('%s-artifacts-%s', s3config.bucket, region),
+                    bucketRegion: region,
+                    bucketKeyPath: keyPathBase + '/' + baseName,
+                    artifactReadStream: fs.createReadStream(artifact.path),
+                    artifactName: artifact.name,
+                };
+            }));
+            return memo;
+        }, []);
 
+        var promises = _.map(uploadInfo, function(info) {
             var params = {
-                Bucket: bucketName,
-                Key: keyPath,
-                Body: readStream,
+                Bucket: info.bucketName,
+                Key: info.bucketKeyPath,
+                Body: info.artifactReadStream,
             };
 
-            var s3 = new AWS.S3({ region : artifact.region, signatureVersion: 'v4' });
+            var s3 = new AWS.S3({ region : info.bucketRegion, signatureVersion: 'v4' });
 
             var lastProgress = 0;
             var s3ManagedUploader = s3.upload(params);
@@ -213,7 +233,7 @@ Command.prototype.execute = function() {
                 s3ManagedUploader.on('httpUploadProgress', function(event) {
                     var thisProgress = event.loaded / event.total * 100;
                     if (thisProgress === 100 || thisProgress > lastProgress + 7) {
-                        console.log('Progress', thisProgress.toFixed(1), '% -', event.loaded, 'of', event.total);
+                        console.log('Progress (', info.bucketRegion, ')', thisProgress.toFixed(1), '% -', event.loaded, 'of', event.total);
                         lastProgress = thisProgress;
                     }
                 });
@@ -222,11 +242,11 @@ Command.prototype.execute = function() {
             var s3ManagedUploaderSend = q.nbind(s3ManagedUploader.send, s3ManagedUploader);
             return s3ManagedUploaderSend().then(function(data) {
                 return {
-                    Bucket: bucketName,
-                    Key: keyPath,
-                    region: artifact.region,
+                    Bucket: info.bucketName,
+                    Key: info.bucketKeyPath,
+                    region: info.bucketRegion,
                     url: data.Location,
-                    name: artifact.name,
+                    name: info.artifactName,
                 };
             });
         });
