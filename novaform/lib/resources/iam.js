@@ -3,7 +3,8 @@ var AWSResource = require('../awsresource')
 
 var Role = AWSResource.define('AWS::IAM::Role', {
     AssumeRolePolicyDocument : { type: types.object('iam-assume-role-policy-document'), required: true },
-    Path : { type: types.string, required: true },
+    ManagedPolicyArns: { type: types.array },
+    Path : { type: types.string },
     Policies : { type: types.array },
 });
 
