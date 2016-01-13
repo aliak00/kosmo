@@ -3,7 +3,8 @@ var AWSResource = require('../awsresource')
 
 var Role = AWSResource.define('AWS::IAM::Role', {
     AssumeRolePolicyDocument : { type: types.object('iam-assume-role-policy-document'), required: true },
-    Path : { type: types.string, required: true },
+    ManagedPolicyArns: { type: types.array },
+    Path : { type: types.string },
     Policies : { type: types.array },
 });
 
@@ -17,7 +18,7 @@ var Policy = AWSResource.define('AWS::IAM::Policy', {
 
 function PathValidator(self) {
     // TODO: Half assed solution. Path can be a fn.Join for eg.
-    if (typeof self.properties.Path === 'string' && !/\/[a-zA-Z0-9\/]*\//.test(self.properties.Path)) {
+    if (typeof self.properties.Path === 'string' && !/^\/[a-zA-Z0-9+=,.@_\-\/]*\/$/.test(self.properties.Path)) {
         return 'Path can contain only alphanumeric characters and / and begin and end with /';
     };
 }
