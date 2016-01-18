@@ -43,6 +43,9 @@ function parseArguments(commands) {
     ]);
 
     var commandDescriptions = _.map(commands, function(command, name) {
+        // Pad right to get consistent tabs
+        const maxCommandLengthBeforeTab = 8;
+        name = _.padRight((name + ':'), maxCommandLengthBeforeTab);
         return util.format('  %s\t%s', name, command.descriptionText);
     }).join('\n');
 
