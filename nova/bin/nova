@@ -33,7 +33,7 @@ function parseArguments(commands) {
     } else {
         commonArgs = args.slice(0, commandIndex);
         commandName = args[commandIndex];
-        commandArgs = args.slice(commandIndex+1);
+        commandArgs = args.slice(commandIndex + 1);
     }
 
     var commonOpts = getopt.create([
