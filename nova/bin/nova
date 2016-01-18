@@ -237,7 +237,7 @@ if (opts.primaryOptions.version) {
 
 if (!opts.command) {
     if (opts.commandName) {
-        opts.showHelp('Unknown command specified');
+        opts.showHelp('Unknown command specified - ' + opts.commandName);
     } else {
         opts.showHelp('Missing command');
     }
