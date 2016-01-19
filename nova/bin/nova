@@ -226,13 +226,9 @@ if (commandLine.primaryOptions.version) {
     process.exit(0);
 }
 
-config.commonOptions = commandLine.primaryOptions;
-
 initAws(commandLine.primaryOptions.profile, commandLine.primaryOptions.debug).then(function() {
     return readParams(commandLine.primaryOptions.params);
 }).then(function(paramsObject) {
-    config.paramsObject = paramsObject;
-}).then(function() {
     // Get options supplied by the command, add in help option, and check for it.
     var command = nova.commands[commandLine.commandName];
     var extendedCommandOptions = (command.options || []).concat([['h', 'help', 'Display help']]);
@@ -261,6 +257,9 @@ Options:\n\
         showCommandHelp();
         process.exit(0);
     }
+
+    config.commonOptions = commandLine.primaryOptions;
+    config.paramsObject = paramsObject;
 
     var theCommand = new command(opts, function help(errorMessage) {
         showCommandHelp(errorMessage);
