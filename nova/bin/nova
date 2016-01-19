@@ -9,9 +9,9 @@ var nova = require('../lib')
     , util = require('util')
     , q = require('q')
     , config = require('../lib/configuration')
-    , yaml = require('js-yaml');;
+    , yaml = require('js-yaml');
 
-function parseArguments() {
+function parseCommandLine() {
     var args = process.argv.slice(2);
 
     // find index of the first command (if present)
@@ -69,9 +69,9 @@ Commands:\n\
         commandName = opts.argv[0];
     }
 
-    var showHelp = function(message) {
-        if (message) {
-            console.error('Error:', message, '\n');
+    var showHelp = function(errorMessage) {
+        if (errorMessage) {
+            console.error('Error:', errorMessage, '\n');
         }
         console.error(primaryOpts.getHelp());
     };
@@ -79,6 +79,16 @@ Commands:\n\
     var outputFormat = opts.options['output-format'] = opts.options['output-format'] || 'text';
     if (outputFormat !== 'text' && outputFormat !== 'json') {
         showHelp('Invalid output format');
+        process.exit(0);
+    }
+
+    if (commandName) {
+        var command = nova.commands[commandName];
+        if (!command) {
+            showHelp('Unknown command specified - ' + commandName);
+        } else {
+            showHelp('Missing command');
+        }
         process.exit(0);
     }
 
@@ -204,8 +214,7 @@ function readParams(paramsFiles) {
     });
 }
 
-var commandLine = parseArguments();
-config.commonOptions = commandLine.primaryOptions;
+var commandLine = parseCommandLine();
 
 if (commandLine.primaryOptions.help) {
     commandLine.showHelp();
@@ -217,16 +226,7 @@ if (commandLine.primaryOptions.version) {
     process.exit(0);
 }
 
-// Check command is valid
-var command = nova.commands[commandLine.commandName];
-if (!command) {
-    if (commandLine.commandName) {
-        commandLine.showHelp('Unknown command specified - ' + commandLine.commandName);
-    } else {
-        commandLine.showHelp('Missing command');
-    }
-    process.exit(0);
-}
+config.commonOptions = commandLine.primaryOptions;
 
 initAws(commandLine.primaryOptions.profile, commandLine.primaryOptions.debug).then(function() {
     return readParams(commandLine.primaryOptions.params);
@@ -234,6 +234,7 @@ initAws(commandLine.primaryOptions.profile, commandLine.primaryOptions.debug).th
     config.paramsObject = paramsObject;
 }).then(function() {
     // Get options supplied by the command, add in help option, and check for it.
+    var command = nova.commands[commandLine.commandName];
     var extendedCommandOptions = (command.options || []).concat([['h', 'help', 'Display help']]);
     var commandOptions = getopt.create(extendedCommandOptions);
 
@@ -261,7 +262,7 @@ Options:\n\
         process.exit(0);
     }
 
-    var theCommand = new commandLine.command(opts, function help(errorMessage) {
+    var theCommand = new command(opts, function help(errorMessage) {
         showCommandHelp(errorMessage);
         process.exit(0);
     });
