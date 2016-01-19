@@ -16,29 +16,15 @@ var getopt = require('node-getopt')
     , Project = require('../project')
     , assert = require('assert');
 
-var cmdopts = module.exports.opts = getopt.create([
-    ['', 'artifact=ARG', 'Will upload and use specified artifact'],
-    ['', 'name=ARG', 'The name to use for the artifact'],
-    ['', 'region=ARG', 'The region the artifact belongs to'],
-    ['h', 'help', 'Display help'],
-]);
-
-cmdopts.setHelp('[[OPTIONS]]\n');
-
-function Command(args, helpCallback) {
+function Command(opts, helpCallback) {
     if (!(this instanceof Command)) {
         return new Command(name, properties);
     }
 
     this.displayHelpAndExit = helpCallback;
 
-    var opts = this.opts = cmdopts.parse(args);
+    this.opts = opts;
     this.commandOptions = this.opts.options;
-
-    if (opts.options.help) {
-        helpCallback();
-        return;
-    }
 
     if (_(opts.argv).isEmpty()) {
         helpCallback('Missing project reference');
@@ -52,6 +38,11 @@ function Command(args, helpCallback) {
     this.project = Project.load(projectName, config.paramsObject, function(e) {
         helpCallback(util.format('Failed to load project "%s": %s', projectName, e.message));
     });
+
+    if (!this.project) {
+        helpCallback(util.format('Could not find project "%s"', projectName));
+        return;
+    }
 
     var self = this;
     if (this.commandOptions.artifact && this.commandOptions.region && this.commandOptions.name) {
@@ -68,6 +59,14 @@ function Command(args, helpCallback) {
         helpCallback(util.format('If you specify any of --artifact, --name or --region, you must specify them all'));
     }
 }
+
+Command.options = [
+    ['', 'artifact=ARG', 'Will upload and use specified artifact'],
+    ['', 'name=ARG', 'The name to use for the artifact'],
+    ['', 'region=ARG', 'The region the artifact belongs to'],
+];
+Command.usageText = '[options] project_name'
+Command.descriptionText = 'Builds artifacts for the project';
 
 Command.prototype.execute = function() {
     var that = this;
@@ -268,9 +267,5 @@ Command.prototype.execute = function() {
         console.log(e)
     }).done();
 }
-
-Command.usageText = '[options]'
-Command.descriptionText = 'Builds artifacts for the project';
-Command.optionsText = cmdopts.getHelp();
 
 module.exports = Command;

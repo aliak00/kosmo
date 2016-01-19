@@ -96,22 +96,6 @@ Commands:\n\
     };
 }
 
-function showCommandHelp(opts, command, errorMessage) {
-    var commandName = command.commandName;
-    var commandUsage = command.usageText;
-    var commandOptions = command.optionsText;
-
-    if (errorMessage) {
-        console.error('Error: ' + errorMessage + '\n');
-    }
-
-    console.error(util.format(
-'Usage: nova %s %s\n\n\
-"%s" options:\n\
-%s\n\
-', commandName, commandUsage, commandName, commandOptions));
-}
-
 function initAws(profile, debug) {
     if (debug) {
         AWS.config.logger = process.stdout;
@@ -222,43 +206,71 @@ function readParams(paramsFiles) {
     });
 }
 
-var opts = parseArguments(nova.commands);
-config.commonOptions = opts.primaryOptions;
+var commandLine = parseArguments(nova.commands);
+config.commonOptions = commandLine.primaryOptions;
 
-if (opts.primaryOptions.help) {
-    opts.showHelp();
+if (commandLine.primaryOptions.help) {
+    commandLine.showHelp();
     process.exit(0);
 }
 
-if (opts.primaryOptions.version) {
+if (commandLine.primaryOptions.version) {
     console.log(nova.version);
     process.exit(0);
 }
 
-if (!opts.command) {
-    if (opts.commandName) {
-        opts.showHelp('Unknown command specified - ' + opts.commandName);
+if (!commandLine.command) {
+    if (commandLine.commandName) {
+        commandLine.showHelp('Unknown command specified - ' + commandLine.commandName);
     } else {
-        opts.showHelp('Missing command');
+        commandLine.showHelp('Missing command');
     }
     process.exit(0);
 }
 
-initAws(opts.primaryOptions.profile, opts.primaryOptions.debug).then(function() {
-    return readParams(opts.primaryOptions.params);
+initAws(commandLine.primaryOptions.profile, commandLine.primaryOptions.debug).then(function() {
+    return readParams(commandLine.primaryOptions.params);
 }).then(function(paramsObject) {
     config.paramsObject = paramsObject;
 }).then(function() {
-    var command = new opts.command(opts.commandArguments, function help(errorMessage) {
-        showCommandHelp(opts, opts.command, errorMessage);
+    // Get options supplied by the command, add in help option, and check for it.
+    var extendedCommandOptions = (commandLine.command.options || []).concat([['h', 'help', 'Display help']]);
+    var commandOptions = getopt.create(extendedCommandOptions);
+
+    commandOptions.setHelp('[[OPTIONS]]\n');
+
+    var opts = commandOptions.parse(commandLine.commandArguments);
+
+    function showCommandHelp(errorMessage) {
+        var commandName = commandLine.commandName;
+        var commandUsage = nova.commands[commandName].usageText;
+
+        if (errorMessage) {
+            console.error('\nError: ' + errorMessage);
+        }
+
+        console.error(util.format(
+'\nUsage: nova %s %s\n\n\
+Options:\n\
+%s\n'
+, commandName, commandUsage, commandOptions.getHelp()));
+    }
+
+    if (opts.options.help) {
+        showCommandHelp();
+        process.exit(0);
+    }
+
+    var command = new commandLine.command(opts, function help(errorMessage) {
+        showCommandHelp(errorMessage);
         process.exit(0);
     });
 
     return command.execute();
 }).catch(function(err) {
-    if (opts.primaryOptions.debug) {
+    if (commandLine.primaryOptions.debug) {
         console.log(err.stack)
     }
-    opts.showHelp(err.message);
+    commandLine.showHelp(err.message);
     process.exit(0);
 }).done();

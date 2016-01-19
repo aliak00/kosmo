@@ -16,29 +16,15 @@ var getopt = require('node-getopt')
     , Ref = require('../ref')
     , assert = require('assert');
 
-var cmdopts = module.exports.opts = getopt.create([
-    ['w', 'wait', 'Wait for completion'],
-    ['n', 'noop', 'Do not actually deploy'],
-    ['', 'template-output=ARG', 'Dump the generated CloudFormation template to a file'],
-    ['h', 'help', 'Display help']
-]);
-
-cmdopts.setHelp('[[OPTIONS]]\n');
-
-function Command(args, helpCallback) {
+function Command(opts, helpCallback) {
     if (!(this instanceof Command)) {
         return new Command(name, properties);
     }
 
     this.displayHelpAndExit = helpCallback;
 
-    var opts = this.opts = cmdopts.parse(args);
+    this.opts = opts;
     this.commandOptions = this.opts.options;
-
-    if (opts.options.help) {
-        helpCallback();
-        return;
-    }
 
     if (_(opts.argv).isEmpty()) {
         helpCallback('Missing project/component reference');
@@ -62,6 +48,7 @@ function Command(args, helpCallback) {
     this.project = Project.load(this.ref.project, config.paramsObject, function(e) {
         helpCallback(util.format('Failed to load project "%s": %s', ref.project, e.message));
     });
+
     if (!this.project) {
         helpCallback(util.format('Could not find project "%s"', this.ref.project));
         return;
@@ -73,6 +60,14 @@ function Command(args, helpCallback) {
         return;
     }
 }
+
+Command.options = [
+    ['w', 'wait', 'Wait for completion'],
+    ['n', 'noop', 'Do not actually deploy'],
+    ['', 'template-output=ARG', 'Dump the generated CloudFormation template to a file'],
+];
+Command.usageText = '[options] project_name/component_name'
+Command.descriptionText = 'Deploys project component';
 
 Command.prototype._waitForStack = function(options, shouldStopCallback) {
     var cfn = options.cfn;
@@ -508,9 +503,5 @@ Command.prototype.execute = function() {
         }
     }).done();
 }
-
-Command.usageText = '[options] <project>/<component>'
-Command.descriptionText = 'Deploys project component';
-Command.optionsText = cmdopts.getHelp();
 
 module.exports = Command;

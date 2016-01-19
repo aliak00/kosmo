@@ -7,7 +7,9 @@ var fs = require('fs')
 function Project(config) {
     this.config = config;
 }
+
 Project.searchPaths = [process.cwd()];
+
 Project.load = function(name, params, callback) {
     for (var i = 0; i < Project.searchPaths.length; ++i) {
         var searchPath = Project.searchPaths[i];
@@ -35,6 +37,7 @@ Project.load = function(name, params, callback) {
     }
     return null;
 };
+
 Project.prototype.findComponent = function(name) {
     var component = _.findWhere(this.config.components, { name : name })
     return component;
