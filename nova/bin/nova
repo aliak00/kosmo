@@ -11,7 +11,7 @@ var nova = require('../lib')
     , config = require('../lib/configuration')
     , yaml = require('js-yaml');;
 
-function parseArguments(commands) {
+function parseArguments() {
     var args = process.argv.slice(2);
 
     // find index of the first command (if present)
@@ -46,7 +46,7 @@ function parseArguments(commands) {
         ['h', 'help', 'Display help'],
     ]);
 
-    var commandDescriptions = _.map(commands, function(command, name) {
+    var commandDescriptions = _.map(nova.commands, function(command, name) {
         // Pad right to get consistent tabs
         const maxCommandLengthBeforeTab = 8;
         name = _.padRight((name + ':'), maxCommandLengthBeforeTab);
@@ -90,7 +90,7 @@ Commands:\n\
         primaryArguments: primaryArgs,
         primaryOptions: opts.options,
         commandName: commandName,
-        command: commands[commandName],
+        command: nova.commands[commandName],
         commandArguments: commandArgs,
         showHelp: showHelp,
     };
@@ -206,7 +206,7 @@ function readParams(paramsFiles) {
     });
 }
 
-var commandLine = parseArguments(nova.commands);
+var commandLine = parseArguments();
 config.commonOptions = commandLine.primaryOptions;
 
 if (commandLine.primaryOptions.help) {
