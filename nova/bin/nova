@@ -89,7 +89,6 @@ Commands:\n\
     return {
         primaryOptions: opts.options,
         commandName: commandName,
-        command: nova.commands[commandName],
         commandArguments: commandArgs,
         showHelp: showHelp,
     };
@@ -219,7 +218,8 @@ if (commandLine.primaryOptions.version) {
 }
 
 // Check command is valid
-if (!commandLine.command) {
+var command = nova.commands[commandLine.commandName];
+if (!command) {
     if (commandLine.commandName) {
         commandLine.showHelp('Unknown command specified - ' + commandLine.commandName);
     } else {
@@ -233,7 +233,6 @@ initAws(commandLine.primaryOptions.profile, commandLine.primaryOptions.debug).th
 }).then(function(paramsObject) {
     config.paramsObject = paramsObject;
 }).then(function() {
-    var command = nova.commands[commandLine.commandName];
     // Get options supplied by the command, add in help option, and check for it.
     var extendedCommandOptions = (command.options || []).concat([['h', 'help', 'Display help']]);
     var commandOptions = getopt.create(extendedCommandOptions);
@@ -262,12 +261,12 @@ Options:\n\
         process.exit(0);
     }
 
-    var command = new commandLine.command(opts, function help(errorMessage) {
+    var theCommand = new commandLine.command(opts, function help(errorMessage) {
         showCommandHelp(errorMessage);
         process.exit(0);
     });
 
-    return command.execute();
+    return theCommand.execute();
 }).catch(function(err) {
     if (commandLine.primaryOptions.debug) {
         console.log(err.stack)
