@@ -71,7 +71,7 @@ Commands:\n\
 
     var showHelp = function(errorMessage) {
         if (errorMessage) {
-            console.error('\nError:', errorMessage, '\n');
+            console.error('Error:', errorMessage, '\n');
         }
         console.error(primaryOpts.getHelp());
     };
@@ -95,6 +95,33 @@ Commands:\n\
         primaryOptions: opts.options,
         commandName: commandName,
         commandArguments: commandArgs,
+        showHelp: showHelp,
+    };
+}
+
+function parseCommandArguments(commandName, commandArguments) {
+    var command = nova.commands[commandName];
+    var extendedCommandOptions = (command.options || []).concat([['h', 'help', 'Display help']]);
+    var opts = getopt.create(extendedCommandOptions);
+    opts.setHelp('[[OPTIONS]]\n');
+
+    var commandOptions = opts.parse(commandArguments);
+
+    function showHelp(errorMessage) {
+        var commandUsage = nova.commands[commandName].usageText;
+        if (errorMessage) {
+            console.error('Error: ' + errorMessage);
+        }
+
+    console.error(util.format(
+'\nUsage: nova %s %s\n\n\
+Options:\n\
+%s\n'
+, commandName, commandUsage, opts.getHelp()));
+    }
+
+    return {
+        commandOptions: commandOptions,
         showHelp: showHelp,
     };
 }
@@ -192,6 +219,25 @@ function readParams(paramsFiles) {
     });
 }
 
+function executeCommand(commandName, commandArguments, config) {
+    var command = nova.commands[commandName];
+
+    if (commandArguments.commandOptions.options.help) {
+        commandArguments.showHelp();
+        return Promise.resolve();
+    }
+
+    return new Promise(function(resolve, reject) {
+        try {
+            resolve(new command(commandArguments.commandOptions, config));
+        } catch (e) {
+            reject(e);
+        }
+    }).then(function(command) {
+        return command.execute();
+    });
+}
+
 var commandLine = parseCommandLine();
 
 if (commandLine.primaryOptions.help) {
@@ -204,53 +250,31 @@ if (commandLine.primaryOptions.version) {
     process.exit(0);
 }
 
+if (!nova.commands[commandLine.commandName]) {
+    commandLine.showHelp('Expected command');
+    process.exit(0);
+}
+
+var commandArguments = parseCommandArguments(commandLine.commandName, commandLine.commandArguments);
+
 Promise.all([
     readParams(commandLine.primaryOptions.params),
     initAws(commandLine.primaryOptions.profile, commandLine.primaryOptions.debug),
 ]).then(function(values) {
     var paramsObject = values[0];
-    // Get options supplied by the command, add in help option, and check for it.
-    var command = nova.commands[commandLine.commandName];
-    var extendedCommandOptions = (command.options || []).concat([['h', 'help', 'Display help']]);
-    var commandOptions = getopt.create(extendedCommandOptions);
-
-    commandOptions.setHelp('[[OPTIONS]]\n');
-
-    var opts = commandOptions.parse(commandLine.commandArguments);
-
-    function showCommandHelp(errorMessage) {
-        var commandName = commandLine.commandName;
-        var commandUsage = command.usageText;
-
-        if (errorMessage) {
-            console.error('\nError: ' + errorMessage);
-        }
-
-        console.error(util.format(
-'\nUsage: nova %s %s\n\n\
-Options:\n\
-%s\n'
-, commandName, commandUsage, commandOptions.getHelp()));
-    }
-
-    if (opts.options.help) {
-        showCommandHelp();
-        process.exit(0);
-    }
 
     config.commonOptions = commandLine.primaryOptions;
     config.paramsObject = paramsObject;
 
-    var theCommand = new command(opts, function help(errorMessage) {
-        showCommandHelp(errorMessage);
-        process.exit(0);
-    });
-
-    return theCommand.execute();
-}).catch(function(err) {
+    return executeCommand(commandLine.commandName, commandArguments, config);
+}, function(err) {
     if (commandLine.primaryOptions.debug) {
-        console.log(err.stack)
+        console.log(err.stack);
     }
     commandLine.showHelp(err.message);
-    process.exit(0);
+}).catch(function(err) {
+    if (commandLine.primaryOptions.debug) {
+        console.log(err.stack);
+    }
+    commandArguments.showHelp(err.message);
 });

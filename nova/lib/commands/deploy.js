@@ -16,48 +16,40 @@ var getopt = require('node-getopt')
     , Ref = require('../ref')
     , assert = require('assert');
 
-function Command(opts, helpCallback) {
+function Command(opts) {
     if (!(this instanceof Command)) {
         return new Command(name, properties);
     }
-
-    this.displayHelpAndExit = helpCallback;
 
     this.opts = opts;
     this.commandOptions = this.opts.options;
 
     if (_(opts.argv).isEmpty()) {
-        helpCallback('Missing project/component reference');
-        return;
+        throw new Error('Missing project/component reference');
     } else if (opts.argv.length !== 1) {
-        helpCallback('Too many project/component references specified');
-        return;
+        throw new Error('Too many project/component references specified');
     }
 
     var ref = opts.argv[0];
     ref = this.ref = Ref.parse(ref);
     if (!this.ref) {
-        helpCallback('Invalid project ref');
-        return;
+        throw new Error('Invalid project ref');
     }
     if (!this.ref.component) {
-        helpCallback('Component was not specified')
-        return;
+        throw new Error('Component was not specified');
     }
 
     this.project = Project.load(this.ref.project, config.paramsObject, function(e) {
-        helpCallback(util.format('Failed to load project "%s": %s', ref.project, e.message));
+        throw new Error(util.format('Failed to load project "%s": %s', ref.project, e.message));
     });
 
     if (!this.project) {
-        helpCallback(util.format('Could not find project "%s"', this.ref.project));
-        return;
+        throw new Error(util.format('Could not find project "%s"', this.ref.project));
     }
 
     this.component = this.project.findComponent(this.ref.component);
     if (!this.component) {
-        helpCallback(util.format('Component "%s" does not exist', this.ref.component));
-        return;
+        throw new Error(util.format('Component "%s" does not exist', this.ref.component));
     }
 }
 

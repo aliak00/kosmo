@@ -16,32 +16,27 @@ var getopt = require('node-getopt')
     , Project = require('../project')
     , assert = require('assert');
 
-function Command(opts, helpCallback) {
+function Command(opts, config) {
     if (!(this instanceof Command)) {
         return new Command(name, properties);
     }
-
-    this.displayHelpAndExit = helpCallback;
 
     this.opts = opts;
     this.commandOptions = this.opts.options;
 
     if (_(opts.argv).isEmpty()) {
-        helpCallback('Missing project reference');
-        return;
+        throw new Error('Missing project reference');
     } else if (opts.argv.length !== 1) {
-        helpCallback('Too many project references specified');
-        return;
+        throw new Error('Too many project references specified');
     }
 
     var projectName = this.projectName = opts.argv[0];
     this.project = Project.load(projectName, config.paramsObject, function(e) {
-        helpCallback(util.format('Failed to load project "%s": %s', projectName, e.message));
+        throw new Error(util.format('Failed to load project "%s": %s', projectName, e.message));
     });
 
     if (!this.project) {
-        helpCallback(util.format('Could not find project "%s"', projectName));
-        return;
+        throw new Error(util.format('Could not find project "%s"', projectName));
     }
 
     var self = this;
@@ -56,7 +51,7 @@ function Command(opts, helpCallback) {
 
         this.willSkipBuildStep = true;
     } else if (this.commandOptions.artifact || this.commandOptions.region || this.commandOptions.name) {
-        helpCallback(util.format('If you specify any of --artifact, --name or --region, you must specify them all'));
+        throw new Error('If you specify any of --artifact, --name or --region, you must specify them all');
     }
 }
 
