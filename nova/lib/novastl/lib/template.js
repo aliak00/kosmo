@@ -1,4 +1,4 @@
-var novaform = require('novaform')
+var novaform = require('../../novaform')
     , util = require('util')
     , _ = require('lodash');
 

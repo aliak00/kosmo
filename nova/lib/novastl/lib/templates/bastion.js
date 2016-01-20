@@ -1,6 +1,6 @@
 var Vpc = require('../templates/vpc')
     , Template = require('../template')
-    , novaform = require('novaform')
+    , novaform = require('../../../novaform')
     , _ = require('lodash')
     , yaml = require('js-yaml')
     , multipart = require('mime-multipart');

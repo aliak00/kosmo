@@ -1,5 +1,5 @@
 var Template = require('../template')
-    , novaform = require('novaform')
+    , novaform = require('../../../novaform')
     , util = require('util')
     , _ = require('lodash');
 

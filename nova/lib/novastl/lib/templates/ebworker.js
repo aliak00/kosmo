@@ -1,6 +1,6 @@
 var EBApp = require('../templates/ebapp')
     , EBOptionsSettings = require('../utils/eb-option-settings')
-    , novaform = require('novaform');
+    , novaform = require('../../../novaform');
 
 function EBWorker(options) {
     if (!(this instanceof EBWorker)) {

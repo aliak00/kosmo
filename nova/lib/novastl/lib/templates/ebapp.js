@@ -1,5 +1,5 @@
 var Template = require('../template')
-    , novaform = require('novaform');
+    , novaform = require('../../../novaform');
 
 function EBApp(options) {
     if (!(this instanceof EBApp)) {
