@@ -104,38 +104,21 @@ function initAws(profile, debug) {
         AWS.config.logger = process.stdout;
     }
 
-    return q().then(function() {
-        if (profile) {
-            var options = {
-                profile : profile,
-            };
-            var credentials = new AWS.SharedIniFileCredentials(options);
-            // TODO: Look at this
-            var refresh = q.nbind(credentials.refresh, credentials);
-            return refresh().then(function() {
-                return credentials;
-            }).catch(function(err) {
-                return null;
-            });
-        }
-    }).then(function(credentials) {
-        if (!credentials) {
-            credentials = new AWS.EnvironmentCredentials('AWS');
-            // TODO: Look at this
-            var refresh = q.nbind(credentials.refresh, credentials);
-            return refresh().then(function() {
-                return credentials;
-            }).catch(function(err) {
-                return null;
-            });
-        }
-        return credentials;
-    }).then(function(credentials) {
-        if (!credentials) {
-            throw new Error('Failed to initialize AWS - make sure you provide --profile or set AWS_ACCESS_KEY_ID env var');
-        }
+    var credentials =
+        profile
+            ? new AWS.SharedIniFileCredentials({ profile: profile })
+            : new AWS.EnvironmentCredentials('AWS');
 
-        AWS.config.credentials = credentials;
+    return new Promise(function(resolve, reject) {
+        credentials.refresh(function(err) {
+            if (err) {
+                reject(new Error('Failed to initialize AWS - make sure you provide --profile or set AWS_ACCESS_KEY_ID env var'));
+                return;
+            }
+
+            AWS.config.credentials = credentials;
+            resolve();
+        });
     });
 }
 
@@ -221,9 +204,11 @@ if (commandLine.primaryOptions.version) {
     process.exit(0);
 }
 
-initAws(commandLine.primaryOptions.profile, commandLine.primaryOptions.debug).then(function() {
-    return readParams(commandLine.primaryOptions.params);
-}).then(function(paramsObject) {
+Promise.all([
+    readParams(commandLine.primaryOptions.params),
+    initAws(commandLine.primaryOptions.profile, commandLine.primaryOptions.debug),
+]).then(function(values) {
+    var paramsObject = values[0];
     // Get options supplied by the command, add in help option, and check for it.
     var command = nova.commands[commandLine.commandName];
     var extendedCommandOptions = (command.options || []).concat([['h', 'help', 'Display help']]);
@@ -268,4 +253,4 @@ Options:\n\
     }
     commandLine.showHelp(err.message);
     process.exit(0);
-}).done();
+});
