@@ -14,10 +14,10 @@ var commandNames = _.map(_.filter(fs.readdirSync(__dirname), function(file) {
     return name;
 });
 
-var commands = _.object(_.map(commandNames, function(commandName) {
-    var module = require('./'+commandName);
+var commands = _.zipObject(commandNames, _.map(commandNames, function(commandName) {
+    var module = require('./' + commandName);
     module.commandName = commandName;
-    return [commandName, module];
+    return module;
 }));
 
 module.exports = commands;

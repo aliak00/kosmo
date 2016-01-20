@@ -15,7 +15,7 @@
     "archiver": "^0.14.2",
     "aws-sdk": "^2.1.2",
     "js-yaml": "^3.2.7",
-    "lodash": "^3.10.0",
+    "lodash": "^4.0.0",
     "mime-multipart": "git://github.com/sergi/mime-multipart.git#master",
     "minimatch": "^2.0.4",
     "moment": "^2.8.4",

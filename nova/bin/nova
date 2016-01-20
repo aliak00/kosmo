@@ -49,7 +49,7 @@ function parseCommandLine() {
     var commandDescriptions = _.map(nova.commands, function(command, name) {
         // Pad right to get consistent tabs
         const maxCommandLengthBeforeTab = 8;
-        name = _.padRight((name + ':'), maxCommandLengthBeforeTab);
+        name = _.padEnd((name + ':'), maxCommandLengthBeforeTab);
         return util.format('  %s\t%s', name, command.descriptionText);
     }).join('\n');
 

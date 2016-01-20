@@ -22,7 +22,7 @@ function walkFiles(directoryPath, callback, filter) {
             }
         }, { files: [], statPromises: [] });
         return q.all(info.statPromises).then(function(stats) {
-            return _.object(info.files, stats);
+            return _.zipObject(info.files, stats);
         }).then(function(entries) {
             if (filter) {
                 entries = _.omit(entries, function(stats, file) {
