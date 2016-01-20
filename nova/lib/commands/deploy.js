@@ -163,7 +163,7 @@ Command.prototype.execute = function() {
             dependentComponents: deplist,
         });
     }).then(function(deploymentConfig) {
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             console.log('Fetching outputs of dependent stacks...');
         }
 
@@ -204,7 +204,7 @@ Command.prototype.execute = function() {
             throw e;
         });
     }).then(function(deploymentConfig) {
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             console.log('Building component...');
         }
 
@@ -228,7 +228,7 @@ Command.prototype.execute = function() {
             return returnResult(result);
         }
     }).then(function(deploymentConfig) {
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             console.log('Generating cloudformation template...');
         }
 
@@ -281,7 +281,7 @@ Command.prototype.execute = function() {
             return deploymentConfig;
         }
 
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             console.log('Uploading cloudformation template to S3...');
         }
 
@@ -316,7 +316,7 @@ Command.prototype.execute = function() {
             return deploymentConfig;
         }
 
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             console.log('Checking cloudformation stack status...');
         }
 
@@ -330,7 +330,7 @@ Command.prototype.execute = function() {
                 });
             }
 
-            if (config.commonOptions.verbose) {
+            if (config.programOptions.verbose) {
                 console.log('Stack was stuck in a rollback state, deleting it before deploying...');
             }
 
@@ -361,7 +361,7 @@ Command.prototype.execute = function() {
             return deploymentConfig;
         }
 
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             console.log('Deploying cloudformation stack...');
         }
 
@@ -424,7 +424,7 @@ Command.prototype.execute = function() {
 
         // wait for completion
         if (that.commandOptions.wait) {
-            if (config.commonOptions.verbose) {
+            if (config.programOptions.verbose) {
                 console.log('Waiting for deployment to complete...');
             }
 
@@ -438,7 +438,7 @@ Command.prototype.execute = function() {
                     throw new Error('Stack deployment failed');
                 }
                 if (!Stack.isStatusComplete(status)) {
-                    if (config.commonOptions.verbose) {
+                    if (config.programOptions.verbose) {
                         console.log('Still waiting...');
                     }
                     return null;
@@ -472,9 +472,9 @@ Command.prototype.execute = function() {
 
         var stackOutput = deploymentConfig.stackOutput;
 
-        if (config.commonOptions['output-format'] == 'json') {
+        if (config.programOptions['output-format'] == 'json') {
             console.log(_.extend({}, output, stackOutput));
-        } else if (config.commonOptions['output-format'] == 'text') {
+        } else if (config.programOptions['output-format'] == 'text') {
             function print(x) {
                 for (var key in x) {
                     var value = x[key];

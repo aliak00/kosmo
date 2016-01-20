@@ -59,7 +59,7 @@ module.exports.createArchive = function(destinationName, sourcePath, options, ca
         deferred = q.defer();
     }
 
-    if (config.commonOptions.verbose) {
+    if (config.programOptions.verbose) {
         console.log('Creating archive', destinationName);
     }
 
@@ -78,7 +78,7 @@ module.exports.createArchive = function(destinationName, sourcePath, options, ca
     var archive = archiver('zip');
 
     output.on('close', function() {
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             var size = archive.pointer();
             var sizeString;
             if (size >= 1024*1024) {
@@ -109,7 +109,7 @@ module.exports.createArchive = function(destinationName, sourcePath, options, ca
             stats: stats
         });
     }, options.filter).then(function() {
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             var entriesAdded = 0;
             var lastProgress = 0;
             archive.on('entry', function(entry) {
@@ -163,7 +163,7 @@ module.exports.deployArchive = function(sourcePath, options, callback) {
     var artifactsBucket = util.format('%s-artifacts-%s', s3config.bucket, options.region);
 
     q().then(function() {
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             console.log(util.format('Verifying the target S3 bucket for artifacts exists in %s region...', options.region));
         }
         var getBucketLocation = q.nbind(s3.getBucketLocation, s3);
@@ -175,7 +175,7 @@ module.exports.deployArchive = function(sourcePath, options, callback) {
         });
     }).then(function(data) {
         if (!data) {
-            if (config.commonOptions.verbose) {
+            if (config.programOptions.verbose) {
                 console.log(util.format('Nope. Creating bucket %s...', artifactsBucket));
             }
             var createBucket = q.nbind(s3.createBucket, s3);
@@ -200,7 +200,7 @@ module.exports.deployArchive = function(sourcePath, options, callback) {
             }
         }
     }).then(function() {
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             console.log('Uploading artifact...');
         }
         var sourceStream = fs.createReadStream(sourcePath);
@@ -271,7 +271,7 @@ module.exports.findArtifacts = function(options, callback) {
         var s3 = new AWS.S3({ region : region });
         var s3listObjects = q.nbind(s3.listObjects, s3);
 
-        var s3config = config.get('s3', config.commonOptions.profile);
+        var s3config = config.get('s3', config.programOptions.profile);
         var bucketName = util.format('%s-artifacts-%s', s3config.bucket, region);
 
         var params = {
@@ -322,7 +322,7 @@ module.exports.findArtifacts = function(options, callback) {
                     key: key,
                 };
             });
-            if (config.commonOptions.verbose) {
+            if (config.programOptions.verbose) {
                 var names = _.map(state.keys, function(key) {
                     return path.basename(key);
                 });

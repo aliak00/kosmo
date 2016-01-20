@@ -263,7 +263,7 @@ Promise.all([
 ]).then(function(values) {
     var paramsObject = values[0];
 
-    config.commonOptions = commandLine.programOptions;
+    config.programOptions = commandLine.programOptions;
     config.paramsObject = paramsObject;
 
     return executeCommand(commandLine.commandName, commandArguments, config);

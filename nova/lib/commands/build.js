@@ -77,7 +77,7 @@ Command.prototype.execute = function() {
             buildDate: buildDate,
         };
     }).then(function(buildConfig) {
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             console.log('Ensuring buckets are full...');
         }
         var regions = _.compact(_.uniq(_.map(that.project.config.artifacts, function(artifact) {
@@ -141,7 +141,7 @@ Command.prototype.execute = function() {
             return buildConfig;
         });
     }).then(function(buildConfig) {
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             if (!that.willSkipBuildStep) {
                 console.log('Building artifacts...');
             } else {
@@ -182,7 +182,7 @@ Command.prototype.execute = function() {
             });
         });
     }).then(function(buildConfig) {
-        if (config.commonOptions.verbose) {
+        if (config.programOptions.verbose) {
             console.log('Uploading artifacts...');
         }
 
@@ -223,7 +223,7 @@ Command.prototype.execute = function() {
 
             var lastProgress = 0;
             var s3ManagedUploader = s3.upload(params);
-            if (config.commonOptions.verbose) {
+            if (config.programOptions.verbose) {
                 s3ManagedUploader.on('httpUploadProgress', function(event) {
                     var thisProgress = event.loaded / event.total * 100;
                     if (thisProgress === 100 || thisProgress > lastProgress + 7) {

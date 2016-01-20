@@ -14,7 +14,7 @@ function loadConfiguration() {
 
         get: function(domain, profile) {
             var cfg = this.default[domain];
-            profile = profile || this.commonOptions.profile;
+            profile = profile || this.programOptions.profile;
             if (profile) {
                 var profilecfg = this.profiles[profile] || {};
                 cfg = _.extend({}, cfg, profilecfg[domain]);
@@ -32,7 +32,7 @@ function loadConfiguration() {
             date: null,
             project: null,
         },
-        commonOptions: {
+        programOptions: {
         },
         paramsObject: {
         },
