@@ -18,7 +18,7 @@ var getopt = require('node-getopt')
 
 function Command(opts) {
     if (!(this instanceof Command)) {
-        return new Command(name, properties);
+        return new Command(opts);
     }
 
     this.opts = opts;
