@@ -82,13 +82,8 @@ Commands:\n\
         process.exit(0);
     }
 
-    if (commandName) {
-        var command = nova.commands[commandName];
-        if (!command) {
-            showHelp('Unknown command specified - ' + commandName);
-        } else {
-            showHelp('Missing command');
-        }
+    if (commandName && !nova.commands[commandName]) {
+        showHelp('Unknown command specified - ' + commandName);
         process.exit(0);
     }
 
