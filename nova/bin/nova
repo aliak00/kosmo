@@ -71,7 +71,7 @@ Commands:\n\
 
     var showHelp = function(errorMessage) {
         if (errorMessage) {
-            console.error('Error:', errorMessage, '\n');
+            console.error('\nError:', errorMessage, '\n');
         }
         console.error(primaryOpts.getHelp());
     };
