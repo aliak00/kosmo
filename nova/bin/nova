@@ -24,19 +24,19 @@ function parseCommandLine() {
             return idx != -1;
         });
 
-    var primaryArgs = [];
+    var programArgs = [];
     var commandName;
     var commandArgs = [];
 
     if (typeof commandIndex == 'undefined') {
-        primaryArgs = args;
+        programArgs = args;
     } else {
-        primaryArgs = args.slice(0, commandIndex);
+        programArgs = args.slice(0, commandIndex);
         commandName = args[commandIndex];
         commandArgs = args.slice(commandIndex + 1);
     }
 
-    var primaryOpts = getopt.create([
+    var programOpts = getopt.create([
         ['', 'profile=ARG', 'Set which aws profile to use for credentials'],
         ['', 'params=ARG+', 'Yml configuration file passed in to your nova deployment definition'],
         ['v', 'verbose', 'Print more stuff'],
@@ -53,7 +53,7 @@ function parseCommandLine() {
         return util.format('  %s\t%s', name, command.descriptionText);
     }).join('\n');
 
-    primaryOpts.setHelp(util.format(
+    programOpts.setHelp(util.format(
 'Usage: nova [common_options] command [command_options]\n\n\
 Common options:\n\
 [[OPTIONS]]\n\n\
@@ -61,22 +61,22 @@ Commands:\n\
 %s\n\
 ', commandDescriptions));
 
-    var opts = primaryOpts.parse(primaryArgs);
+    var parsedProgramOptions = programOpts.parse(programArgs);
 
-    if (opts.argv.length !== 0) {
+    if (parsedProgramOptions.argv.length !== 0) {
         // something is wrong, we shouldn't have left over argument here,
         // treat it as fake command name to report an error later.
-        commandName = opts.argv[0];
+        commandName = parsedProgramOptions.argv[0];
     }
 
     var showHelp = function(errorMessage) {
         if (errorMessage) {
             console.error('Error:', errorMessage, '\n');
         }
-        console.error(primaryOpts.getHelp());
+        console.error(programOpts.getHelp());
     };
 
-    var outputFormat = opts.options['output-format'] = opts.options['output-format'] || 'text';
+    var outputFormat = parsedProgramOptions.options['output-format'] = parsedProgramOptions.options['output-format'] || 'text';
     if (outputFormat !== 'text' && outputFormat !== 'json') {
         showHelp('Invalid output format');
         process.exit(0);
@@ -87,12 +87,12 @@ Commands:\n\
         process.exit(0);
     }
 
-    if (opts.options['debug']) {
-        opts.options['verbose'] = true;
+    if (parsedProgramOptions.options['debug']) {
+        parsedProgramOptions.options['verbose'] = true;
     }
 
     return {
-        primaryOptions: opts.options,
+        programOptions: parsedProgramOptions.options,
         commandName: commandName,
         commandArguments: commandArgs,
         showHelp: showHelp,
@@ -240,12 +240,12 @@ function executeCommand(commandName, commandArguments, config) {
 
 var commandLine = parseCommandLine();
 
-if (commandLine.primaryOptions.help) {
+if (commandLine.programOptions.help) {
     commandLine.showHelp();
     process.exit(0);
 }
 
-if (commandLine.primaryOptions.version) {
+if (commandLine.programOptions.version) {
     console.log(nova.version);
     process.exit(0);
 }
@@ -258,22 +258,22 @@ if (!nova.commands[commandLine.commandName]) {
 var commandArguments = parseCommandArguments(commandLine.commandName, commandLine.commandArguments);
 
 Promise.all([
-    readParams(commandLine.primaryOptions.params),
-    initAws(commandLine.primaryOptions.profile, commandLine.primaryOptions.debug),
+    readParams(commandLine.programOptions.params),
+    initAws(commandLine.programOptions.profile, commandLine.programOptions.debug),
 ]).then(function(values) {
     var paramsObject = values[0];
 
-    config.commonOptions = commandLine.primaryOptions;
+    config.commonOptions = commandLine.programOptions;
     config.paramsObject = paramsObject;
 
     return executeCommand(commandLine.commandName, commandArguments, config);
 }, function(err) {
-    if (commandLine.primaryOptions.debug) {
+    if (commandLine.programOptions.debug) {
         console.log(err.stack);
     }
     commandLine.showHelp(err.message);
 }).catch(function(err) {
-    if (commandLine.primaryOptions.debug) {
+    if (commandLine.programOptions.debug) {
         console.log(err.stack);
     }
     commandArguments.showHelp(err.message);
