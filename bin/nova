@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 
-var nova = require('../lib')
+var commands = require('../lib/commands')
     , getopt = require('node-getopt')
     , AWS = require('aws-sdk')
     , _ = require('lodash')
@@ -9,13 +9,14 @@ var nova = require('../lib')
     , util = require('util')
     , q = require('q')
     , config = require('../lib/configuration')
-    , yaml = require('js-yaml');
+    , yaml = require('js-yaml')
+    , path = require('path');
 
 function parseCommandLine() {
     var args = process.argv.slice(2);
 
     // find index of the first command (if present)
-    var commandIndex = _(nova.commands)
+    var commandIndex = _(commands)
         .keys()
         .map(function(command) {
             return _.indexOf(args, command);
@@ -46,7 +47,7 @@ function parseCommandLine() {
         ['h', 'help', 'Display help'],
     ]);
 
-    var commandDescriptions = _.map(nova.commands, function(command, name) {
+    var commandDescriptions = _.map(commands, function(command, name) {
         // Pad right to get consistent tabs
         const maxCommandLengthBeforeTab = 8;
         name = _.padEnd((name + ':'), maxCommandLengthBeforeTab);
@@ -82,7 +83,7 @@ Commands:\n\
         process.exit(0);
     }
 
-    if (commandName && !nova.commands[commandName]) {
+    if (commandName && !commands[commandName]) {
         showHelp('Unknown command specified - ' + commandName);
         process.exit(0);
     }
@@ -100,7 +101,7 @@ Commands:\n\
 }
 
 function parseCommandArguments(commandName, commandArguments) {
-    var command = nova.commands[commandName];
+    var command = commands[commandName];
     var extendedCommandOptions = (command.options || []).concat([['h', 'help', 'Display help']]);
     var commandOptions = getopt.create(extendedCommandOptions);
     commandOptions.setHelp('[[OPTIONS]]\n');
@@ -108,7 +109,7 @@ function parseCommandArguments(commandName, commandArguments) {
     var parsedCommandOptions = commandOptions.parse(commandArguments);
 
     function showHelp(errorMessage) {
-        var commandUsage = nova.commands[commandName].usageText;
+        var commandUsage = commands[commandName].usageText;
         if (errorMessage) {
             console.error('Error: ' + errorMessage);
         }
@@ -220,7 +221,7 @@ function readParams(paramsFiles) {
 }
 
 function executeCommand(commandName, commandArguments, config) {
-    var command = nova.commands[commandName];
+    var command = commands[commandName];
 
     if (commandArguments.commandOptions.options.help) {
         commandArguments.showHelp();
@@ -246,11 +247,20 @@ if (commandLine.programOptions.help) {
 }
 
 if (commandLine.programOptions.version) {
-    console.log(nova.version);
+    var version;
+    try {
+        var packagPath = path.join(__dirname, '../package.json');
+        var packageJson = JSON.parse(fs.readFileSync(packagPath));
+        version = packageJson.version;
+    } catch (e) {
+        console.log('Error reading verison out of package.json - ', e);
+        version = e;
+    }
+    console.log(version);
     process.exit(0);
 }
 
-if (!nova.commands[commandLine.commandName]) {
+if (!commands[commandLine.commandName]) {
     commandLine.showHelp('Expected command');
     process.exit(0);
 }
