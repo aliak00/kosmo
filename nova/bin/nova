@@ -36,7 +36,7 @@ function parseCommandLine() {
         commandArgs = args.slice(commandIndex + 1);
     }
 
-    var programOpts = getopt.create([
+    var programOptions = getopt.create([
         ['', 'profile=ARG', 'Set which aws profile to use for credentials'],
         ['', 'params=ARG+', 'Yml configuration file passed in to your nova deployment definition'],
         ['v', 'verbose', 'Print more stuff'],
@@ -53,7 +53,7 @@ function parseCommandLine() {
         return util.format('  %s\t%s', name, command.descriptionText);
     }).join('\n');
 
-    programOpts.setHelp(util.format(
+    programOptions.setHelp(util.format(
 'Usage: nova [common_options] command [command_options]\n\n\
 Common options:\n\
 [[OPTIONS]]\n\n\
@@ -61,7 +61,7 @@ Commands:\n\
 %s\n\
 ', commandDescriptions));
 
-    var parsedProgramOptions = programOpts.parse(programArgs);
+    var parsedProgramOptions = programOptions.parse(programArgs);
 
     if (parsedProgramOptions.argv.length !== 0) {
         // something is wrong, we shouldn't have left over argument here,
@@ -73,7 +73,7 @@ Commands:\n\
         if (errorMessage) {
             console.error('Error:', errorMessage, '\n');
         }
-        console.error(programOpts.getHelp());
+        console.error(programOptions.getHelp());
     };
 
     var outputFormat = parsedProgramOptions.options['output-format'] = parsedProgramOptions.options['output-format'] || 'text';
@@ -102,10 +102,10 @@ Commands:\n\
 function parseCommandArguments(commandName, commandArguments) {
     var command = nova.commands[commandName];
     var extendedCommandOptions = (command.options || []).concat([['h', 'help', 'Display help']]);
-    var opts = getopt.create(extendedCommandOptions);
-    opts.setHelp('[[OPTIONS]]\n');
+    var commandOptions = getopt.create(extendedCommandOptions);
+    commandOptions.setHelp('[[OPTIONS]]\n');
 
-    var commandOptions = opts.parse(commandArguments);
+    var parsedCommandOptions = commandOptions.parse(commandArguments);
 
     function showHelp(errorMessage) {
         var commandUsage = nova.commands[commandName].usageText;
@@ -117,11 +117,11 @@ function parseCommandArguments(commandName, commandArguments) {
 '\nUsage: nova %s %s\n\n\
 Options:\n\
 %s\n'
-, commandName, commandUsage, opts.getHelp()));
+, commandName, commandUsage, commandOptions.getHelp()));
     }
 
     return {
-        commandOptions: commandOptions,
+        commandOptions: parsedCommandOptions,
         showHelp: showHelp,
     };
 }
