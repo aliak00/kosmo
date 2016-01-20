@@ -16,7 +16,7 @@ var getopt = require('node-getopt')
     , Project = require('../project')
     , assert = require('assert');
 
-function Command(opts, config) {
+function Command(opts) {
     if (!(this instanceof Command)) {
         return new Command(opts);
     }

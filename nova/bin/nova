@@ -229,7 +229,7 @@ function executeCommand(commandName, commandArguments, config) {
 
     return new Promise(function(resolve, reject) {
         try {
-            resolve(new command(commandArguments.commandOptions, config));
+            resolve(new command(commandArguments.commandOptions));
         } catch (e) {
             reject(e);
         }
