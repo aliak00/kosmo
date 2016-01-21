@@ -18,7 +18,7 @@
     "lodash": "^4.0.0",
     "mime-multipart": "git://github.com/sergi/mime-multipart.git#master",
     "minimatch": "^2.0.4",
-    "moment": "^2.8.4",
+    "moment": "^2.11.1",
     "node-getopt": "^0.2.3",
     "node-uuid": "^1.4.2",
     "q": "^1.1.2"
