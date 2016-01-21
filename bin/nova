@@ -278,13 +278,25 @@ Promise.all([
 
     return executeCommand(commandLine.commandName, commandArguments, config);
 }, function(err) {
-    if (commandLine.programOptions.debug) {
-        console.log(err.stack);
+    if (!(err instanceof Error)) {
+        commandLine.showHelp('Unexpected error object: ' - err);
+        return;
     }
-    commandLine.showHelp(err.message);
+
+    if (commandLine.programOptions.debug) {
+        commandLine.showHelp(err.stack);
+    } else {
+        commandLine.showHelp(err.message);
+    }
 }).catch(function(err) {
-    if (commandLine.programOptions.debug) {
-        console.log(err.stack);
+    if (!(err instanceof Error)) {
+        commandArguments.showHelp('Unexpected error object: ' - err);
+        return;
     }
-    commandArguments.showHelp(err.message);
+
+    if (commandLine.programOptions.debug) {
+        commandArguments.showHelp(err.stack);
+    } else {
+        commandArguments.showHelp(err.message);
+    }
 });
