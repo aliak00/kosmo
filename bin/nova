@@ -253,8 +253,7 @@ if (commandLine.programOptions.version) {
         var packageJson = JSON.parse(fs.readFileSync(packagPath));
         version = packageJson.version;
     } catch (e) {
-        console.log('Error reading verison out of package.json - ', e);
-        version = e;
+        version = 'Error reading verison out of package.json - ' + e;
     }
     console.log(version);
     process.exit(0);
