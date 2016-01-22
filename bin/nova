@@ -9,6 +9,7 @@ var commands = require('../lib/commands')
     , util = require('util')
     , q = require('q')
     , config = require('../lib/configuration')
+    , program = require('../lib/program')
     , yaml = require('js-yaml')
     , path = require('path');
 
@@ -272,6 +273,10 @@ Promise.all([
 ]).then(function(values) {
     var paramsObject = values[0];
 
+    program.options = commandLine.programOptions;
+    program.params = paramsObject;
+
+    // TODO: remove this, fix up deply and build command to account for state info.
     config.programOptions = commandLine.programOptions;
     config.paramsObject = paramsObject;
 
