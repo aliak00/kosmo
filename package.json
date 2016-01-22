@@ -1,14 +1,16 @@
 {
   "name": "nova",
   "version": "0.0.0",
-  "description": "Deployment tool for novaform stacks",
+  "description": "Deployment tool aws infrastructure",
   "main": "lib",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "aws",
-    "cloudformation"
+    "cloudformation",
+    "infrastructure",
+    "deployment",
   ],
   "license": "MIT",
   "dependencies": {
