@@ -19,7 +19,7 @@
     "js-yaml": "^3.2.7",
     "lodash": "^4.0.0",
     "mime-multipart": "git://github.com/sergi/mime-multipart.git#master",
-    "minimatch": "^2.0.4",
+    "minimatch": "^2.0.10",
     "moment": "^2.11.1",
     "node-getopt": "^0.2.3",
     "node-uuid": "^1.4.2",
