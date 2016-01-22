@@ -1,43 +1,19 @@
 nova
 ====
 
-Secret CTO tool - also a cataclysmic nuclear explosion of a white dwarf.
+AWS infrastructure deployment tool
 
-This repository contains maybe 3 projects
+Nova consists of 3 parts
 
 - Novaform: base building blocks of aws cloudformation stacks
 - NovaSTL: standard template library for common aws resource groups
-- Nova: The binary itself that takes a config file, some nova code and manages deployments
+- Nova: The binary that is used to build artifacts and deploy intrastructure components
 
-## Dev setup
+## Setting up nova
 
-Since this repo uses unpublished node modules, you have to do a little manual work to get it up and running to develop on
-
+Nova will associate a bucket in your aws account with your profile. To set it up, run:
 ```bash
-cd <nova-repo>/novaform
-npm link
-
-cd <nova-repo>/novastl
-npm link novaform
-npm install
-npm link
-
-cd <nova-repo>/nova
-npm link novaform
-npm link novastl
-npm install
-npm link
-```
-
-## Examples
-
-To run examples templates with a dev setup. These examples outout a cloudformation stack
-```bash
-cd ../examples/cf-templates
-npm link novastl
-npm link novaform
-npm install
-node <example-file>.js
+nova --profile <aws-cli-profile> init
 ```
 
 ## Running nova
