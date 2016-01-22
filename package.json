@@ -10,7 +10,7 @@
     "aws",
     "cloudformation",
     "infrastructure",
-    "deployment",
+    "deployment"
   ],
   "license": "MIT",
   "dependencies": {
