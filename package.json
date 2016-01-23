@@ -15,7 +15,7 @@
   "license": "MIT",
   "dependencies": {
     "archiver": "^0.14.2",
-    "aws-sdk": "^2.1.2",
+    "aws-sdk": "^2.2.32",
     "js-yaml": "^3.2.7",
     "lodash": "^4.0.0",
     "mime-multipart": "git://github.com/sergi/mime-multipart.git#master",
