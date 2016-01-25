@@ -7,7 +7,7 @@ var commands = require('../lib/commands')
     , _ = require('lodash')
     , fs = require('fs')
     , util = require('util')
-    , q = require('q')
+    , utils = require('../lib/utils')
     , config = require('../lib/configuration')
     , program = require('../lib/program')
     , yaml = require('js-yaml')
@@ -199,18 +199,16 @@ function mergeDeep(value1, value2, resolver) {
 }
 
 function readParams(paramsFiles) {
-    return q().then(function() {
-        if (!paramsFiles || paramsFiles.length === 0) {
-            return [];
-        }
+    if (!paramsFiles || paramsFiles.length === 0) {
+        return Promise.resolve([]);
+    }
 
-        var promises = _.map(paramsFiles, function(paramsFile) {
-            var readFile = q.nbind(fs.readFile, fs);
-            return readFile(paramsFile, { encoding: 'utf-8', flag: 'r' });
-        });
+    var promises = _.map(paramsFiles, function(paramsFile) {
+        var readFile = utils.pbind(fs.readFile, fs, paramsFile, { encoding: 'utf-8', flag: 'r' });
+        return readFile();
+    });
 
-        return q.all(promises);
-    }).then(function(datas) {
+    return Promise.all(promises).then((datas) => {
         return _.reduce(datas, function(memo, data) {
             var object = yaml.safeLoad(data) || {};
 
