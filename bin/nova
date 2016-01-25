@@ -1,0 +1,306 @@
+#!/usr/bin/env node
+'use strict';
+
+var commands = require('../lib/commands')
+    , getopt = require('node-getopt')
+    , AWS = require('aws-sdk')
+    , _ = require('lodash')
+    , fs = require('fs')
+    , util = require('util')
+    , q = require('q')
+    , config = require('../lib/configuration')
+    , program = require('../lib/program')
+    , yaml = require('js-yaml')
+    , path = require('path');
+
+function parseCommandLine() {
+    var args = process.argv.slice(2);
+
+    // find index of the first command (if present)
+    var commandIndex = _(commands)
+        .keys()
+        .map(function(command) {
+            return _.indexOf(args, command);
+        })
+        .find(function(idx) {
+            return idx != -1;
+        });
+
+    var programArgs = [];
+    var commandName;
+    var commandArgs = [];
+
+    if (typeof commandIndex == 'undefined') {
+        programArgs = args;
+    } else {
+        programArgs = args.slice(0, commandIndex);
+        commandName = args[commandIndex];
+        commandArgs = args.slice(commandIndex + 1);
+    }
+
+    var programOptions = getopt.create([
+        ['', 'profile=ARG', 'Set which aws profile to use for credentials'],
+        ['', 'params=ARG+', 'Yml configuration file passed in to your nova deployment definition'],
+        ['v', 'verbose', 'Print more stuff'],
+        ['d', 'debug', 'Print insane amounts of logs'],
+        ['f', 'output-format=ARG', 'Output format (json or text) - defaults to json'],
+        ['', 'version', 'Display current version'],
+        ['h', 'help', 'Display help'],
+    ]);
+
+    var commandDescriptions = _.map(commands, function(command, name) {
+        // Pad right to get consistent tabs
+        const maxCommandLengthBeforeTab = 8;
+        name = _.padEnd((name + ':'), maxCommandLengthBeforeTab);
+        return util.format('  %s\t%s', name, command.descriptionText);
+    }).join('\n');
+
+    programOptions.setHelp(util.format(
+'Usage: nova [common_options] command [command_options]\n\n\
+Common options:\n\
+[[OPTIONS]]\n\n\
+Commands:\n\
+%s\n\
+', commandDescriptions));
+
+    var parsedProgramOptions = programOptions.parse(programArgs);
+
+    if (parsedProgramOptions.argv.length !== 0) {
+        // something is wrong, we shouldn't have left over argument here,
+        // treat it as fake command name to report an error later.
+        commandName = parsedProgramOptions.argv[0];
+    }
+
+    var showHelp = function(errorMessage) {
+        if (errorMessage) {
+            console.error('Error:', errorMessage, '\n');
+        }
+        console.error(programOptions.getHelp());
+    };
+
+    var outputFormat = parsedProgramOptions.options['output-format'] = parsedProgramOptions.options['output-format'] || 'text';
+    if (outputFormat !== 'text' && outputFormat !== 'json') {
+        showHelp('Invalid output format');
+        process.exit(0);
+    }
+
+    if (commandName && !commands[commandName]) {
+        showHelp('Unknown command specified - ' + commandName);
+        process.exit(0);
+    }
+
+    if (parsedProgramOptions.options['debug']) {
+        parsedProgramOptions.options['verbose'] = true;
+    }
+
+    return {
+        programOptions: parsedProgramOptions.options,
+        commandName: commandName,
+        commandArguments: commandArgs,
+        showHelp: showHelp,
+    };
+}
+
+function parseCommandArguments(commandName, commandArguments) {
+    var command = commands[commandName];
+    var extendedCommandOptions = (command.options || []).concat([['h', 'help', 'Display help']]);
+    var commandOptions = getopt.create(extendedCommandOptions);
+    commandOptions.setHelp('[[OPTIONS]]\n');
+
+    var parsedCommandOptions = commandOptions.parse(commandArguments);
+
+    function showHelp(errorMessage) {
+        var commandUsage = commands[commandName].usageText;
+        if (errorMessage) {
+            console.error('Error: ' + errorMessage);
+        }
+
+    console.error(util.format(
+'\nUsage: nova %s %s\n\n\
+Options:\n\
+%s\n'
+, commandName, commandUsage, commandOptions.getHelp()));
+    }
+
+    return {
+        commandOptions: parsedCommandOptions,
+        showHelp: showHelp,
+    };
+}
+
+function initAws(profile, debug) {
+    if (debug) {
+        AWS.config.logger = process.stdout;
+    }
+
+    var credentials =
+        profile
+            ? new AWS.SharedIniFileCredentials({ profile: profile })
+            : new AWS.EnvironmentCredentials('AWS');
+
+    return new Promise(function(resolve, reject) {
+        credentials.refresh(function(err) {
+            if (err) {
+                reject(new Error('Failed to initialize AWS - make sure you provide --profile or set AWS_ACCESS_KEY_ID env var'));
+                return;
+            }
+
+            AWS.config.credentials = credentials;
+            resolve();
+        });
+    });
+}
+
+function mergeDeep(value1, value2, resolver) {
+    function _mergeDeep(value1, value2, path1, path2) {
+        if (typeof value1 !== typeof value2) {
+            return resolver(value1, value2, path1, path2) || value2;
+        }
+
+        if (_.isArray(value1) && _.isArray(value2)) {
+            return resolver(value1, value2, path1, path2) || value1.concat(value2);
+        } else if (_.isArray(value1) || _.isArray(value2)) {
+            return resolver(value1, value2, path1, path2) || value2;
+        }
+
+        if (_.isObject(value1) && _.isObject(value2)) {
+            var keys1 = _.keys(value1);
+            var keys2 = _.keys(value2);
+
+            var result = {};
+
+            // add distinct keys
+            var distinctKeys = _.difference(keys1, keys2).concat(_.difference(keys2, keys1));
+            result = _.extend(result,
+              _.pick(value1, distinctKeys),
+              _.pick(value2, distinctKeys));
+
+            // recursively merge common keys
+            var commonKeys = _.intersection(keys1, keys2);
+            var common = _.reduce(commonKeys, function(memo, key) {
+                var value = _mergeDeep(value1[key], value2[key], path1+'.'+key, path2+'.'+key);
+                memo[key] = value;
+                return memo;
+            }, {});
+
+            result = _.extend(result, common);
+            return result;
+        }
+
+        return resolver(value1, value2, path1, path2) || value2;
+    }
+
+    if (!_.isObject(value1) || !_.isObject(value2)) {
+        resolver(null, null, '<root>', '<root>');
+        return value2;
+    }
+
+    return _mergeDeep(value1, value2, '', '');
+}
+
+function readParams(paramsFiles) {
+    return q().then(function() {
+        if (!paramsFiles || paramsFiles.length === 0) {
+            return [];
+        }
+
+        var promises = _.map(paramsFiles, function(paramsFile) {
+            var readFile = q.nbind(fs.readFile, fs);
+            return readFile(paramsFile, { encoding: 'utf-8', flag: 'r' });
+        });
+
+        return q.all(promises);
+    }).then(function(datas) {
+        return _.reduce(datas, function(memo, data) {
+            var object = yaml.safeLoad(data) || {};
+
+            return mergeDeep(memo, object, function(value1, value2, path1, path2) {
+                console.log('Warning: cannot cleanly merge params files ("%s" and "%s")...', path1, path2);
+            });
+        }, {});
+    });
+}
+
+function executeCommand(commandName, commandArguments, config) {
+    var command = commands[commandName];
+
+    if (commandArguments.commandOptions.options.help) {
+        commandArguments.showHelp();
+        return Promise.resolve();
+    }
+
+    return new Promise(function(resolve, reject) {
+        try {
+            resolve(new command(commandArguments.commandOptions));
+        } catch (e) {
+            reject(e);
+        }
+    }).then(function(command) {
+        return command.execute();
+    });
+}
+
+var commandLine = parseCommandLine();
+
+if (commandLine.programOptions.help) {
+    commandLine.showHelp();
+    process.exit(0);
+}
+
+if (commandLine.programOptions.version) {
+    var version;
+    try {
+        var packagPath = path.join(__dirname, '../package.json');
+        var packageJson = JSON.parse(fs.readFileSync(packagPath));
+        version = packageJson.version;
+    } catch (e) {
+        version = 'Error reading verison out of package.json - ' + e;
+    }
+    console.log(version);
+    process.exit(0);
+}
+
+if (!commands[commandLine.commandName]) {
+    commandLine.showHelp('Expected command');
+    process.exit(0);
+}
+
+var commandArguments = parseCommandArguments(commandLine.commandName, commandLine.commandArguments);
+
+Promise.all([
+    readParams(commandLine.programOptions.params),
+    initAws(commandLine.programOptions.profile, commandLine.programOptions.debug),
+]).then(function(values) {
+    var paramsObject = values[0];
+
+    program.options = commandLine.programOptions;
+    program.params = paramsObject;
+
+    // TODO: remove this, fix up deply and build command to account for state info.
+    config.programOptions = commandLine.programOptions;
+    config.paramsObject = paramsObject;
+
+    return executeCommand(commandLine.commandName, commandArguments, config);
+}, function(err) {
+    if (!(err instanceof Error)) {
+        commandLine.showHelp('Unexpected error object: ' - err);
+        return;
+    }
+
+    if (commandLine.programOptions.debug) {
+        commandLine.showHelp(err.stack);
+    } else {
+        commandLine.showHelp(err.message);
+    }
+}).catch(function(err) {
+    if (!(err instanceof Error)) {
+        commandArguments.showHelp('Unexpected error object: ' - err);
+        return;
+    }
+
+    if (commandLine.programOptions.debug) {
+        commandArguments.showHelp(err.stack);
+    } else {
+        commandArguments.showHelp(err.message);
+    }
+});

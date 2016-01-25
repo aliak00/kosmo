@@ -1,0 +1,31 @@
+{
+  "name": "nova",
+  "version": "0.0.1",
+  "description": "Deployment tool aws infrastructure",
+  "main": "lib",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "aws",
+    "cloudformation",
+    "infrastructure",
+    "deployment"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "archiver": "^0.14.2",
+    "aws-sdk": "^2.2.32",
+    "js-yaml": "^3.2.7",
+    "lodash": "^4.0.0",
+    "mime-multipart": "git://github.com/sergi/mime-multipart.git#master",
+    "minimatch": "^2.0.10",
+    "moment": "^2.11.1",
+    "node-getopt": "^0.2.3",
+    "node-uuid": "^1.4.2",
+    "q": "^1.1.2"
+  },
+  "bin": {
+    "nova": "bin/nova"
+  }
+}
