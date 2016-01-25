@@ -19,10 +19,10 @@ function parseCommandLine() {
     // find index of the first command (if present)
     var commandIndex = _(commands)
         .keys()
-        .map(function(command) {
+        .map((command) => {
             return _.indexOf(args, command);
         })
-        .find(function(idx) {
+        .find((idx) => {
             return idx != -1;
         });
 
@@ -71,7 +71,7 @@ Commands:\n\
         commandName = parsedProgramOptions.argv[0];
     }
 
-    var showHelp = function(errorMessage) {
+    var showHelp = (errorMessage) => {
         if (errorMessage) {
             console.error('Error:', errorMessage, '\n');
         }
@@ -109,7 +109,7 @@ function parseCommandArguments(commandName, commandArguments) {
 
     var parsedCommandOptions = commandOptions.parse(commandArguments);
 
-    function showHelp(errorMessage) {
+    var showHelp = (errorMessage) => {
         var commandUsage = commands[commandName].usageText;
         if (errorMessage) {
             console.error('Error: ' + errorMessage);
@@ -138,8 +138,8 @@ function initAws(profile, debug) {
             ? new AWS.SharedIniFileCredentials({ profile: profile })
             : new AWS.EnvironmentCredentials('AWS');
 
-    return new Promise(function(resolve, reject) {
-        credentials.refresh(function(err) {
+    return new Promise((resolve, reject) => {
+        credentials.refresh((err) => {
             if (err) {
                 reject(new Error('Failed to initialize AWS - make sure you provide --profile or set AWS_ACCESS_KEY_ID env var'));
                 return;
@@ -203,16 +203,16 @@ function readParams(paramsFiles) {
         return Promise.resolve([]);
     }
 
-    var promises = _.map(paramsFiles, function(paramsFile) {
+    var promises = _.map(paramsFiles, (paramsFile) => {
         var readFile = utils.pbind(fs.readFile, fs, paramsFile, { encoding: 'utf-8', flag: 'r' });
         return readFile();
     });
 
     return Promise.all(promises).then((datas) => {
-        return _.reduce(datas, function(memo, data) {
+        return _.reduce(datas, (memo, data) => {
             var object = yaml.safeLoad(data) || {};
 
-            return mergeDeep(memo, object, function(value1, value2, path1, path2) {
+            return mergeDeep(memo, object, (value1, value2, path1, path2) => {
                 console.log('Warning: cannot cleanly merge params files ("%s" and "%s")...', path1, path2);
             });
         }, {});
@@ -227,13 +227,13 @@ function executeCommand(commandName, commandArguments, config) {
         return Promise.resolve();
     }
 
-    return new Promise(function(resolve, reject) {
+    return new Promise((resolve, reject) => {
         try {
             resolve(new command(commandArguments.commandOptions));
         } catch (e) {
             reject(e);
         }
-    }).then(function(command) {
+    }).then((command) => {
         return command.execute();
     });
 }
@@ -268,7 +268,7 @@ var commandArguments = parseCommandArguments(commandLine.commandName, commandLin
 Promise.all([
     readParams(commandLine.programOptions.params),
     initAws(commandLine.programOptions.profile, commandLine.programOptions.debug),
-]).then(function(values) {
+]).then((values) => {
     var paramsObject = values[0];
 
     program.options = commandLine.programOptions;
@@ -279,7 +279,7 @@ Promise.all([
     config.paramsObject = paramsObject;
 
     return executeCommand(commandLine.commandName, commandArguments, config);
-}, function(err) {
+}, (err) => {
     if (!(err instanceof Error)) {
         commandLine.showHelp('Unexpected error object: ' - err);
         return;
@@ -290,7 +290,7 @@ Promise.all([
     } else {
         commandLine.showHelp(err.message);
     }
-}).catch(function(err) {
+}).catch((err) => {
     if (!(err instanceof Error)) {
         commandArguments.showHelp('Unexpected error object: ' - err);
         return;
