@@ -273,11 +273,7 @@ Promise.all([
     program.options = commandLine.programOptions;
     program.params = paramsObject;
 
-    // TODO: remove this, fix up deply and build command to account for state info.
-    config.programOptions = commandLine.programOptions;
-    config.paramsObject = paramsObject;
-
-    return executeCommand(commandLine.commandName, commandArguments, config);
+    return executeCommand(commandLine.commandName, commandArguments);
 }, (err) => {
     if (!(err instanceof Error)) {
         commandLine.showHelp('Unexpected error object: ' - err);
