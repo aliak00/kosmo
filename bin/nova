@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 'use strict';
 
-var commands = require('../lib/commands')
-    , getopt = require('node-getopt')
+var _ = require('lodash')
     , AWS = require('aws-sdk')
-    , _ = require('lodash')
+    , commands = require('../lib/commands')
     , fs = require('fs')
+    , NovaError = require('../lib/nova-error')
+    , getopt = require('node-getopt')
+    , path = require('path')
+    , program = require('../lib/program')
     , util = require('util')
     , utils = require('../lib/utils')
-    , config = require('../lib/configuration')
-    , program = require('../lib/program')
-    , yaml = require('js-yaml')
-    , path = require('path');
+    , yaml = require('js-yaml');
 
 function parseCommandLine() {
     var args = process.argv.slice(2);
@@ -267,14 +267,14 @@ if (commandArguments.commandOptions.options.help) {
 Promise.all([
     readParams(commandLine.programOptions.params),
     initAws(commandLine.programOptions.profile, commandLine.programOptions.debug),
-]).then((values) => {
+]).then(values => {
     var paramsObject = values[0];
 
     program.options = commandLine.programOptions;
     program.params = paramsObject;
 
     return executeCommand(commandLine.commandName, commandArguments);
-}, (err) => {
+}, err => {
     if (!(err instanceof Error)) {
         commandLine.showHelp('Unexpected error object: ' - err);
         return;
@@ -285,7 +285,12 @@ Promise.all([
     } else {
         commandLine.showHelp(err.message);
     }
-}).catch((err) => {
+}).catch(err => {
+    if (err instanceof NovaError) {
+        console.log(err.toString());
+        return;
+    }
+
     if (!(err instanceof Error)) {
         commandArguments.showHelp('Unexpected error object: ' - err);
         return;
