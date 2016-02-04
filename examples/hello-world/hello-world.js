@@ -16,7 +16,7 @@ module.exports = function(nova) {
         region: 'eu-west-1',
         build: function(deps) {
             var bucket = nova.form.s3.Bucket('Bucket', {
-                BucketName: 'nova-hello-world-bucket-' + nova.lib.userId(),
+                BucketName: 'nova-hello-world-bucket-' + nova.lib.getAwsAccountId(),
                 AccessControl: 'Private',
                 VersioningConfiguration: {
                     Status: 'Enabled',
