@@ -264,9 +264,13 @@ if (commandArguments.commandOptions.options.help) {
     process.exit(0);
 }
 
+var initAwsPromise = commands[commandLine.commandName].skipAws
+    ? ''
+    : initAws(commandLine.programOptions.profile, commandLine.programOptions.debug);
+
 Promise.all([
     readParams(commandLine.programOptions.params),
-    initAws(commandLine.programOptions.profile, commandLine.programOptions.debug),
+    initAwsPromise,
 ]).then(values => {
     var paramsObject = values[0];
 
