@@ -280,7 +280,7 @@ Promise.all([
     return executeCommand(commandLine.commandName, commandArguments);
 }, err => {
     if (!(err instanceof Error)) {
-        commandLine.showHelp('Unexpected error object: ' - err);
+        commandLine.showHelp('Unexpected error object: ' + err);
         return;
     }
 
@@ -296,7 +296,7 @@ Promise.all([
     }
 
     if (!(err instanceof Error)) {
-        commandArguments.showHelp('Unexpected error object: ' - err);
+        commandArguments.showHelp('Unexpected error object: ' + err);
         return;
     }
 
