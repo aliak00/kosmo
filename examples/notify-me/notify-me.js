@@ -108,9 +108,17 @@ module.exports = function(nova) {
                 ],
             });
 
+            var lambdaPermission = nova.form.lambda.Permission('SnsPermission', {
+                Action: 'lambda:*',
+                FunctionName: lambdaArn,
+                Principal: 'sns.amazonaws.com',
+                SourceArn: topic,
+            });
+
             return {
                 resources: [
                     topic,
+                    lambdaPermission,
                 ],
                 outputs: [
                     nova.form.Output('arn', topic),
@@ -136,9 +144,6 @@ module.exports = function(nova) {
             var bucket = nova.form.s3.Bucket('Bucket', {
                 BucketName: 'nova-notify-me-bucket-' + nova.lib.getAwsAccountId(),
                 AccessControl: 'Private',
-                VersioningConfiguration: {
-                    Status: 'Enabled',
-                },
             });
 
             return {
