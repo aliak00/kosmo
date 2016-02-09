@@ -18,7 +18,7 @@
     "aws-sdk": "^2.2.32",
     "change-case": "^2.3.1",
     "js-yaml": "^3.2.7",
-    "lodash": "^4.0.0",
+    "lodash": "^4.3.0",
     "mime-multipart": "git://github.com/sergi/mime-multipart.git#master",
     "minimatch": "^2.0.10",
     "moment": "^2.11.1",
