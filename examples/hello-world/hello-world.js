@@ -2,9 +2,11 @@ var path = require('path');
 
 module.exports = function(nova) {
 
-    var helloWorldArtifact = {
-        name: 'hello-world',
+    var helloWorldServer = {
+        name: 'server',
+
         region: ['eu-west-1', 'eu-central-1'],
+
         build: function(options, done) {
             var applicationPath = path.join(__dirname, 'src');
             return nova.lib.createEbArtifact('hello-world-nova', applicationPath);
@@ -13,14 +15,13 @@ module.exports = function(nova) {
 
     var helloWorldBucket = {
         name: 'bucket',
+
         region: 'eu-west-1',
+
         build: function(deps) {
             var bucket = nova.form.s3.Bucket('Bucket', {
                 BucketName: 'nova-hello-world-bucket-' + nova.lib.getAwsAccountId(),
                 AccessControl: 'Private',
-                VersioningConfiguration: {
-                    Status: 'Enabled',
-                },
             });
 
             return {
@@ -37,10 +38,19 @@ module.exports = function(nova) {
 
     var helloWorldApp = {
         name: 'app',
+
         region: 'eu-west-1',
-        dependencies: ['bucket'],
+
+        dependencies: {
+            components: ['bucket'],
+        },
+
         build: function(deps) {
-            return nova.lib.findArtifact(this.region, helloWorldArtifact.name).then(artifact => {
+            var bucket = deps.getComponent('bucket');
+            var bucketName = bucket.name;
+            var bucketDomainName = bucket.domainName;
+
+            return nova.lib.findArtifact(this.region, helloWorldServer.name).then(artifact => {
 
                 var role = nova.form.iam.Role('IAmRole', {
                     AssumeRolePolicyDocument: {
@@ -52,7 +62,7 @@ module.exports = function(nova) {
                                 },
                                 Action: [ 'sts:AssumeRole' ],
                             },
-                        ]
+                        ],
                     },
                     Path: '/',
                 });
@@ -89,8 +99,8 @@ module.exports = function(nova) {
                             NodeCommand: 'node server.js',
                         },
                         'aws:elasticbeanstalk:application:environment': {
-                            BUCKET_NAME: deps.bucket.name,
-                            BUCKET_DOMAIN: deps.bucket.domainName,
+                            BUCKET_NAME: bucketName,
+                            BUCKET_DOMAIN: bucketDomainName,
                             PORT: '8080',
                         },
                     }),
@@ -123,7 +133,8 @@ module.exports = function(nova) {
             helloWorldApp,
         ],
         artifacts: [
-            helloWorldArtifact,
+            helloWorldServer,
         ],
     };
-}
+
+};
