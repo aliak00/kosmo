@@ -122,7 +122,7 @@ module.exports = function(nova) {
                 ],
                 outputs: [
                     nova.form.Output('arn', topic),
-                ]
+                ],
             };
         },
     };
@@ -140,7 +140,7 @@ module.exports = function(nova) {
             return deps.getComponent('sns').arn;
         },
 
-        build: function(deps) {
+        build: function() {
             var bucket = nova.form.s3.Bucket('Bucket', {
                 BucketName: 'nova-notify-me-bucket-' + nova.lib.getAwsAccountId(),
                 AccessControl: 'Private',
@@ -155,8 +155,7 @@ module.exports = function(nova) {
                     nova.form.Output('domainName', nova.form.fn.getAtt(bucket, 'DomainName')),
                 ],
             };
-
-        }
+        },
     };
 
     return {
@@ -170,4 +169,4 @@ module.exports = function(nova) {
             artifact,
         ],
     };
-}
+};

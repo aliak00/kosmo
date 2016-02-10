@@ -7,7 +7,7 @@ module.exports = function(nova) {
 
         region: ['eu-west-1', 'eu-central-1'],
 
-        build: function(options, done) {
+        build: function() {
             var applicationPath = path.join(__dirname, 'src');
             return nova.lib.createEbArtifact('hello-world-nova', applicationPath);
         },
@@ -18,7 +18,7 @@ module.exports = function(nova) {
 
         region: 'eu-west-1',
 
-        build: function(deps) {
+        build: function() {
             var bucket = nova.form.s3.Bucket('Bucket', {
                 BucketName: 'nova-hello-world-bucket-' + nova.lib.getAwsAccountId(),
                 AccessControl: 'Private',
