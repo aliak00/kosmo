@@ -13,7 +13,14 @@
     "infrastructure",
     "deployment"
   ],
-  "license": "MIT",
+  "engines": {
+    "node": ">=4.2.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comoyo/nova.git"
+  },
+  "license": "Apache-2.0",
   "dependencies": {
     "archiver": "^0.14.2",
     "aws-sdk": "^2.2.32",
@@ -24,7 +31,6 @@
     "minimatch": "^2.0.10",
     "moment": "^2.11.1",
     "node-getopt": "^0.2.3",
-    "node-uuid": "^1.4.2",
     "q": "^1.1.2"
   },
   "bin": {
