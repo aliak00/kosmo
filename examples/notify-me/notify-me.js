@@ -159,6 +159,7 @@ module.exports = function(nova) {
     };
 
     return {
+        novaVersion: '>0.0.1',
         project: 'notify-me',
         components: [
             lambdaComopnent,

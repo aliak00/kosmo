@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-'use strict';
 
 var _ = require('lodash')
     , AWS = require('aws-sdk')
@@ -240,15 +239,7 @@ if (commandLine.programOptions.help) {
 }
 
 if (commandLine.programOptions.version) {
-    var version;
-    try {
-        var packagPath = path.join(__dirname, '../package.json');
-        var packageJson = JSON.parse(fs.readFileSync(packagPath));
-        version = packageJson.version;
-    } catch (e) {
-        version = 'Error reading verison out of package.json - ' + e;
-    }
-    console.log(version);
+    console.log(program.getVersion());
     process.exit(0);
 }
 

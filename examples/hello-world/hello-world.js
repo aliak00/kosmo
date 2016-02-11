@@ -127,6 +127,7 @@ module.exports = function(nova) {
     };
 
     return {
+        novaVersion: '>0.0.1',
         project: 'hello-world',
         components: [
             helloWorldBucket,

@@ -1,6 +1,6 @@
 {
   "name": "nova",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Deployment tool aws infrastructure",
   "main": "lib",
   "scripts": {
@@ -31,7 +31,8 @@
     "minimatch": "^2.0.10",
     "moment": "^2.11.1",
     "node-getopt": "^0.2.3",
-    "q": "^1.1.2"
+    "q": "^1.1.2",
+    "semver": "^5.1.0"
   },
   "bin": {
     "nova": "bin/nova"
