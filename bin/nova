@@ -127,6 +127,38 @@ Options:\n\
     };
 }
 
+function isUserRetarded(question) {
+    return utils.yesorno(question).then(userRetarded => {
+        if (userRetarded) {
+            throw new Error('User is retarded.');
+        }
+
+        throw new Error('Hmm... well this may be a bug then. Nova leaves the next steps to you.');
+    });
+}
+
+function ensureNovaBucket() {
+    var novaBucket;
+    try {
+        novaBucket = program.getNovaBucket();
+    } catch (e) {
+        // Not initied yet. Carry on...
+        return;
+    }
+
+    var s3 = new AWS.S3({ region: novaBucket.region });
+    var getLocation = utils.pbind(s3.getBucketLocation, s3, {
+        Bucket: novaBucket.name,
+    });
+    return getLocation().then(data => {
+        if (data.LocationConstraint !== novaBucket.region) {
+            var question = `Nova confused. Expected nova bucket in '${novaBucket.region}', but found in '${data.Location}'.`
+                + ' Did you recreate the bucket in another region?'
+            return isUserRetarded(question);
+        }
+    })
+}
+
 function initAws(profile, debug) {
     if (debug) {
         AWS.config.logger = process.stdout;
@@ -137,17 +169,19 @@ function initAws(profile, debug) {
             ? new AWS.SharedIniFileCredentials({ profile: profile })
             : new AWS.EnvironmentCredentials('AWS');
 
-    return new Promise((resolve, reject) => {
-        credentials.refresh((err) => {
-            if (err) {
-                reject(new Error('Failed to initialize AWS - make sure you provide --profile or set AWS_ACCESS_KEY_ID env var'));
-                return;
+    var refresh = utils.pbind(credentials.refresh, credentials);
+    return refresh()
+        .then(() => AWS.config.credentials = credentials)
+        .then(ensureNovaBucket)
+        .catch(err => {
+            if (err.code === 'NoSuchBucket') {
+                var question = 'Well this is awkward. Expected nova bucket, but I haz none. '
+                    + 'Did you delete it manually from S3?';
+                return isUserRetarded(question);
             }
 
-            AWS.config.credentials = credentials;
-            resolve();
+            throw new Error('Failed to initialize AWS - make sure you provide --profile or set AWS_ACCESS_KEY_ID env var');
         });
-    });
 }
 
 function mergeDeep(value1, value2, resolver) {
@@ -207,7 +241,7 @@ function readParams(paramsFiles) {
         return readFile();
     });
 
-    return Promise.all(promises).then((datas) => {
+    return Promise.all(promises).then(datas => {
         return _.reduce(datas, (memo, data) => {
             var object = yaml.safeLoad(data) || {};
 
@@ -219,16 +253,30 @@ function readParams(paramsFiles) {
 }
 
 function executeCommand(commandName, commandArguments) {
-    var command = commands[commandName];
-    return new Promise((resolve, reject) => {
-        try {
-            resolve(new command(commandArguments.commandOptions));
-        } catch (e) {
-            reject(e);
-        }
-    }).then((command) => {
-        return command.execute();
-    });
+    return Promise.resolve(commands[commandName])
+        .then(command => new command(commandArguments.commandOptions))
+        .then(command => command.execute())
+        .catch(err => {
+            if (err instanceof NovaError) {
+                console.log(err.toString());
+                return;
+            }
+
+            if (!(err instanceof Error)) {
+                commandArguments.showHelp('Unexpected error object: ' + err);
+                return;
+            }
+
+            if (err.code === 'CredentialsError') {
+                err.message = 'Nova seems to have failed to set AWS credentials. Something is fishy. And it\'s not Nemo.';
+            }
+
+            if (commandLine.programOptions.debug) {
+                commandArguments.showHelp(err.stack);
+            } else {
+                commandArguments.showHelp(err.message);
+            }
+        });
 }
 
 var commandLine = parseCommandLine();
@@ -255,45 +303,25 @@ if (commandArguments.commandOptions.options.help) {
     process.exit(0);
 }
 
-var initAwsPromise = commands[commandLine.commandName].skipAws
-    ? ''
-    : initAws(commandLine.programOptions.profile, commandLine.programOptions.debug);
+Promise.resolve()
+    .then(() => readParams(commandLine.programOptions.params))
+    .then(paramsObject => program.params = paramsObject)
+    .then(() => program.options = commandLine.programOptions)
+    .then(() => {
+        if (!commands[commandLine.commandName].skipAws) {
+            return initAws(commandLine.programOptions.profile, commandLine.programOptions.debug);
+        }
+    })
+    .then(() => executeCommand(commandLine.commandName, commandArguments))
+    .catch(err => {
+        if (!(err instanceof Error)) {
+            commandLine.showHelp('Unexpected error object: ' + err);
+            return;
+        }
 
-Promise.all([
-    readParams(commandLine.programOptions.params),
-    initAwsPromise,
-]).then(values => {
-    var paramsObject = values[0];
-
-    program.options = commandLine.programOptions;
-    program.params = paramsObject;
-
-    return executeCommand(commandLine.commandName, commandArguments);
-}, err => {
-    if (!(err instanceof Error)) {
-        commandLine.showHelp('Unexpected error object: ' + err);
-        return;
-    }
-
-    if (commandLine.programOptions.debug) {
-        commandLine.showHelp(err.stack);
-    } else {
-        commandLine.showHelp(err.message);
-    }
-}).catch(err => {
-    if (err instanceof NovaError) {
-        console.log(err.toString());
-        return;
-    }
-
-    if (!(err instanceof Error)) {
-        commandArguments.showHelp('Unexpected error object: ' + err);
-        return;
-    }
-
-    if (commandLine.programOptions.debug) {
-        commandArguments.showHelp(err.stack);
-    } else {
-        commandArguments.showHelp(err.message);
-    }
-});
+        if (commandLine.programOptions.debug) {
+            commandLine.showHelp(err.stack);
+        } else {
+            commandLine.showHelp(err.message);
+        }
+    });
