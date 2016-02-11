@@ -70,21 +70,21 @@ Commands:\n\
         commandName = parsedProgramOptions.argv[0];
     }
 
-    var showHelp = (errorMessage) => {
-        if (errorMessage) {
-            console.error('Error:', errorMessage, '\n');
+    var showHelp = (error) => {
+        if (error) {
+            console.error(error.toString());
         }
         console.error(programOptions.getHelp());
     };
 
     var outputFormat = parsedProgramOptions.options['output-format'] = parsedProgramOptions.options['output-format'] || 'text';
     if (outputFormat !== 'text' && outputFormat !== 'json') {
-        showHelp('Invalid output format');
+        showHelp(new Error('Invalid output format'));
         process.exit(0);
     }
 
     if (commandName && !commands[commandName]) {
-        showHelp('Unknown command specified - ' + commandName);
+        showHelp(new Error('Unknown command specified - ' + commandName));
         process.exit(0);
     }
 
@@ -108,10 +108,10 @@ function parseCommandArguments(commandName, commandArguments) {
 
     var parsedCommandOptions = commandOptions.parse(commandArguments);
 
-    var showHelp = (errorMessage) => {
+    var showHelp = (error) => {
         var commandUsage = commands[commandName].usageText;
-        if (errorMessage) {
-            console.error('Error: ' + errorMessage);
+        if (error) {
+            console.error(error.toString());
         }
 
     console.error(util.format(
@@ -274,7 +274,7 @@ function executeCommand(commandName, commandArguments) {
             if (commandLine.programOptions.debug) {
                 commandArguments.showHelp(err.stack);
             } else {
-                commandArguments.showHelp(err.message);
+                commandArguments.showHelp(err.toString());
             }
         });
 }
@@ -292,7 +292,7 @@ if (commandLine.programOptions.version) {
 }
 
 if (!commands[commandLine.commandName]) {
-    commandLine.showHelp('Expected command');
+    commandLine.showHelp(new Error('Expected command'));
     process.exit(0);
 }
 
@@ -315,13 +315,13 @@ Promise.resolve()
     .then(() => executeCommand(commandLine.commandName, commandArguments))
     .catch(err => {
         if (!(err instanceof Error)) {
-            commandLine.showHelp('Unexpected error object: ' + err);
+            commandLine.showHelp(new Error('Unexpected error object: ' + err));
             return;
         }
 
         if (commandLine.programOptions.debug) {
-            commandLine.showHelp(err.stack);
+            commandLine.showHelp(new Error(err.stack));
         } else {
-            commandLine.showHelp(err.message);
+            commandLine.showHelp(err);
         }
     });
