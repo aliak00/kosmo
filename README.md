@@ -1,3 +1,5 @@
+NOTE: This branch is deprecated. Rework-nova is the branch that is being actively worked on.
+
 nova
 ====
 
