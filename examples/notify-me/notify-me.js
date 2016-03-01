@@ -23,10 +23,10 @@ module.exports = function(nova) {
             components: ['hello-world/bucket'],
         },
 
-        build: function(deps) {
+        build: function(context) {
 
-            var artifact = deps.getArtifact('lambda');
-            var bucketName = deps.getComponent('hello-world/bucket');
+            var artifact = context.getArtifact('lambda');
+            var bucketName = context.getComponent('hello-world/bucket');
 
             var role = nova.form.iam.Role('ExecRole', {
                 AssumeRolePolicyDocument: {
@@ -96,8 +96,8 @@ module.exports = function(nova) {
             components: ['lambda'],
         },
 
-        build: function(deps) {
-            var lambdaArn = deps.getComponent('lambda').arn;
+        build: function(context) {
+            var lambdaArn = context.getComponent('lambda').arn;
 
             var topic = nova.form.sns.Topic('EventsTopic', {
                 Subscription: [
@@ -136,8 +136,8 @@ module.exports = function(nova) {
             components: ['sns'],
         },
 
-        notificationArns: function(deps) {
-            return deps.getComponent('sns').arn;
+        notificationArns: function(context) {
+            return context.getComponent('sns').arn;
         },
 
         build: function() {

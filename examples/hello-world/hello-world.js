@@ -45,8 +45,8 @@ module.exports = function(nova) {
             components: ['bucket'],
         },
 
-        build: function(deps) {
-            var bucket = deps.getComponent('bucket');
+        build: function(context) {
+            var bucket = context.getComponent('bucket');
             var bucketName = bucket.name;
             var bucketDomainName = bucket.domainName;
 
