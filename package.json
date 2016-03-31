@@ -4,9 +4,9 @@
   "description": "Deployment tool aws infrastructure",
   "main": "lib",
   "scripts": {
-    "test": "mocha ./tests/**/*.js --check-leaks --reporter spec",
+    "test": "mocha ./tests/**/*.js --opts './.mocha.opts'",
     "lint": "eslint .",
-    "coverage": "istanbul cover --print detail _mocha -- tests/**/*.js"
+    "coverage": "node --use_strict ./node_modules/.bin/istanbul cover --print detail _mocha -- tests/**/*.js"
   },
   "keywords": [
     "aws",
@@ -43,7 +43,6 @@
     "chai-as-promised": "^5.3.0",
     "eslint": "^2.5.3",
     "istanbul": "^0.4.2",
-    "mocha": "^2.4.5",
-    "use-strict": "^1.0.1"
+    "mocha": "^2.4.5"
   }
 }
