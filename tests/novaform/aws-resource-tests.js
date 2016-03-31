@@ -1,3 +1,4 @@
+var AWSResource = require('../../lib/novaform/lib/aws-resource')
 
 describe('Array', function() {
     describe('#indexOf()', function () {
