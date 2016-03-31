@@ -4,7 +4,7 @@
   "description": "Deployment tool aws infrastructure",
   "main": "lib",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha ./tests/**/*.js --check-leaks --require tests/common/node --reporter spec",
     "lint": "eslint ."
   },
   "keywords": [
@@ -38,6 +38,10 @@
     "nova": "bin/nova"
   },
   "devDependencies": {
-    "eslint": "^2.5.3"
+    "chai": "^3.5.0",
+    "chai-as-promised": "^5.3.0",
+    "eslint": "^2.5.3",
+    "mocha": "^2.4.5",
+    "use-strict": "^1.0.1"
   }
 }
