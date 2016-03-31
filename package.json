@@ -6,7 +6,7 @@
   "scripts": {
     "test": "mocha ./tests/**/*.js --opts './.mocha.opts'",
     "lint": "eslint .",
-    "coverage": "node --use_strict ./node_modules/.bin/istanbul cover --print detail _mocha -- tests/**/*.js"
+    "coverage": "istanbul cover --print detail _mocha -- tests/**/*.js"
   },
   "keywords": [
     "aws",

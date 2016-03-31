@@ -1,4 +1,3 @@
 --reporter spec
---use_strict
 --check-leaks
 --require tests/common/node
