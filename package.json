@@ -38,6 +38,6 @@
     "nova": "bin/nova"
   },
   "devDependencies": {
-    "eslint": "^1.10.3"
+    "eslint": "^2.5.3"
   }
 }
