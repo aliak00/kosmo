@@ -1,10 +1,10 @@
 var AWSResource = require('../../lib/novaform/lib/aws-resource')
 
-describe('Array', function() {
-    describe('#indexOf()', function () {
-        it('should return -1 when the value is not present', function () {
-            assert.equal(-1, [1,2,3].indexOf(5));
-            assert.equal(-1, [1,2,3].indexOf(0));
+describe('AWSResource', function() {
+    describe('#define()', function () {
+        it('should return an AWSResource constructir', function () {
+            const resource = AWSResource.define();
+            assert(new resource() instanceof  AWSResource);
         });
     });
 });
