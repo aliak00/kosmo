@@ -4,9 +4,9 @@
   "description": "Deployment tool aws infrastructure",
   "main": "lib",
   "scripts": {
-    "test": "mocha ./tests/**/*.js --opts './.mocha.opts'",
+    "test": "mocha './tests/**/*-tests.js' --opts './.mocha.opts'",
     "lint": "eslint .",
-    "coverage": "istanbul cover --print detail _mocha -- tests/**/*.js"
+    "coverage": "istanbul cover --print detail _mocha -- 'tests/**/*-tests.js' --opts './.mocha.opts'"
   },
   "keywords": [
     "aws",
