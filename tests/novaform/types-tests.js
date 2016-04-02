@@ -452,4 +452,39 @@ describe('novaform.types', function() {
         });
     });
 
+    describe('object', function() {
+        // call it object because ensureValidInterface checks that .name is correct
+        // by inspecting the test's describe title
+        const objectType = types.object('object', {
+            t1: types.number,
+            t2: types.string,
+        });
+        ensureValidInterface(objectType);
+
+        describe('#validate()', function() {
+            it('should not validate non object', function() {
+                expect(objectType.validate(3)).to.be.false;
+                expect(objectType.validate('s')).to.be.false;
+                expect(objectType.validate(false)).to.be.false;
+            });
+            it('should not validate object with incorrect properties', function() {
+                expect(objectType.validate({x1: 4})).to.be.false;
+                expect(objectType.validate({t1: true})).to.be.false;
+                expect(objectType.validate({t2: 4})).to.be.false;
+            });
+            it('should validate object with correct properties', function() {
+                expect(objectType.validate({t1: 4})).to.be.true;
+                expect(objectType.validate({t2: 's'})).to.be.true;
+                expect(objectType.validate({t1: 4, t2: 's'})).to.be.true;
+            });
+        });
+
+        describe('#toCloudFormationValue()', function() {
+            it('should output valid object data from string', function() {
+                expect(objectType.toCloudFormationValue({t1: 4, t2: 's'}))
+                    .to.deep.equal({t1: '4', t2: 's'});
+            });
+        });
+    });
+
 });
