@@ -428,14 +428,26 @@ describe('novaform.types', function() {
         });
 
         describe('#toCloudFormationValue()', function() {
-            it('should output valid json data', function() {
-                expect(types.jsonobject.toCloudFormationValue({
+            it('should output valid json data from string', function() {
+                expect(types.jsonobject.toCloudFormationValue('{"some":{"json":{"object":true}}}'))
+                    .to.deep.equal({
+                        some: {
+                            json: {
+                                object: true,
+                            },
+                        },
+                    });
+            });
+            it('should output valid json data from object', function() {
+                var obj = {
                     some: {
                         json: {
                             object: true,
                         },
                     },
-                })).to.equal('{"some":{"json":{"object":true}}}');
+                };
+                expect(types.jsonobject.toCloudFormationValue(obj))
+                    .to.deep.equal(obj);
             });
         });
     });
