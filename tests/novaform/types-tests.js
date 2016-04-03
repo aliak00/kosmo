@@ -476,6 +476,30 @@ describe('novaform.types', function() {
         });
     });
 
+    describe('ref', function() {
+        const refType = types.ref('AWS::Type');
+        ensureValidInterface(refType);
+
+        describe('#validate()', function() {
+            it('should not validate non ref function object', function() {
+                expect(refType.validate(CloudFormationFunction.join())).to.be.false;
+                expect(refType.validate({})).to.be.false;
+                expect(refType.validate(true)).to.be.false;
+                expect(refType.validate(false)).to.be.false;
+            });
+            it('should validate empty object', function() {
+                expect(refType.validate(CloudFormationFunction.ref(AWSResource()))).to.be.true;
+            });
+        });
+
+        describe('#toCloudFormationValue()', function() {
+            it('should output ref object', function() {
+                expect(refType.toCloudFormationValue(CloudFormationFunction.ref(AWSResource())))
+                    .to.deep.equal(CloudFormationFunction.ref(AWSResource()));
+            });
+        });
+    });
+
     describe('object', function() {
         // call it object because ensureValidInterface checks that .name is correct
         // by inspecting the test's describe title
