@@ -452,6 +452,30 @@ describe('novaform.types', function() {
         });
     });
 
+    describe('emptymap', function() {
+        ensureValidInterface();
+
+        describe('#validate()', function() {
+            it('should not validate a non empty', function() {
+                expect(types.emptymap.validate(3)).to.be.false;
+                expect(types.emptymap.validate({a:1})).to.be.false;
+                expect(types.emptymap.validate(true)).to.be.false;
+                expect(types.emptymap.validate('s')).to.be.false;
+                expect(types.emptymap.validate([])).to.be.false;
+            });
+            it('should validate empty object', function() {
+                expect(types.emptymap.validate({})).to.be.true;
+            });
+        });
+
+        describe('#toCloudFormationValue()', function() {
+            it('should output empty object', function() {
+                expect(types.emptymap.toCloudFormationValue({}))
+                    .to.deep.equal({});
+            });
+        });
+    });
+
     describe('object', function() {
         // call it object because ensureValidInterface checks that .name is correct
         // by inspecting the test's describe title
