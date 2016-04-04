@@ -6,7 +6,7 @@
   "scripts": {
     "test": "mocha './tests/**/*-tests.js' --opts './.mocha.opts'",
     "lint": "eslint .",
-    "coverage": "istanbul cover --print detail _mocha -- 'tests/**/*-tests.js' --opts './.mocha.opts'"
+    "coverage": "istanbul cover -x '**lib/novaform/lib/resources/lambda.js' --print detail _mocha -- 'tests/**/*-tests.js' --opts './.mocha.opts'"
   },
   "keywords": [
     "aws",
