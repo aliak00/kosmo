@@ -535,4 +535,93 @@ describe('novaform.types', function() {
         });
     });
 
+    describe('array', function() {
+        ensureValidInterface(types.array(types.string));
+
+        describe('#validate()', function() {
+            it('should not validate non array', function() {
+                const array = types.array(types.string);
+                expect(array.validate({})).to.be.false;
+                expect(array.validate(4)).to.be.false;
+                expect(array.validate(true)).to.be.false;
+            });
+            it('should validate array of strings only', function() {
+                const array = types.array(types.string);
+                expect(array.validate(['a', 'b', 'c'])).to.be.true;
+                expect(array.validate([1, 2, 3])).to.be.false;
+            });
+            it('should validate array of valid objects', function() {
+                const custom = types.object('name', {
+                    t1: types.number,
+                    t2: types.string,
+                });
+                const array = types.array(custom);
+
+                const o1 = {t1: 3, t2: 's'};
+                const o2 = {t1: 1, t2: 'g'};
+                const o3 = {t1: 3};
+                const o4 = {t2: 's'};
+
+                expect(array.validate([o1, o2])).to.be.true;
+                expect(array.validate([o3, o4])).to.be.true;
+                expect(array.validate([o1])).to.be.true;
+                expect(array.validate([o1, o2, o3, o4])).to.be.true;
+            });
+            it('should not validate array of invalid objects', function() {
+                const custom = types.object('name', {
+                    t1: types.number,
+                    t2: types.string,
+                });
+                const array = types.array(custom);
+
+                const o1 = {t1: 's', t2: 's'};
+                const o2 = {t1: 1, t2: 'g'};
+                const o3 = {t2: 1};
+                const o4 = {t3: 3};
+
+                expect(array.validate([o1, o2])).to.be.false;
+                expect(array.validate([o3, o4])).to.be.false;
+                expect(array.validate([o3])).to.be.false;
+                expect(array.validate([o1, o2, o3, o4])).to.be.false;
+            });
+        });
+
+        describe('#toCloudFormationValue()', function() {
+            it('should output valid string array', function() {
+                const array = types.array(types.string);
+                expect(array.toCloudFormationValue(['a', 'b', 'c']))
+                    .to.deep.equal(['a', 'b', 'c']);
+            });
+            it('should output valid object array', function() {
+                const custom = types.object('name', {
+                    t1: types.number,
+                    t2: types.string,
+                });
+                const array = types.array(custom);
+                expect(array.toCloudFormationValue(
+                    [
+                        {
+                            t1: 3,
+                            t2: 's',
+                        },
+                        {
+                            t1: 1,
+                            t2: 'g',
+                        },
+                    ]))
+                .to.deep.equal(
+                    [
+                        {
+                            t1: '3',
+                            t2: 's',
+                        },
+                        {
+                            t1: '1',
+                            t2: 'g',
+                        },
+                    ]);
+            });
+        });
+    });
+
 });
