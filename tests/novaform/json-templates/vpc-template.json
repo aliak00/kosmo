@@ -1,0 +1,154 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "stack-description",
+  "Resources": {
+    "TheVpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "192.168.0.0/16",
+        "EnableDnsSupport": "true",
+        "EnableDnsHostnames": "true",
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": {
+              "Ref": "AWS::StackId"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "TheVpc"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Igw": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": {
+              "Ref": "AWS::StackId"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "Igw"
+                ]
+              ]
+            }
+          },
+          {
+            "Key": "Network",
+            "Value": "public"
+          }
+        ]
+      }
+    },
+    "GatewayAttachment": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "TheVpc"
+        },
+        "InternetGatewayId": {
+          "Ref": "Igw"
+        }
+      }
+    },
+    "Subnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "TheVpc"
+        },
+        "AvailabilityZone": "az",
+        "CidrBlock": "0.0.0.10/8"
+      }
+    },
+    "RouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "TheVpc"
+        }
+      }
+    },
+    "Route": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "RouteTable"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "Igw"
+        }
+      },
+      "DependsOn": "GatewayAttachment"
+    },
+    "SubnetRouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "Subnet"
+        },
+        "RouteTableId": {
+          "Ref": "RouteTable"
+        }
+      }
+    },
+    "Nacl": {
+      "Type": "AWS::EC2::NetworkAcl",
+      "Properties": {
+        "VpcId": {
+          "Ref": "TheVpc"
+        }
+      }
+    },
+    "InboundAllowAll": {
+      "Type": "AWS::EC2::NetworkAclEntry",
+      "Properties": {
+        "NetworkAclId": {
+          "Ref": "Nacl"
+        },
+        "RuleNumber": "1",
+        "Protocol": "-1",
+        "RuleAction": "allow",
+        "Egress": "false",
+        "CidrBlock": "0.0.0.0/0"
+      }
+    },
+    "SubnetNaclAssociation": {
+      "Type": "AWS::EC2::SubnetNetworkAclAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "Subnet"
+        },
+        "NetworkAclId": {
+          "Ref": "Nacl"
+        }
+      }
+    }
+  },
+  "Outputs": {},
+  "Parameters": {}
+}

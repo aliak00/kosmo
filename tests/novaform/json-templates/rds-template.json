@@ -1,0 +1,153 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "stack-description",
+  "Resources": {
+    "SecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": "vpc-id",
+        "GroupDescription": "description"
+      }
+    },
+    "DbSgi": {
+      "Type": "AWS::EC2::SecurityGroupIngress",
+      "Properties": {
+        "GroupId": {
+          "Ref": "SecurityGroup"
+        },
+        "IpProtocol": "6",
+        "FromPort": "5432",
+        "ToPort": "5432",
+        "CidrIp": "0.0.0.0/0"
+      }
+    },
+    "DbSubnetGroup": {
+      "Type": "AWS::RDS::DBSubnetGroup",
+      "Properties": {
+        "DBSubnetGroupDescription": "description",
+        "SubnetIds": [
+          "public-subnets"
+        ],
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": {
+              "Ref": "AWS::StackId"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "DbSubnetGroup"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "DbInstance": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "AllocatedStorage": "10",
+        "DBInstanceClass": "instance-type",
+        "DBSubnetGroupName": {
+          "Ref": "DbSubnetGroup"
+        },
+        "Engine": "postgres",
+        "EngineVersion": "9.3.5",
+        "MasterUsername": "username",
+        "MasterUserPassword": {
+          "Ref": "DatabasePassword"
+        },
+        "BackupRetentionPeriod": "7",
+        "PubliclyAccessible": "true",
+        "VPCSecurityGroups": [
+          {
+            "Ref": "SecurityGroup"
+          }
+        ],
+        "MultiAZ": "false",
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": {
+              "Ref": "AWS::StackId"
+            }
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "DbInstance"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "DbR53": {
+      "Type": "AWS::Route53::RecordSet",
+      "Properties": {
+        "HostedZoneId": "external-hosted-zone-id",
+        "Type": "CNAME",
+        "Name": "db.external-zone",
+        "TTL": "60",
+        "ResourceRecords": [
+          {
+            "Fn::GetAtt": [
+              "DbInstance",
+              "Endpoint.Address"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "id": {
+      "Value": {
+        "Ref": "DbInstance"
+      }
+    },
+    "dbaddress": {
+      "Value": {
+        "Fn::GetAtt": [
+          "DbInstance",
+          "Endpoint.Address"
+        ]
+      }
+    },
+    "dbport": {
+      "Value": {
+        "Fn::GetAtt": [
+          "DbInstance",
+          "Endpoint.Port"
+        ]
+      }
+    },
+    "hostname": {
+      "Value": {
+        "Ref": "DbR53"
+      }
+    }
+  },
+  "Parameters": {
+    "DatabasePassword": {
+      "Type": "String",
+      "NoEcho": "true"
+    }
+  }
+}
