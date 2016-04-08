@@ -30,6 +30,26 @@ function ensureValidInterface(explicitType) {
     });
 }
 
+function ensureValid(result) {
+    expect(result).to.equal(undefined);
+}
+
+function ensureNotValid(result, withMessage) {
+    if (_.isUndefined(withMessage)) {
+        expect(result).to.not.equal(undefined);
+    } else if (typeof withMessage === 'string') {
+        expect(result).to.equal(withMessage);
+    } else if (withMessage instanceof RegExp) {
+        expect(result).to.match(withMessage);
+    } else if (withMessage instanceof Array) {
+        _.forEach(withMessage, m => {
+            ensureNotValid(m);
+        });
+    } else {
+        throw new Error('Unknown withMessage type: ' + withMessage);
+    }
+}
+
 describe('novaform.types', function() {
 
     describe('#ensureValueValid()', function() {
@@ -46,18 +66,18 @@ describe('novaform.types', function() {
 
         describe('#validate()', function() {
             it('should validate a string', function() {
-                expect(types.string.validate('a string')).to.be.true;
+                ensureValid(types.string.validate('a string'));
             });
             it('should validate a AWSResource', function() {
-                expect(types.string.validate(AWSResource())).to.be.true;
+                ensureValid(types.string.validate(AWSResource()));
             });
             it('should not validate other object', function() {
-                expect(types.string.validate({})).to.be.false;
+                ensureNotValid(types.string.validate({}));
             });
 
             _.forEach(CloudFormationFunction, (fn, name) => {
                 it('should validate ' + name + ' as CloudFormationFunction', function() {
-                    expect(types.string.validate(fn())).to.be.true;
+                    ensureValid(types.string.validate(fn()));
                 });
             });
         });
@@ -80,13 +100,13 @@ describe('novaform.types', function() {
 
         describe('#validate()', function() {
             it('should validate a regex', function() {
-                expect(types.regex.validate(/regexp?/)).to.be.true;
+                ensureValid(types.regex.validate(/regexp?/));
             });
-            it('should not validate non-regext', function() {
-                expect(types.regex.validate(true)).to.be.false;
-                expect(types.regex.validate(3)).to.be.false;
-                expect(types.regex.validate({})).to.be.false;
-                expect(types.regex.validate('s')).to.be.false;
+            it('should not validate non-regex', function() {
+                ensureNotValid(types.regex.validate(true));
+                ensureNotValid(types.regex.validate(3));
+                ensureNotValid(types.regex.validate({}));
+                ensureNotValid(types.regex.validate('s'));
             });
         });
 
@@ -103,8 +123,13 @@ describe('novaform.types', function() {
 
         describe('#validate()', function() {
             it('should validate a boolean type', function() {
-                expect(types.boolean.validate(true)).to.be.true;
-                expect(types.boolean.validate(false)).to.be.true;
+                ensureValid(types.boolean.validate(true));
+                ensureValid(types.boolean.validate(false));
+            });
+            it('should not validate non-boolean', function() {
+                ensureNotValid(types.boolean.validate(3));
+                ensureNotValid(types.boolean.validate({}));
+                ensureNotValid(types.boolean.validate('s'));
             });
         });
 
@@ -119,26 +144,40 @@ describe('novaform.types', function() {
     });
 
     describe('enum', function() {
-        const enumType = types.enum('t1', 't2', 't3');
+        const enumType = types.enum();
         ensureValidInterface(enumType);
+
+        it('should not create enum without string values', function() {
+            expect(() => types.enum('t1', 3)).to.throw(Error);
+        });
 
         describe('#validate()', function() {
             it('should validate valid values', function() {
-                expect(enumType.validate('t1')).to.be.true;
-                expect(enumType.validate('t2')).to.be.true;
-                expect(enumType.validate('t3')).to.be.true;
+                const enumType = types.enum('t1', 't2', 't3');
+                ensureValid(enumType.validate('t1'));
+                ensureValid(enumType.validate('t2'));
+                ensureValid(enumType.validate('t3'));
             });
             it('should not validate invalid values', function() {
-                expect(enumType.validate('t4')).to.be.false;
-                expect(enumType.validate('t5')).to.be.false;
-                expect(enumType.validate('t6')).to.be.false;
+                const enumType = types.enum('t1', 't2', 't3');
+                ensureNotValid(enumType.validate('t4'));
+                ensureNotValid(enumType.validate('t5'));
+                ensureNotValid(enumType.validate('t6'));
+            });
+            it('should not validate non string', function() {
+                const enumType = types.enum('1', '2');
+                ensureNotValid(enumType.validate(1));
+                ensureNotValid(enumType.validate(2));
             });
         });
 
         describe('#toCloudFormationValue()', function() {
             it('should output string from enum value', function() {
+                const enumType = types.enum('t1', 't2');
                 expect(enumType.toCloudFormationValue('t1')).to.be.a('string')
                     .and.equal('t1');
+                expect(enumType.toCloudFormationValue('t2')).to.be.a('string')
+                    .and.equal('t2');
             });
         });
     });
@@ -149,21 +188,23 @@ describe('novaform.types', function() {
 
         describe('#validate()', function() {
             it('should validate valid values', function() {
-                expect(rangeType.validate(3)).to.be.true;
-                expect(rangeType.validate(5)).to.be.true;
-                expect(rangeType.validate(6)).to.be.true;
+                ensureValid(rangeType.validate(3));
+                ensureValid(rangeType.validate(5));
+                ensureValid(rangeType.validate(6));
             });
             it('should be inclusive valid values', function() {
-                expect(rangeType.validate(2)).to.be.true;
-                expect(rangeType.validate(8)).to.be.true;
+                ensureValid(rangeType.validate(2));
+                ensureValid(rangeType.validate(8));
             });
             it('should not validate invalid values', function() {
-                expect(rangeType.validate(1)).to.be.false;
-                expect(rangeType.validate(-10)).to.be.false;
-                expect(rangeType.validate(7478)).to.be.false;
+                ensureNotValid(rangeType.validate(1));
+                ensureNotValid(rangeType.validate(-10));
+                ensureNotValid(rangeType.validate(7478));
             });
             it('should not validate a non number', function() {
-                expect(rangeType.validate('3')).to.be.false;
+                ensureNotValid(rangeType.validate('3'));
+                ensureNotValid(rangeType.validate({}));
+                ensureNotValid(rangeType.validate(true));
             });
         });
 
@@ -180,7 +221,12 @@ describe('novaform.types', function() {
 
         describe('#validate()', function() {
             it('should validate a number type', function() {
-                expect(types.number.validate(3)).to.be.true;
+                ensureValid(types.number.validate(3));
+            });
+            it('should not validate a non number type', function() {
+                ensureNotValid(types.number.validate(true));
+                ensureNotValid(types.number.validate('s'));
+                ensureNotValid(types.number.validate({}));
             });
         });
 
@@ -197,22 +243,22 @@ describe('novaform.types', function() {
 
         describe('#validate()', function() {
             it('should validate a cidr', function() {
-                expect(types.cidr.validate('100.0.222.1/31')).to.be.true;
-                expect(types.cidr.validate('10.3.0.255/31')).to.be.true;
-                expect(types.cidr.validate('255.255.255.255/10')).to.be.true;
-                expect(types.cidr.validate('127.0.5.1/3')).to.be.true;
+                ensureValid(types.cidr.validate('100.0.222.1/31'));
+                ensureValid(types.cidr.validate('10.3.0.255/31'));
+                ensureValid(types.cidr.validate('255.255.255.255/10'));
+                ensureValid(types.cidr.validate('127.0.5.1/3'));
             });
             it('should not validate invalid cidr', function() {
-                expect(types.cidr.validate('10.0.0.1/33')).to.be.false;
-                expect(types.cidr.validate('10.0.0.1')).to.be.false;
-                expect(types.cidr.validate('10.0.0')).to.be.false;
-                expect(types.cidr.validate('10.0.1/33')).to.be.false;
-                expect(types.cidr.validate('256.0.0.1/10')).to.be.false;
+                ensureNotValid(types.cidr.validate('10.0.0.1/33'));
+                ensureNotValid(types.cidr.validate('10.0.0.1'));
+                ensureNotValid(types.cidr.validate('10.0.0'));
+                ensureNotValid(types.cidr.validate('10.0.1/33'));
+                ensureNotValid(types.cidr.validate('256.0.0.1/10'));
             });
             it('should not validate non string', function() {
-                expect(types.cidr.validate(3)).to.be.false;
-                expect(types.cidr.validate(false)).to.be.false;
-                expect(types.cidr.validate({})).to.be.false;
+                ensureNotValid(types.cidr.validate(3));
+                ensureNotValid(types.cidr.validate(false));
+                ensureNotValid(types.cidr.validate({}));
             });
         });
 
@@ -230,21 +276,19 @@ describe('novaform.types', function() {
         describe('#validate()', function() {
             it('should validate valid number protocols', function() {
                 _.forEach(types.protocol.nameToNumberMap, value => {
-                    expect(types.protocol.validate(value)).to.be.true;
+                    ensureValid(types.protocol.validate(value));
                 });
             });
             it('should validate valid named protocols', function() {
                 _.forEach(types.protocol.numberToNameMap, value => {
-                    expect(types.protocol.validate(value)).to.be.true;
+                    ensureValid(types.protocol.validate(value));
                 });
             });
             it('should not validate invalid protocol', function() {
-                expect(types.protocol.validate(-30)).to.be.false;
-                expect(types.protocol.validate('hibbyjibby')).to.be.false;
-            });
-            it('should not validate invalid protocol', function() {
-                expect(types.protocol.validate(true)).to.be.false;
-                expect(types.protocol.validate({})).to.be.false;
+                ensureNotValid(types.protocol.validate(-30));
+                ensureNotValid(types.protocol.validate('hibbyjibby'));
+                ensureNotValid(types.protocol.validate(true));
+                ensureNotValid(types.protocol.validate({}));
             });
         });
 
@@ -278,42 +322,67 @@ describe('novaform.types', function() {
 
         describe('#validate()', function() {
             it('should not validate non object', function() {
-                expect(types.tags.validate(3)).to.be.false;
+                ensureNotValid(types.tags.validate(3));
+                ensureNotValid(types.tags.validate(true));
+                ensureNotValid(types.tags.validate('s'));
             });
-            it('should not validate invalid object', function() {
-                expect(types.tags.validate({
-                    Name: 4,
-                })).to.be.false;
-                expect(types.tags.validate({
+            it('should validate valid values', function() {
+                ensureValid(types.tags.validate({
+                    Name: 's',
+                }));
+                ensureValid(types.tags.validate({
+                    Name: CloudFormationFunction.Base(),
+                }));
+                ensureValid(types.tags.validate({
+                    Name: AWSResource(),
+                }));
+                ensureValid(types.tags.validate({
                     Name: {
-                        Value: 4,
+                        Value: 's',
                     },
-                })).to.be.false;
-                expect(types.tags.validate({
-                    Name: {},
-                })).to.be.false;
-                expect(types.tags.validate({
+                }));
+            });
+            it('should not validate object with no value', function() {
+                ensureNotValid(types.tags.validate({
                     Name: {
-                        Value: 4,
+                        Value: {},
+                    },
+                }));
+                ensureNotValid(types.tags.validate({
+                    Name: {},
+                }));
+            });
+            it('should not validate invalid option name', function() {
+                ensureNotValid(types.tags.validate({
+                    Name: {
+                        Value: 's',
                         UnsupportedOption: 'whatever',
                     },
-                })).to.be.false;
+                }));
+            });
+            it('should not validate invalid option value', function() {
+                ensureNotValid(types.tags.validate({
+                    Name: {
+                        Value: 's',
+                        PropagateAtLaunch: 'whatever',
+                    },
+                }));
             });
             it('should validate valid object', function() {
-                expect(types.tags.validate({
+                ensureValid(types.tags.validate({
                     Name: '4',
-                })).to.be.true;
-                expect(types.tags.validate({
+                }));
+                ensureValid(types.tags.validate({
                     Name: {
                         Value: '4',
                     },
-                })).to.be.true;
-                expect(types.tags.validate({
+                }));
+                ensureValid(types.tags.validate({
                     Name: {
                         Value: '4',
                         PropagateAtLaunch: true,
                     },
-                })).to.be.true;
+                }));
             });
         });
 
@@ -376,28 +445,28 @@ describe('novaform.types', function() {
 
         describe('#validate()', function() {
             it('should validate array of length 2', function() {
-                expect(types.portrange.validate([1, 2])).to.be.true;
+                ensureValid(types.portrange.validate([1, 2]));
             });
-            it('should validate non array', function() {
-                expect(types.portrange.validate(3)).to.be.false;
-                expect(types.portrange.validate(true)).to.be.false;
-                expect(types.portrange.validate({})).to.be.false;
+            it('should not validate non array', function() {
+                ensureNotValid(types.portrange.validate(3));
+                ensureNotValid(types.portrange.validate(true));
+                ensureNotValid(types.portrange.validate({}));
             });
             it('should validate valid port ranges', function() {
-                expect(types.portrange.validate([1, 65535])).to.be.true;
-                expect(types.portrange.validate([1000, 30293])).to.be.true;
-                expect(types.portrange.validate([230, 5001])).to.be.true;
+                ensureValid(types.portrange.validate([1, 65535]));
+                ensureValid(types.portrange.validate([1000, 30293]));
+                ensureValid(types.portrange.validate([230, 5001]));
             });
             it('should not validate array of non length 2', function() {
-                expect(types.portrange.validate([1, 2, 4])).to.be.false;
-                expect(types.portrange.validate([1])).to.be.false;
-                expect(types.portrange.validate([])).to.be.false;
+                ensureNotValid(types.portrange.validate([1, 2, 4]));
+                ensureNotValid(types.portrange.validate([1]));
+                ensureNotValid(types.portrange.validate([]));
             });
             it('should not validate invalid port ranges', function() {
-                expect(types.portrange.validate([0, 65535])).to.be.false;
-                expect(types.portrange.validate([1, 65536])).to.be.false;
-                expect(types.portrange.validate([-50, 202020])).to.be.false;
-                expect(types.portrange.validate([40, 10])).to.be.false;
+                ensureNotValid(types.portrange.validate([0, 65535]));
+                ensureNotValid(types.portrange.validate([1, 65536]));
+                ensureNotValid(types.portrange.validate([-50, 202020]));
+                ensureNotValid(types.portrange.validate([40, 10]));
             });
         });
 
@@ -417,13 +486,13 @@ describe('novaform.types', function() {
 
         describe('#validate()', function() {
             it('should not validate non object non string', function() {
-                expect(types.jsonobject.validate(3)).to.be.false;
+                ensureNotValid(types.jsonobject.validate(3));
             });
             it('should not validate invalid json', function() {
-                expect(types.jsonobject.validate('{"invalid":json}')).to.be.false;
+                ensureNotValid(types.jsonobject.validate('{"invalid":json}'));
             });
             it('should validate json', function() {
-                expect(types.jsonobject.validate('{"valid":"json"}')).to.be.true;
+                ensureValid(types.jsonobject.validate('{"valid":"json"}'));
             });
         });
 
@@ -457,14 +526,14 @@ describe('novaform.types', function() {
 
         describe('#validate()', function() {
             it('should not validate a non empty', function() {
-                expect(types.emptymap.validate(3)).to.be.false;
-                expect(types.emptymap.validate({a:1})).to.be.false;
-                expect(types.emptymap.validate(true)).to.be.false;
-                expect(types.emptymap.validate('s')).to.be.false;
-                expect(types.emptymap.validate([])).to.be.false;
+                ensureNotValid(types.emptymap.validate(3));
+                ensureNotValid(types.emptymap.validate({a:1}));
+                ensureNotValid(types.emptymap.validate(true));
+                ensureNotValid(types.emptymap.validate('s'));
+                ensureNotValid(types.emptymap.validate([]));
             });
             it('should validate empty object', function() {
-                expect(types.emptymap.validate({})).to.be.true;
+                ensureValid(types.emptymap.validate({}));
             });
         });
 
@@ -481,14 +550,18 @@ describe('novaform.types', function() {
         ensureValidInterface(refType);
 
         describe('#validate()', function() {
+            it('should not validate AWSResource and ref function', function() {
+                ensureValid(refType.validate(CloudFormationFunction.ref()));
+                ensureValid(refType.validate(AWSResource()));
+            });
             it('should not validate non ref function object', function() {
-                expect(refType.validate(CloudFormationFunction.join())).to.be.false;
-                expect(refType.validate({})).to.be.false;
-                expect(refType.validate(true)).to.be.false;
-                expect(refType.validate(false)).to.be.false;
+                ensureNotValid(refType.validate(CloudFormationFunction.join()));
+                ensureNotValid(refType.validate({}));
+                ensureNotValid(refType.validate(true));
+                ensureNotValid(refType.validate(false));
             });
             it('should validate empty object', function() {
-                expect(refType.validate(CloudFormationFunction.ref(AWSResource()))).to.be.true;
+                ensureValid(refType.validate(CloudFormationFunction.ref(AWSResource())));
             });
         });
 
@@ -503,27 +576,90 @@ describe('novaform.types', function() {
     describe('object', function() {
         // call it object because ensureValidInterface checks that .name is correct
         // by inspecting the test's describe title
-        const objectType = types.object('object', {
-            t1: types.number,
-            t2: types.string,
+        ensureValidInterface(types.object('object', {
+            t1: { type: types.number },
+        }));
+
+        const objectType = types.object('type-name', {
+            t1: { type: types.number },
+            t2: { type: types.string },
         });
-        ensureValidInterface(objectType);
+
+        it('should not create object without type name', function() {
+            expect(() => types.object()).to.throw(Error);
+        });
+
+        it('should not create object without type definition', function() {
+            expect(() => types.object('hi', {something: {}})).to.throw(Error);
+        });
 
         describe('#validate()', function() {
             it('should not validate non object', function() {
-                expect(objectType.validate(3)).to.be.false;
-                expect(objectType.validate('s')).to.be.false;
-                expect(objectType.validate(false)).to.be.false;
+                ensureNotValid(objectType.validate(3), /^in type-name expected object/);
+                ensureNotValid(objectType.validate('s'), /^in type-name expected object/);
+                ensureNotValid(objectType.validate(false), /^in type-name expected object/);
             });
             it('should not validate object with incorrect properties', function() {
-                expect(objectType.validate({x1: 4})).to.be.false;
-                expect(objectType.validate({t1: true})).to.be.false;
-                expect(objectType.validate({t2: 4})).to.be.false;
+                ensureNotValid(objectType.validate({x1: 4}), /^in type-name unexpected property x1/);
+                ensureNotValid(objectType.validate({x1: 4, x2: 3}), /^in type-name unexpected properties x1, x2/);
+                ensureNotValid(objectType.validate({t1: true}), /^in type-name.t1 expected number/);
+                ensureNotValid(objectType.validate({t2: 4}), /^in type-name.t2 expected string/);
             });
             it('should validate object with correct properties', function() {
-                expect(objectType.validate({t1: 4})).to.be.true;
-                expect(objectType.validate({t2: 's'})).to.be.true;
-                expect(objectType.validate({t1: 4, t2: 's'})).to.be.true;
+                ensureValid(objectType.validate({t1: 4}));
+                ensureValid(objectType.validate({t2: 's'}));
+                ensureValid(objectType.validate({t1: 4, t2: 's'}));
+            });
+            it('should validate empty object', function() {
+                const object = types.object('type-name');
+                ensureValid(object.validate({}));
+            });
+            it('should not validate missing required properties', function() {
+                const object = types.object('type-name', {
+                    t1: { type: types.number },
+                    t2: { type: types.string, required: true },
+                });
+                ensureNotValid(object.validate({t1: 4}));
+            });
+            it('should work on objects with inner objects', function() {
+                const object = types.object('type-name-1', {
+                    t1: { type: types.number },
+                    t2: { type: types.object('type-name-2', {
+                        t3: { type: types.number },
+                    })},
+                });
+                ensureValid(object.validate({
+                    t1: 1,
+                    t2: {
+                        t3: 2,
+                    },
+                }));
+                ensureNotValid(object.validate({
+                    t1: 1,
+                    t2: {
+                        t3: 's',
+                    },
+                }), /^in type-name-1.t2 in type-name-2.t3 expected number/);
+                ensureNotValid(object.validate({
+                    t1: 1,
+                    t2: {
+                        t4: 4,
+                    },
+                }), /^in type-name-1.t2 unexpected property/);
+            });
+            it('should work on objects with inner arrays', function() {
+                const object = types.object('type-name', {
+                    t1: { type: types.number },
+                    t2: { type: types.array(types.number) },
+                });
+                ensureValid(object.validate({
+                    t1: 1,
+                    t2: [1, 2, 3],
+                }));
+                ensureNotValid(object.validate({
+                    t1: 1,
+                    t2: [1, 2, 's'],
+                }), /^in type-name.t2 in \[2\] expected number/);
             });
         });
 
@@ -531,6 +667,14 @@ describe('novaform.types', function() {
             it('should output valid object data from string', function() {
                 expect(objectType.toCloudFormationValue({t1: 4, t2: 's'}))
                     .to.deep.equal({t1: '4', t2: 's'});
+            });
+        });
+
+        describe('#toCloudFormationValue()', function() {
+            it('should output valid empty object', function() {
+                const object = types.object('name');
+                expect(object.toCloudFormationValue({}))
+                    .to.deep.equal({});
             });
         });
     });
@@ -541,19 +685,20 @@ describe('novaform.types', function() {
         describe('#validate()', function() {
             it('should not validate non array', function() {
                 const array = types.array(types.string);
-                expect(array.validate({})).to.be.false;
-                expect(array.validate(4)).to.be.false;
-                expect(array.validate(true)).to.be.false;
+                ensureNotValid(array.validate({}));
+                ensureNotValid(array.validate(4));
+                ensureNotValid(array.validate(true));
             });
-            it('should validate array of strings only', function() {
+            it('should validate array of strings', function() {
                 const array = types.array(types.string);
-                expect(array.validate(['a', 'b', 'c'])).to.be.true;
-                expect(array.validate([1, 2, 3])).to.be.false;
+                ensureValid(array.validate(['a', 'b', 'c']));
+                ensureNotValid(array.validate([1]), /^in \[0\] expected string/);
+                ensureNotValid(array.validate(['1', '2', 3]), /^in \[2\] expected string/);
             });
             it('should validate array of valid objects', function() {
-                const custom = types.object('name', {
-                    t1: types.number,
-                    t2: types.string,
+                const custom = types.object('type-name', {
+                    t1: { type: types.number },
+                    t2: { type: types.string },
                 });
                 const array = types.array(custom);
 
@@ -562,27 +707,52 @@ describe('novaform.types', function() {
                 const o3 = {t1: 3};
                 const o4 = {t2: 's'};
 
-                expect(array.validate([o1, o2])).to.be.true;
-                expect(array.validate([o3, o4])).to.be.true;
-                expect(array.validate([o1])).to.be.true;
-                expect(array.validate([o1, o2, o3, o4])).to.be.true;
+                ensureValid(array.validate([o1, o2]));
+                ensureValid(array.validate([o3, o4]));
+                ensureValid(array.validate([o1]));
+                ensureValid(array.validate([o1, o2, o3, o4]));
             });
             it('should not validate array of invalid objects', function() {
-                const custom = types.object('name', {
-                    t1: types.number,
-                    t2: types.string,
+                const custom = types.object('type-name', {
+                    t1: { type: types.number },
+                    t2: { type: types.string },
                 });
                 const array = types.array(custom);
 
+                const v1 = {t1: 1, t2: 's'};
+                const v2 = {t2: 's'};
                 const o1 = {t1: 's', t2: 's'};
-                const o2 = {t1: 1, t2: 'g'};
-                const o3 = {t2: 1};
-                const o4 = {t3: 3};
+                const o2 = {t1: 1, t2: 1};
+                const o3 = {t3: 3};
+                const o4 = {t3: 3, t4: 3};
+                ensureNotValid(array.validate([o1, o2]), [
+                    /^in \[0\] in type-name expected number/,
+                    /^in \[1\] in type-name expected string/,
+                ]);
+                ensureNotValid(array.validate([v1, o2]), /^in \[1\] in type-name.t2 expected string/);
+                ensureNotValid(array.validate([v1, v2, o3]), /^in \[2\] in type-name unexpected property t3/);
+                ensureNotValid(array.validate([o4]), /^in \[0\] in type-name unexpected properties t3, t4/);
+                ensureNotValid(array.validate([o1, o2, o3]), [
+                    /^in \[0\] type-name.t1 expected number/,
+                    /^in \[0\] type-name.t2 expected string/,
+                    /^in \[2\] type-name unexpected property t3/,
+                ]);
+            });
+            it('should work with array of arrays', function() {
+                const array = types.array(types.array(types.number));
+                ensureValid(array.validate([[1, 2], [3, 4], [5, 6]]));
+                ensureNotValid(array.validate([[1, 2], true, [5, 6]]), /^in \[1\] expected array/);
+                ensureNotValid(array.validate([[1, 2], [3, 4], [5, 's']]), /^in \[2\] in \[1\] expected number/);
+            });
+            it('should work with array of objects with arrays', function() {
+                const object = types.object('type-name', {
+                    t1: { type: types.array(types.number) },
+                })
+                const array = types.array(object);
 
-                expect(array.validate([o1, o2])).to.be.false;
-                expect(array.validate([o3, o4])).to.be.false;
-                expect(array.validate([o3])).to.be.false;
-                expect(array.validate([o1, o2, o3, o4])).to.be.false;
+                ensureValid(array.validate([{t1: [1, 2]}, {t1: [3, 4]}]));
+                ensureNotValid(array.validate([{t1: [1, 2]}, {t1: [1, true]}]), /^in \[1\] in type-name.t1 in \[1\] expected number/);
+                ensureNotValid(array.validate([{t1: [1, 2]}, {t3: [3, 4]}]));
             });
         });
 
@@ -594,8 +764,8 @@ describe('novaform.types', function() {
             });
             it('should output valid object array', function() {
                 const custom = types.object('name', {
-                    t1: types.number,
-                    t2: types.string,
+                    t1: { type: types.number },
+                    t2: { type: types.string },
                 });
                 const array = types.array(custom);
                 expect(array.toCloudFormationValue(
