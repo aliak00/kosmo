@@ -124,7 +124,7 @@ describe('novaform.stack', function() {
             const internetGatewayAttachment = novaform.ec2.VPCGatewayAttachment('GatewayAttachment', {
                 VpcId: vpc,
                 InternetGatewayId: internetGateway,
-            })
+            });
 
             const subnet = novaform.ec2.Subnet('Subnet', {
                 VpcId: vpc,

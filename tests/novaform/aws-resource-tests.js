@@ -1,4 +1,4 @@
-var AWSResource = require('../../lib/novaform/lib/aws-resource');
+// var AWSResource = require('../../lib/novaform/lib/aws-resource');
 
 describe('novaform.AWSResource', function() {
 

@@ -676,7 +676,7 @@ describe('novaform.types', function() {
                     if (props.t1 % 2) {
                         return 'prop error';
                     }
-                }
+                };
                 const object = types.object('type-name', {
                     t1: { type: types.number, validators: [v] },
                 });
@@ -769,7 +769,7 @@ describe('novaform.types', function() {
             it('should work with array of objects with arrays', function() {
                 const object = types.object('type-name', {
                     t1: { type: types.array(types.number) },
-                })
+                });
                 const array = types.array(object);
 
                 ensureValid(array.validate([{t1: [1, 2]}, {t1: [3, 4]}]));
