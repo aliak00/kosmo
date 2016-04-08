@@ -661,6 +661,18 @@ describe('novaform.types', function() {
                     t2: [1, 2, 's'],
                 }), /^in type-name.t2 in \[2\] expected number/);
             });
+            it('should call custom validators', function() {
+                const v = props => {
+                    if (props.t1 % 2) {
+                        return 'prop error';
+                    }
+                }
+                const object = types.object('type-name', {
+                    t1: { type: types.number, validators: [v] },
+                });
+                ensureValid(object.validate({t1: 2}));
+                ensureNotValid(object.validate({t1: 1}), /(in type-name.t1 validation failed)*(prop error)/);
+            });
         });
 
         describe('#toCloudFormationValue()', function() {
