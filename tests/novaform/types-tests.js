@@ -661,6 +661,16 @@ describe('novaform.types', function() {
                     t2: [1, 2, 's'],
                 }), /^in type-name.t2 in \[2\] expected number/);
             });
+            it('should ensure required properties', function() {
+                const object = types.object('type-name', {
+                    t1: { type: types.number },
+                    t2: { type: types.number, required: true },
+                    t3: { type: types.number, required: true },
+                });
+                ensureValid(object.validate({t2: 2, t3: 2}));
+                ensureNotValid(object.validate({t2: 2}), /in type-name missing mandatory property t3/);
+                ensureNotValid(object.validate({t1: 2}), /in type-name missing mandatory properties t2, t3/);
+            });
             it('should call custom validators', function() {
                 const v = props => {
                     if (props.t1 % 2) {
