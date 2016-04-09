@@ -89,7 +89,13 @@ describe('novaform.types', function() {
             });
             it('should output ref function from AWSResource', function() {
                 expect(types.string.toCloudFormationValue(AWSResource()))
-                    .to.be.instanceof(CloudFormationFunction.ref);
+                    .to.be.instanceof(CloudFormationFunction.ref)
+                    .and.deep.equal(CloudFormationFunction.ref(AWSResource()));
+            });
+            it('should output ref function from ref function', function() {
+                expect(types.string.toCloudFormationValue(CloudFormationFunction.ref(AWSResource())))
+                    .to.be.instanceof(CloudFormationFunction.ref)
+                    .and.deep.equal(CloudFormationFunction.ref(AWSResource()));
             });
         });
 
@@ -568,7 +574,13 @@ describe('novaform.types', function() {
         describe('#toCloudFormationValue()', function() {
             it('should output ref object', function() {
                 expect(refType.toCloudFormationValue(CloudFormationFunction.ref(AWSResource())))
-                    .to.deep.equal(CloudFormationFunction.ref(AWSResource()));
+                    .to.be.instanceof(CloudFormationFunction.ref)
+                    .and.deep.equal(CloudFormationFunction.ref(AWSResource()));
+            });
+            it('should output ref object from AWSResource', function() {
+                expect(refType.toCloudFormationValue(AWSResource()))
+                    .to.be.instanceof(CloudFormationFunction.ref)
+                    .and.deep.equal(CloudFormationFunction.ref(AWSResource()));
             });
         });
     });
@@ -670,6 +682,14 @@ describe('novaform.types', function() {
                 ensureValid(object.validate({t2: 2, t3: 2}));
                 ensureNotValid(object.validate({t2: 2}), /in type-name missing mandatory property t3/);
                 ensureNotValid(object.validate({t1: 2}), /in type-name missing mandatory properties t2, t3/);
+            });
+            it('should ensure required properties not undefined', function() {
+                const object = types.object('type-name', {
+                    t1: { type: types.number },
+                    t2: { type: types.number, required: true },
+                });
+                ensureValid(object.validate({t2: 2}));
+                ensureNotValid(object.validate({t1: 2, t2: undefined}), /in type-name missing mandatory property t2/);
             });
             it('should call custom validators', function() {
                 const v = props => {
