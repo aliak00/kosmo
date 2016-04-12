@@ -49,7 +49,7 @@ describe('novaform.AWSResource', function() {
             }
 
             const resource = AWSResource.define('resource-type', {
-                Prop1: { type: types.number }
+                Prop1: { type: types.number },
             }, {
                 validator: validator,
             });
@@ -93,7 +93,7 @@ describe('novaform.AWSResource', function() {
             });
 
             const r1 = resource('resource-name', { Prop1: 1 });
-            const validationResults = r1.validate();
+            r1.validate();
 
             expect(v1.calledOnce).to.be.true;
             expect(v2.calledOnce).to.be.true;
