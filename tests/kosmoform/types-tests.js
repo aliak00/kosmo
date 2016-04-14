@@ -1,8 +1,8 @@
 var _ = require('lodash')
-    , AWSResource = require('../../lib/novaform/lib/aws-resource')
-    , CloudFormationFunction = require('../../lib/novaform/lib/cloud-formation-function')
+    , AWSResource = require('../../lib/kosmoform/lib/aws-resource')
+    , CloudFormationFunction = require('../../lib/kosmoform/lib/cloud-formation-function')
     , sinon = require('sinon')
-    , types = require('../../lib/novaform/lib/types');
+    , types = require('../../lib/kosmoform/lib/types');
 
 function ensureValidInterface(explicitType) {
     it('should have a name equal to itself', function() {
@@ -50,7 +50,7 @@ function ensureNotValid(result, withMessage) {
     }
 }
 
-describe('novaform.types', function() {
+describe('kosmoform.types', function() {
 
     describe('#ensureValueValid()', function() {
         it('should do nothing if valid valid', function() {

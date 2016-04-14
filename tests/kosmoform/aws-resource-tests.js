@@ -1,8 +1,8 @@
-var AWSResource = require('../../lib/novaform/lib/aws-resource')
+var AWSResource = require('../../lib/kosmoform/lib/aws-resource')
     , sinon = require('sinon')
-    , types = require('../../lib/novaform/lib/types');
+    , types = require('../../lib/kosmoform/lib/types');
 
-describe('novaform.AWSResource', function() {
+describe('kosmoform.AWSResource', function() {
 
     describe('#define()', function () {
         it('should return a function that creates an AWSResource', function() {

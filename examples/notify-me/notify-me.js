@@ -1,6 +1,6 @@
 var path = require('path');
 
-module.exports = function(nova) {
+module.exports = function(kosmo) {
 
     var artifact = {
         name: 'lambda',
@@ -9,7 +9,7 @@ module.exports = function(nova) {
 
         build: function() {
             var applicationPath = path.join(__dirname, 'src');
-            return nova.lib.createLambdaArtifact('notify-me-lambda-nova', applicationPath);
+            return kosmo.lib.createLambdaArtifact('notify-me-lambda-kosmo', applicationPath);
         },
     };
 
@@ -28,7 +28,7 @@ module.exports = function(nova) {
             var artifact = context.getArtifact('lambda');
             var bucketName = context.getComponent('hello-world/bucket');
 
-            var role = nova.form.iam.Role('ExecRole', {
+            var role = kosmo.form.iam.Role('ExecRole', {
                 AssumeRolePolicyDocument: {
                     Version: '2012-10-17',
                     Statement: [
@@ -64,14 +64,14 @@ module.exports = function(nova) {
                 ],
             });
 
-            var lambda = nova.form.lambda.Function('EventsLambda', {
+            var lambda = kosmo.form.lambda.Function('EventsLambda', {
                 Code: {
                     S3Bucket: artifact.bucket,
                     S3Key: artifact.key,
                 },
                 Handler: 'kowabunga.handler',
                 Runtime: 'nodejs',
-                Role: nova.form.fn.getAtt(role, 'Arn'),
+                Role: kosmo.form.fn.getAtt(role, 'Arn'),
             });
 
             return {
@@ -81,7 +81,7 @@ module.exports = function(nova) {
                 ],
 
                 outputs: [
-                    nova.form.Output('arn', nova.form.fn.getAtt(lambda, 'Arn')),
+                    kosmo.form.Output('arn', kosmo.form.fn.getAtt(lambda, 'Arn')),
                 ],
             };
         },
@@ -99,7 +99,7 @@ module.exports = function(nova) {
         build: function(context) {
             var lambdaArn = context.getComponent('lambda').arn;
 
-            var topic = nova.form.sns.Topic('EventsTopic', {
+            var topic = kosmo.form.sns.Topic('EventsTopic', {
                 Subscription: [
                     {
                         Endpoint: lambdaArn,
@@ -108,7 +108,7 @@ module.exports = function(nova) {
                 ],
             });
 
-            var lambdaPermission = nova.form.lambda.Permission('SnsPermission', {
+            var lambdaPermission = kosmo.form.lambda.Permission('SnsPermission', {
                 Action: 'lambda:*',
                 FunctionName: lambdaArn,
                 Principal: 'sns.amazonaws.com',
@@ -121,7 +121,7 @@ module.exports = function(nova) {
                     lambdaPermission,
                 ],
                 outputs: [
-                    nova.form.Output('arn', topic),
+                    kosmo.form.Output('arn', topic),
                 ],
             };
         },
@@ -141,8 +141,8 @@ module.exports = function(nova) {
         },
 
         build: function() {
-            var bucket = nova.form.s3.Bucket('Bucket', {
-                BucketName: 'nova-notify-me-bucket-' + nova.lib.getAwsAccountId(),
+            var bucket = kosmo.form.s3.Bucket('Bucket', {
+                BucketName: 'kosmo-notify-me-bucket-' + kosmo.lib.getAwsAccountId(),
                 AccessControl: 'Private',
             });
 
@@ -151,15 +151,15 @@ module.exports = function(nova) {
                     bucket,
                 ],
                 outputs: [
-                    nova.form.Output('name', bucket.properties.BucketName),
-                    nova.form.Output('domainName', nova.form.fn.getAtt(bucket, 'DomainName')),
+                    kosmo.form.Output('name', bucket.properties.BucketName),
+                    kosmo.form.Output('domainName', kosmo.form.fn.getAtt(bucket, 'DomainName')),
                 ],
             };
         },
     };
 
     return {
-        novaVersion: '>0.0.1',
+        kosmoVersion: '>0.0.1',
         project: 'notify-me',
         components: [
             lambdaComopnent,

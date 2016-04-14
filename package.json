@@ -1,12 +1,12 @@
 {
-  "name": "nova",
-  "version": "0.0.2",
+  "name": "kosmo",
+  "version": "0.0.3",
   "description": "Deployment tool aws infrastructure",
   "main": "lib",
   "scripts": {
     "test": "mocha './tests/**/*-tests.js' --opts './.mocha.opts'",
     "lint": "eslint .",
-    "coverage": "istanbul cover -x '**lib/novaform/lib/resources/lambda.js' --print detail _mocha -- 'tests/**/*-tests.js' --opts './.mocha.opts'"
+    "coverage": "istanbul cover -x '**lib/kosmoform/lib/resources/lambda.js' --print detail _mocha -- 'tests/**/*-tests.js' --opts './.mocha.opts'"
   },
   "keywords": [
     "aws",
@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/aliak00/nova.git"
+    "url": "git+https://github.com/aliak00/kosmo.git"
   },
   "license": "Apache-2.0",
   "dependencies": {
@@ -36,7 +36,7 @@
     "semver": "^5.1.0"
   },
   "bin": {
-    "nova": "bin/nova"
+    "kosmo": "bin/kosmo"
   },
   "devDependencies": {
     "chai": "^3.5.0",

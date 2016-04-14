@@ -1,6 +1,6 @@
 var path = require('path');
 
-module.exports = function(nova) {
+module.exports = function(kosmo) {
 
     var helloWorldServer = {
         name: 'server',
@@ -9,7 +9,7 @@ module.exports = function(nova) {
 
         build: function() {
             var applicationPath = path.join(__dirname, 'src');
-            return nova.lib.createEbArtifact('hello-world-nova', applicationPath);
+            return kosmo.lib.createEbArtifact('hello-world-kosmo', applicationPath);
         },
     };
 
@@ -19,8 +19,8 @@ module.exports = function(nova) {
         region: 'eu-west-1',
 
         build: function() {
-            var bucket = nova.form.s3.Bucket('Bucket', {
-                BucketName: 'nova-hello-world-bucket-' + nova.lib.getAwsAccountId(),
+            var bucket = kosmo.form.s3.Bucket('Bucket', {
+                BucketName: 'kosmo-hello-world-bucket-' + kosmo.lib.getAwsAccountId(),
                 AccessControl: 'Private',
             });
 
@@ -29,8 +29,8 @@ module.exports = function(nova) {
                     bucket,
                 ],
                 outputs: [
-                    nova.form.Output('name', bucket.properties.BucketName),
-                    nova.form.Output('domainName', nova.form.fn.getAtt(bucket, 'DomainName')),
+                    kosmo.form.Output('name', bucket.properties.BucketName),
+                    kosmo.form.Output('domainName', kosmo.form.fn.getAtt(bucket, 'DomainName')),
                 ],
             };
         },
@@ -50,9 +50,9 @@ module.exports = function(nova) {
             var bucketName = bucket.name;
             var bucketDomainName = bucket.domainName;
 
-            return nova.lib.findArtifact(this.region, helloWorldServer.name).then(artifact => {
+            return kosmo.lib.findArtifact(this.region, helloWorldServer.name).then(artifact => {
 
-                var role = nova.form.iam.Role('IAmRole', {
+                var role = kosmo.form.iam.Role('IAmRole', {
                     AssumeRolePolicyDocument: {
                         Statement: [
                             {
@@ -67,7 +67,7 @@ module.exports = function(nova) {
                     Path: '/',
                 });
 
-                var policy = nova.form.iam.Policy('IAmRolePolicy', {
+                var policy = kosmo.form.iam.Policy('IAmRolePolicy', {
                     PolicyName: role.name,
                     Roles: [ role ],
                     PolicyDocument: {
@@ -81,18 +81,18 @@ module.exports = function(nova) {
                     },
                 });
 
-                var instanceProfile = nova.form.iam.InstanceProfile('IAmInstanceProfile', {
+                var instanceProfile = kosmo.form.iam.InstanceProfile('IAmInstanceProfile', {
                     Path: '/',
                     Roles: [ role ],
                 });
 
-                var app = nova.stl.EBApp({
+                var app = kosmo.stl.EBApp({
                     name: 'App',
                     artifact: artifact,
                     stackName: '64bit Amazon Linux 2015.09 v2.0.6 running Node.js',
-                    optionSettings: nova.stl.EBOptionSettings({
+                    optionSettings: kosmo.stl.EBOptionSettings({
                         'aws:autoscaling:launchconfiguration': {
-                            EC2KeyName: nova.params.keyName,
+                            EC2KeyName: kosmo.params.keyName,
                             IamInstanceProfile: instanceProfile,
                         },
                         'aws:elasticbeanstalk:container:nodejs': {
@@ -115,10 +115,10 @@ module.exports = function(nova) {
                     ],
 
                     outputs: [
-                        nova.form.Output('apiApplication', app.app),
-                        nova.form.Output('apiApplicationVersion', app.version),
-                        nova.form.Output('apiEnvironment', app.environment),
-                        nova.form.Output('url', nova.form.fn.join('', ['http://', nova.form.fn.getAtt(app.environment, 'EndpointURL')])),
+                        kosmo.form.Output('apiApplication', app.app),
+                        kosmo.form.Output('apiApplicationVersion', app.version),
+                        kosmo.form.Output('apiEnvironment', app.environment),
+                        kosmo.form.Output('url', kosmo.form.fn.join('', ['http://', kosmo.form.fn.getAtt(app.environment, 'EndpointURL')])),
                     ],
                 };
 
@@ -127,7 +127,7 @@ module.exports = function(nova) {
     };
 
     return {
-        novaVersion: '>0.0.1',
+        kosmoVersion: '>0.0.1',
         project: 'hello-world',
         components: [
             helloWorldBucket,

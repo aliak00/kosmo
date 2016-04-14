@@ -4,7 +4,7 @@ var _ = require('lodash')
     , AWS = require('aws-sdk')
     , commands = require('../lib/commands')
     , fs = require('fs')
-    , NovaError = require('../lib/nova-error')
+    , KosmoError = require('../lib/kosmo-error')
     , getopt = require('node-getopt')
     , path = require('path')
     , program = require('../lib/program')
@@ -39,7 +39,7 @@ function parseCommandLine() {
 
     var programOptions = getopt.create([
         ['', 'profile=ARG', 'Set which aws profile to use for credentials'],
-        ['', 'params=ARG+', 'Yml configuration file passed in to your nova deployment definition'],
+        ['', 'params=ARG+', 'Yml configuration file passed in to your kosmo deployment definition'],
         ['v', 'verbose', 'Print more stuff'],
         ['d', 'debug', 'Print insane amounts of logs'],
         ['f', 'output-format=ARG', 'Output format (json or text) - defaults to json'],
@@ -55,7 +55,7 @@ function parseCommandLine() {
     }).join('\n');
 
     programOptions.setHelp(util.format(
-'Usage: nova [common_options] command [command_options]\n\n\
+'Usage: kosmo [common_options] command [command_options]\n\n\
 Common options:\n\
 [[OPTIONS]]\n\n\
 Commands:\n\
@@ -115,7 +115,7 @@ function parseCommandArguments(commandName, commandArguments) {
         }
 
     console.error(util.format(
-'\nUsage: nova %s %s\n\n\
+'\nUsage: kosmo %s %s\n\n\
 Options:\n\
 %s\n'
 , commandName, commandUsage, commandOptions.getHelp()));
@@ -133,26 +133,26 @@ function isUserRetarded(question) {
             throw new Error('User is retarded.');
         }
 
-        throw new Error('Hmm... well this may be a bug then. Nova leaves the next steps to you.');
+        throw new Error('Hmm... well this may be a bug then. Kosmo leaves the next steps to you.');
     });
 }
 
-function ensureNovaBucket() {
-    var novaBucket;
+function ensureKosmoBucket() {
+    var kosmoBucket;
     try {
-        novaBucket = program.getNovaBucket();
+        kosmoBucket = program.getKosmoBucket();
     } catch (e) {
         // Not initied yet. Carry on...
         return;
     }
 
-    var s3 = new AWS.S3({ region: novaBucket.region });
+    var s3 = new AWS.S3({ region: kosmoBucket.region });
     var getLocation = utils.pbind(s3.getBucketLocation, s3, {
-        Bucket: novaBucket.name,
+        Bucket: kosmoBucket.name,
     });
     return getLocation().then(data => {
-        if (data.LocationConstraint !== novaBucket.region) {
-            var question = `Nova confused. Expected nova bucket in '${novaBucket.region}', but found in '${data.Location}'.`
+        if (data.LocationConstraint !== kosmoBucket.region) {
+            var question = `Kosmo confused. Expected kosmo bucket in '${kosmoBucket.region}', but found in '${data.Location}'.`
                 + ' Did you recreate the bucket in another region?'
             return isUserRetarded(question);
         }
@@ -172,10 +172,10 @@ function initAws(profile, debug) {
     var refresh = utils.pbind(credentials.refresh, credentials);
     return refresh()
         .then(() => AWS.config.credentials = credentials)
-        .then(ensureNovaBucket)
+        .then(ensureKosmoBucket)
         .catch(err => {
             if (err.code === 'NoSuchBucket') {
-                var question = 'Well this is awkward. Expected nova bucket, but I haz none. '
+                var question = 'Well this is awkward. Expected kosmo bucket, but I haz none. '
                     + 'Did you delete it manually from S3?';
                 return isUserRetarded(question);
             }
@@ -257,7 +257,7 @@ function executeCommand(commandName, commandArguments) {
         .then(command => new command(commandArguments.commandOptions))
         .then(command => command.execute())
         .catch(err => {
-            if (err instanceof NovaError) {
+            if (err instanceof KosmoError) {
                 console.log(err.toString());
                 return;
             }
@@ -268,7 +268,7 @@ function executeCommand(commandName, commandArguments) {
             }
 
             if (err.code === 'CredentialsError') {
-                err.message = 'Nova seems to have failed to set AWS credentials. Something is fishy. And it\'s not Nemo.';
+                err.message = 'Kosmo seems to have failed to set AWS credentials. Something is fishy. And it\'s not Nemo.';
             }
 
             if (commandLine.programOptions.debug) {
