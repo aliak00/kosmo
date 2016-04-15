@@ -35,6 +35,15 @@ function ensureValid(result) {
 }
 
 function ensureNotValid(result, withMessage) {
+    if (_.isArray(withMessage) || _.isArray(result)) {
+        expect(result).is.instanceof(Array);
+        expect(withMessage).is.instanceof(Array);
+        if (result.length != withMessage.length) {
+            throw new Error(`result and withMessage not equal lengths:
+  result:\n    ${result.join('\n    ')}
+  withMessage:\n    ${withMessage.join('\n    ')}`);
+        }
+    }
     if (_.isUndefined(withMessage)) {
         expect(result).to.not.equal(undefined);
     } else if (typeof withMessage === 'string') {
@@ -42,8 +51,8 @@ function ensureNotValid(result, withMessage) {
     } else if (withMessage instanceof RegExp) {
         expect(result).to.match(withMessage);
     } else if (withMessage instanceof Array) {
-        _.forEach(withMessage, m => {
-            ensureNotValid(m);
+        _.forEach(withMessage, (m, i) => {
+            ensureNotValid(result[i], m);
         });
     } else {
         throw new Error('Unknown withMessage type: ' + withMessage);
@@ -683,13 +692,17 @@ describe('kosmoform.types', function() {
                 ensureNotValid(object.validate({t2: 2}), /in type-name missing mandatory property t3/);
                 ensureNotValid(object.validate({t1: 2}), /in type-name missing mandatory properties t2, t3/);
             });
-            it('should ensure required properties not undefined', function() {
+            it('should ensure required properties set and not undefined', function() {
                 const object = types.object('type-name', {
                     t1: { type: types.number },
                     t2: { type: types.number, required: true },
                 });
                 ensureValid(object.validate({t2: 2}));
-                ensureNotValid(object.validate({t1: 2, t2: undefined}), /in type-name missing mandatory property t2/);
+                ensureNotValid(object.validate({t1: 2}), [/in type-name missing mandatory property t2/]);
+                ensureNotValid(object.validate({t1: 2, t2: undefined}), [
+                    /in type-name missing mandatory property t2/,
+                    /in type-name.t2 expected number - got undefined/,
+                ]);
             });
             it('should call custom validators', function() {
                 const v = props => {
