@@ -35,25 +35,29 @@ function ensureValid(result) {
 }
 
 function ensureNotValid(result, withMessage) {
-    if (_.isArray(withMessage) || _.isArray(result)) {
-        expect(result).is.instanceof(Array);
-        expect(withMessage).is.instanceof(Array);
-        if (result.length != withMessage.length) {
-            throw new Error(`result and withMessage not equal lengths:
-  result:\n    ${result.join('\n    ')}
-  withMessage:\n    ${withMessage.join('\n    ')}`);
+    if (_.isArray(result)) {
+        // Allow withMessage to to be a single object if result is an array of size one
+        if (!(withMessage instanceof Array) && result.length === 1) {
+            result = result[0];
+        } else {
+            expect(withMessage).to.be.instanceof(Array);
+            expect(withMessage.length).to.equal(result.length);
         }
     }
-    if (_.isUndefined(withMessage)) {
-        expect(result).to.not.equal(undefined);
-    } else if (typeof withMessage === 'string') {
-        expect(result).to.equal(withMessage);
-    } else if (withMessage instanceof RegExp) {
-        expect(result).to.match(withMessage);
-    } else if (withMessage instanceof Array) {
+
+    if (withMessage instanceof Array) {
         _.forEach(withMessage, (m, i) => {
             ensureNotValid(result[i], m);
         });
+        return;
+    }
+
+    if (typeof withMessage === 'string') {
+        expect(result).to.equal(withMessage);
+    } else if (withMessage instanceof RegExp) {
+        expect(result).to.match(withMessage);
+    } else if (_.isUndefined(withMessage)) {
+        expect(result).to.not.equal(undefined);
     } else {
         throw new Error('Unknown withMessage type: ' + withMessage);
     }
@@ -781,16 +785,16 @@ describe('kosmoform.types', function() {
                 const o3 = {t3: 3};
                 const o4 = {t3: 3, t4: 3};
                 ensureNotValid(array.validate([o1, o2]), [
-                    /^in \[0\] in type-name expected number/,
-                    /^in \[1\] in type-name expected string/,
+                    /^in \[0\] in type-name.t1 expected number/,
+                    /^in \[1\] in type-name.t2 expected string/,
                 ]);
                 ensureNotValid(array.validate([v1, o2]), /^in \[1\] in type-name.t2 expected string/);
                 ensureNotValid(array.validate([v1, v2, o3]), /^in \[2\] in type-name unexpected property t3/);
                 ensureNotValid(array.validate([o4]), /^in \[0\] in type-name unexpected properties t3, t4/);
                 ensureNotValid(array.validate([o1, o2, o3]), [
-                    /^in \[0\] type-name.t1 expected number/,
-                    /^in \[0\] type-name.t2 expected string/,
-                    /^in \[2\] type-name unexpected property t3/,
+                    /^in \[0\] in type-name.t1 expected number/,
+                    /^in \[1\] in type-name.t2 expected string/,
+                    /^in \[2\] in type-name unexpected property t3/,
                 ]);
             });
             it('should work with array of arrays', function() {
