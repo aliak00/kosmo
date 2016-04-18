@@ -1,6 +1,4 @@
-var Output = require('../../lib/kosmoform/lib/output')
-    , sinon = require('sinon')
-    , types = require('../../lib/kosmoform/lib/types');
+var Output = require('../../lib/kosmoform/lib/output');
 
 describe('kosmoform.Output', function() {
 
