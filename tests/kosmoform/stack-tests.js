@@ -4,16 +4,74 @@ function json(fileName) {
     const data = require(fileName);
     return JSON.stringify(data, null, 2);
 }
-describe('kosmoform.stack', function() {
+describe('kosmoform.Stack', function() {
+
+    describe('#add()', function() {
+        it('should allow adding arrays and objects', function() {
+            var stack = new kosmoform.Stack('stack-name');
+            const oneResource = kosmoform.s3.Bucket('Bucket');
+            const arrayOfResources = [
+                kosmoform.s3.Bucket('Bucket1'),
+                kosmoform.s3.Bucket('Bucket2'),
+            ];
+            expect(() => stack.add(oneResource)).to.not.throw(Error);
+            expect(() => stack.add(arrayOfResources)).to.not.throw(Error);
+        });
+        it('should accept AWSResource, Parameter and Output only', function() {
+            var stack = new kosmoform.Stack('stack-name');
+            expect(() => stack.add(kosmoform.s3.Bucket('Bucket'))).to.not.throw(Error);
+            expect(() => stack.add(kosmoform.Parameter('parameter-name'))).to.not.throw(Error);
+            expect(() => stack.add(kosmoform.Output('output-name'))).to.not.throw(Error);
+            expect(() => stack.add({})).to.throw(Error);
+        });
+        it('should not allow duplicates', function() {
+            var stack = new kosmoform.Stack('stack-name');
+            expect(() => stack.add(kosmoform.s3.Bucket('Bucket'))).to.not.throw(Error);
+            expect(() => stack.add(kosmoform.s3.Bucket('Bucket'))).to.throw(Error, 'Cannot add duplicate');
+
+            expect(() => stack.add(kosmoform.Parameter('parameter-name'))).to.not.throw(Error);
+            expect(() => stack.add(kosmoform.Parameter('parameter-name'))).to.throw(Error, 'Cannot add duplicate');
+
+            expect(() => stack.add(kosmoform.Output('output-name'))).to.not.throw(Error);
+            expect(() => stack.add(kosmoform.Output('output-name'))).to.throw(Error, 'Cannot add duplicate');
+
+            expect(() => stack.add({})).to.throw(Error);
+        });
+    });
+
+    describe('#isEmpty()', function() {
+        it('should return true for empty stack unless a resource is inside', function() {
+            var stack = new kosmoform.Stack();
+            expect(stack.isEmpty()).to.be.true;
+
+            stack.add(kosmoform.Output());
+            expect(stack.isEmpty()).to.be.true;
+
+            stack.add(kosmoform.Parameter());
+            expect(stack.isEmpty()).to.be.true;
+
+            stack.add(kosmoform.Resource());
+            expect(stack.isEmpty()).to.be.false;
+        });
+    });
+
+    describe('#validate()', function() {
+        it('should return array of errors and warnings', function() {
+            var stack = new kosmoform.Stack();
+            stack.add(kosmoform.s3.Bucket('Bucket'));
+            expect(stack.validate()).to.deep.equal({
+                errors: [],
+                warnings: [],
+            });
+        });
+    });
 
     describe('#toJson()', function () {
-
         it('should create valid empty stack template', function() {
             const stack = new kosmoform.Stack('stack-name', 'stack-description');
 
             expect(stack.toJson()).to.equal(json('./json-templates/empty-template.json'));
         });
-
         it('should create valid template with s3 bucket', function() {
             const bucket = kosmoform.s3.Bucket('Bucket', {
                 BucketName: 'bucket-name',
@@ -25,7 +83,6 @@ describe('kosmoform.stack', function() {
 
             expect(stack.toJson()).to.equal(json('./json-templates/s3-bucket-template.json'));
         });
-
         it('should create valid rds stack', function() {
             const securityGroup = kosmoform.ec2.SecurityGroup('SecurityGroup', {
                 VpcId: 'vpc-id',
@@ -101,7 +158,6 @@ describe('kosmoform.stack', function() {
 
             expect(stack.toJson()).to.equal(json('./json-templates/rds-template.json'));
         });
-
         it('should create a valid vpc stack', function() {
             const vpc = kosmoform.ec2.VPC('TheVpc', {
                 CidrBlock: '192.168.0.0/16',
@@ -183,9 +239,7 @@ describe('kosmoform.stack', function() {
             ]);
 
             expect(stack.toJson()).to.equal(json('./json-templates/vpc-template.json'));
-
         });
-
     });
 
 });
