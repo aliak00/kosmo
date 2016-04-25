@@ -1,6 +1,6 @@
 var _ = require('lodash')
     , AWSResource = require('../../lib/kosmoform/lib/aws-resource')
-    , CloudFormationFunction = require('../../lib/kosmoform/lib/cloud-formation-function')
+    , CFFunction = require('../../lib/kosmoform/lib/cf-function')
     , sinon = require('sinon')
     , types = require('../../lib/kosmoform/lib/types');
 
@@ -88,8 +88,8 @@ describe('kosmoform.types', function() {
                 ensureNotValid(types.string.validate({}));
             });
 
-            _.forEach(CloudFormationFunction, (fn, name) => {
-                it('should validate ' + name + ' as CloudFormationFunction', function() {
+            _.forEach(CFFunction, (fn, name) => {
+                it('should validate ' + name + ' as CFFunction', function() {
                     ensureValid(types.string.validate(fn()));
                 });
             });
@@ -102,13 +102,13 @@ describe('kosmoform.types', function() {
             });
             it('should output ref function from AWSResource', function() {
                 expect(types.string.toCloudFormationValue(AWSResource()))
-                    .to.be.instanceof(CloudFormationFunction.ref)
-                    .and.deep.equal(CloudFormationFunction.ref(AWSResource()));
+                    .to.be.instanceof(CFFunction.ref)
+                    .and.deep.equal(CFFunction.ref(AWSResource()));
             });
             it('should output ref function from ref function', function() {
-                expect(types.string.toCloudFormationValue(CloudFormationFunction.ref(AWSResource())))
-                    .to.be.instanceof(CloudFormationFunction.ref)
-                    .and.deep.equal(CloudFormationFunction.ref(AWSResource()));
+                expect(types.string.toCloudFormationValue(CFFunction.ref(AWSResource())))
+                    .to.be.instanceof(CFFunction.ref)
+                    .and.deep.equal(CFFunction.ref(AWSResource()));
             });
         });
 
@@ -350,7 +350,7 @@ describe('kosmoform.types', function() {
                     Name: 's',
                 }));
                 ensureValid(types.tags.validate({
-                    Name: CloudFormationFunction.Base(),
+                    Name: CFFunction(),
                 }));
                 ensureValid(types.tags.validate({
                     Name: AWSResource(),
@@ -435,11 +435,11 @@ describe('kosmoform.types', function() {
                     ]
                 );
             });
-            it('should output valid tag object with CloudFormationFunction and extra options', function() {
+            it('should output valid tag object with CFFunction and extra options', function() {
                 expect(types.tags.toCloudFormationValue({
                     TagName1: AWSResource(),
                     TagName2: {
-                        Value: CloudFormationFunction.Base(),
+                        Value: CFFunction(),
                         PropagateAtLaunch: true,
                     },
                 })).to.deep.equal(
@@ -450,7 +450,7 @@ describe('kosmoform.types', function() {
                         },
                         {
                             Key: 'TagName2',
-                            Value: CloudFormationFunction.Base(),
+                            Value: CFFunction(),
                             PropagateAtLaunch: 'true',
                         },
                     ]
@@ -570,30 +570,30 @@ describe('kosmoform.types', function() {
 
         describe('#validate()', function() {
             it('should not validate AWSResource and ref function', function() {
-                ensureValid(refType.validate(CloudFormationFunction.ref()));
+                ensureValid(refType.validate(CFFunction.ref()));
                 ensureValid(refType.validate(AWSResource()));
             });
             it('should not validate non ref function object', function() {
-                ensureNotValid(refType.validate(CloudFormationFunction.join()));
+                ensureNotValid(refType.validate(CFFunction.join()));
                 ensureNotValid(refType.validate({}));
                 ensureNotValid(refType.validate(true));
                 ensureNotValid(refType.validate(false));
             });
             it('should validate empty object', function() {
-                ensureValid(refType.validate(CloudFormationFunction.ref(AWSResource())));
+                ensureValid(refType.validate(CFFunction.ref(AWSResource())));
             });
         });
 
         describe('#toCloudFormationValue()', function() {
             it('should output ref object', function() {
-                expect(refType.toCloudFormationValue(CloudFormationFunction.ref(AWSResource())))
-                    .to.be.instanceof(CloudFormationFunction.ref)
-                    .and.deep.equal(CloudFormationFunction.ref(AWSResource()));
+                expect(refType.toCloudFormationValue(CFFunction.ref(AWSResource())))
+                    .to.be.instanceof(CFFunction.ref)
+                    .and.deep.equal(CFFunction.ref(AWSResource()));
             });
             it('should output ref object from AWSResource', function() {
                 expect(refType.toCloudFormationValue(AWSResource()))
-                    .to.be.instanceof(CloudFormationFunction.ref)
-                    .and.deep.equal(CloudFormationFunction.ref(AWSResource()));
+                    .to.be.instanceof(CFFunction.ref)
+                    .and.deep.equal(CFFunction.ref(AWSResource()));
             });
         });
     });

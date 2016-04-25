@@ -81,6 +81,11 @@ describe('kosmoform.Stack', function() {
             const stack = new kosmoform.Stack('stack-name', 'stack-description');
             stack.add(bucket);
 
+
+            expect(stack.validate()).to.deep.equal({
+                errors: [],
+                warnings: []
+            });
             expect(stack.toJson()).to.equal(json('./json-templates/s3-bucket-template.json'));
         });
         it('should create valid rds stack', function() {
@@ -156,6 +161,10 @@ describe('kosmoform.Stack', function() {
                 }),
             ]);
 
+            expect(stack.validate()).to.deep.equal({
+                errors: [],
+                warnings: []
+            });
             expect(stack.toJson()).to.equal(json('./json-templates/rds-template.json'));
         });
         it('should create a valid vpc stack', function() {
@@ -238,6 +247,10 @@ describe('kosmoform.Stack', function() {
                 networkAclAssociation,
             ]);
 
+            expect(stack.validate()).to.deep.equal({
+                errors: [],
+                warnings: []
+            });
             expect(stack.toJson()).to.equal(json('./json-templates/vpc-template.json'));
         });
     });
