@@ -712,17 +712,31 @@ describe('kosmoform.types', function() {
                     /in type-name.t2 expected number - got undefined/,
                 ]);
             });
-            it('should call custom validators', function() {
-                const v = props => {
-                    if (props.t1 % 2) {
+            it('should call custom validator if function or array of functions', function() {
+                const v1 = prop => {
+                    if (prop % 2) {
                         return 'prop error';
                     }
                 };
-                const object = types.object('type-name', {
-                    t1: { type: types.number, validators: [v] },
+                const v2 = prop => {
+                    if (prop === 1) {
+                        return 'prop again';
+                    }
+                };
+                const objectWithValidator = types.object('type-name', {
+                    t1: { type: types.number, validator: v1 },
                 });
-                ensureValid(object.validate({t1: 2}));
-                ensureNotValid(object.validate({t1: 1}), /(in type-name.t1 validation failed)*(prop error)/);
+                ensureValid(objectWithValidator.validate({t1: 2}));
+                ensureNotValid(objectWithValidator.validate({t1: 1}), /(in type-name.t1 validation failed)*(prop error)/);
+
+                const objectWithArrayOfValidators = types.object('type-name', {
+                    t1: { type: types.number, validator: [v1, v2] },
+                });
+                ensureValid(objectWithArrayOfValidators.validate({t1: 2}));
+                ensureNotValid(objectWithArrayOfValidators.validate({t1: 1}), [
+                    /(in type-name.t1 validation failed)*(prop error)/,
+                    /(in type-name.t1 validation failed)*(prop again)/,
+                ]);
             });
         });
 
