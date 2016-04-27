@@ -82,13 +82,17 @@ describe('kosmoform.types', function() {
                 ensureValid(types.string.validate('a string'));
             });
             it('should validate a AWSResource', function() {
-                ensureValid(types.string.validate(AWSResource()));
+                ensureValid(types.string.validate(AWSResource('with-name')));
+                ensureNotValid(types.string.validate(AWSResource()));
             });
             it('should not validate other object', function() {
                 ensureNotValid(types.string.validate({}));
             });
 
             _.forEach(CFFunction, (fn, name) => {
+                if (typeof fn === 'symbol') {
+                    return;
+                }
                 it('should validate ' + name + ' as CFFunction', function() {
                     ensureValid(types.string.validate(fn()));
                 });
@@ -101,14 +105,14 @@ describe('kosmoform.types', function() {
                     .and.equal('s');
             });
             it('should output ref function from AWSResource', function() {
-                expect(types.string.toCloudFormationValue(AWSResource()))
+                expect(types.string.toCloudFormationValue(AWSResource('resource-name')))
                     .to.be.instanceof(CFFunction.ref)
-                    .and.deep.equal(CFFunction.ref(AWSResource()));
+                    .and.deep.equal(CFFunction.ref(AWSResource('resource-name')));
             });
             it('should output ref function from ref function', function() {
-                expect(types.string.toCloudFormationValue(CFFunction.ref(AWSResource())))
+                expect(types.string.toCloudFormationValue(CFFunction.ref(AWSResource('resource-name'))))
                     .to.be.instanceof(CFFunction.ref)
-                    .and.deep.equal(CFFunction.ref(AWSResource()));
+                    .and.deep.equal(CFFunction.ref(AWSResource('resource-name')));
             });
         });
 
@@ -353,7 +357,7 @@ describe('kosmoform.types', function() {
                     Name: CFFunction(),
                 }));
                 ensureValid(types.tags.validate({
-                    Name: AWSResource(),
+                    Name: AWSResource('resource-name'),
                 }));
                 ensureValid(types.tags.validate({
                     Name: {
@@ -421,7 +425,7 @@ describe('kosmoform.types', function() {
             it('should output valid tag object with value and AWSResource', function() {
                 expect(types.tags.toCloudFormationValue({
                     TagName1: 'TagValue1',
-                    TagName2: AWSResource(),
+                    TagName2: AWSResource('resource-name'),
                 })).to.deep.equal(
                     [
                         {
@@ -430,14 +434,14 @@ describe('kosmoform.types', function() {
                         },
                         {
                             Key: 'TagName2',
-                            Value: AWSResource(),
+                            Value: CFFunction.ref(AWSResource('resource-name')),
                         },
                     ]
                 );
             });
             it('should output valid tag object with CFFunction and extra options', function() {
                 expect(types.tags.toCloudFormationValue({
-                    TagName1: AWSResource(),
+                    TagName1: AWSResource('resource-name'),
                     TagName2: {
                         Value: CFFunction(),
                         PropagateAtLaunch: true,
@@ -446,7 +450,7 @@ describe('kosmoform.types', function() {
                     [
                         {
                             Key: 'TagName1',
-                            Value: AWSResource(),
+                            Value: CFFunction.ref(AWSResource('resource-name')),
                         },
                         {
                             Key: 'TagName2',
@@ -569,9 +573,9 @@ describe('kosmoform.types', function() {
         ensureValidInterface(refType);
 
         describe('#validate()', function() {
-            it('should not validate AWSResource and ref function', function() {
+            it('should validate AWSResource and ref function', function() {
                 ensureValid(refType.validate(CFFunction.ref()));
-                ensureValid(refType.validate(AWSResource()));
+                ensureValid(refType.validate(AWSResource('resource-name')));
             });
             it('should not validate non ref function object', function() {
                 ensureNotValid(refType.validate(CFFunction.join()));
@@ -591,9 +595,9 @@ describe('kosmoform.types', function() {
                     .and.deep.equal(CFFunction.ref(AWSResource()));
             });
             it('should output ref object from AWSResource', function() {
-                expect(refType.toCloudFormationValue(AWSResource()))
+                expect(refType.toCloudFormationValue(AWSResource('resource-name')))
                     .to.be.instanceof(CFFunction.ref)
-                    .and.deep.equal(CFFunction.ref(AWSResource()));
+                    .and.deep.equal(CFFunction.ref(AWSResource('resource-name')));
             });
         });
     });

@@ -84,7 +84,7 @@ describe('kosmoform.Stack', function() {
 
             expect(stack.validate()).to.deep.equal({
                 errors: [],
-                warnings: []
+                warnings: [],
             });
             expect(stack.toJson()).to.equal(json('./json-templates/s3-bucket-template.json'));
         });
@@ -163,7 +163,7 @@ describe('kosmoform.Stack', function() {
 
             expect(stack.validate()).to.deep.equal({
                 errors: [],
-                warnings: []
+                warnings: [],
             });
             expect(stack.toJson()).to.equal(json('./json-templates/rds-template.json'));
         });
@@ -249,7 +249,7 @@ describe('kosmoform.Stack', function() {
 
             expect(stack.validate()).to.deep.equal({
                 errors: [],
-                warnings: []
+                warnings: [],
             });
             expect(stack.toJson()).to.equal(json('./json-templates/vpc-template.json'));
         });
