@@ -1,9 +1,10 @@
 {
   "name": "kosmo",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Deployment tool aws infrastructure",
   "main": "lib",
   "scripts": {
+    "prepublish": "npm run lint && npm test",
     "test": "mocha './tests/**/*-tests.js' --opts './.mocha.opts'",
     "lint": "eslint .",
     "coverage": "istanbul cover -x '**lib/kosmoform/lib/resources/lambda.js' --print detail _mocha -- 'tests/**/*-tests.js' --opts './.mocha.opts'"
