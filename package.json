@@ -1,6 +1,6 @@
 {
   "name": "kosmo",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Deployment tool aws infrastructure",
   "main": "lib",
   "scripts": {
@@ -29,7 +29,7 @@
     "change-case": "^2.3.1",
     "js-yaml": "^3.5.3",
     "lodash": "^4.3.0",
-    "mime-multipart": "git://github.com/sergi/mime-multipart.git#master",
+    "mime-multipart": "git+https://github.com/sergi/mime-multipart.git",
     "minimatch": "^2.0.10",
     "moment": "^2.11.1",
     "node-getopt": "^0.2.3",
