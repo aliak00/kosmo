@@ -1,6 +1,6 @@
 {
   "name": "kosmo",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Deployment tool aws infrastructure",
   "main": "lib",
   "scripts": {
