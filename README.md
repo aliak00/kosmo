@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/aliak00/kosmo.svg?branch=master)](https://travis-ci.org/aliak00/kosmo)
+
 kosmo
 ====
 

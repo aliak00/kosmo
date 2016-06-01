@@ -544,6 +544,48 @@ describe('kosmoform.types', function() {
         });
     });
 
+    describe('jsonkeyvalues', function() {
+        ensureValidInterface();
+
+        describe('#validate()', function() {
+            it('should not validate non object non string', function() {
+                ensureNotValid(types.jsonkeyvalues.validate(3));
+            });
+            it('should not validate invalid json', function() {
+                ensureNotValid(types.jsonkeyvalues.validate('{"invalid":json}'));
+            });
+            it('should validate json', function() {
+                ensureValid(types.jsonkeyvalues.validate('{"valid":"json"}'));
+            });
+            it('should not validate json with object value', function() {
+                ensureNotValid(types.jsonkeyvalues.validate('{"invalid":{"a":"b"}}'));
+            });
+            it('should not validate json with array value', function() {
+                ensureNotValid(types.jsonkeyvalues.validate('{"invalid":[1, 2]}'));
+            });
+        });
+
+        describe('#toCloudFormationValue()', function() {
+            it('should output valid json data from string', function() {
+                expect(types.jsonkeyvalues.toCloudFormationValue('{"key1": "value", "key2": true, "key3": 7}'))
+                    .to.deep.equal({
+                        key1: 'value',
+                        key2: true,
+                        key3: 7,
+                    });
+            });
+            it('should output valid json data from object', function() {
+                var obj = {
+                    key1: 'value',
+                    key2: true,
+                    key3: 7,
+                };
+                expect(types.jsonkeyvalues.toCloudFormationValue(obj))
+                    .to.deep.equal(obj);
+            });
+        });
+    });
+
     describe('emptymap', function() {
         ensureValidInterface();
 
