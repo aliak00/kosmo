@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/aliak00/kosmo.svg?branch=master)](https://travis-ci.org/aliak00/kosmo)
+[![npm version](https://badge.fury.io/js/kosmo.svg)](https://badge.fury.io/js/kosmo) [![Build Status](https://travis-ci.org/aliak00/kosmo.svg?branch=master)](https://travis-ci.org/aliak00/kosmo)
 
 kosmo
 ====
