@@ -24,13 +24,13 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "archiver": "^0.21.0",
+    "archiver": "^1.1.0",
     "aws-sdk": "^2.2.32",
-    "change-case": "^2.3.1",
+    "change-case": "^3.0.0",
     "js-yaml": "^3.5.3",
     "lodash": "^4.3.0",
     "mime-multipart": "git+https://github.com/sergi/mime-multipart.git",
-    "minimatch": "^2.0.10",
+    "minimatch": "^3.0.3",
     "moment": "^2.11.1",
     "node-getopt": "^0.2.3",
     "q": "^1.1.2",
@@ -41,10 +41,10 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "chai-as-promised": "^5.3.0",
-    "eslint": "^2.5.3",
+    "chai-as-promised": "^6.0.0",
+    "eslint": "^3.7.1",
     "istanbul": "^0.4.2",
-    "mocha": "^2.4.5",
+    "mocha": "^3.1.0",
     "sinon": "^1.17.3"
   }
 }
